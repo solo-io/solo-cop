@@ -15,6 +15,6 @@ To run the utility, type
 ./get-image-list <version>
 ```
 
-where <version> is the Gloo Mesh Enterprise version (e.g. 1.1.6).
+where **version** is the Gloo Mesh Enterprise version (e.g. 1.1.6).
 
 This will print the list of images to stdout.
