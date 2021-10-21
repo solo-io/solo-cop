@@ -23,6 +23,11 @@ EOF
 cleanup() {
     trap - SIGINT SIGTERM ERR EXIT
     # nothing to do
+    rm enterprise-agent-${VERSION}.tgz
+    rm gloo-mesh-enterprise-${VERSION}.tgz
+    rm -rf enterprise-agent
+    rm -rf gloo-mesh-enterprise
+    rm .images.out
 }
 
 setup_colors() {
@@ -97,7 +102,7 @@ find gloo-mesh-enterprise -name "values.yaml" | while read file; do
 done | sort -u | tee -a .images.out
 
 
-if [ pull ]; then
+if [ $pull == 1 ]; then
   echo ""
   echo "Pulling images locally"
   cat .images.out | while read image; do
@@ -108,8 +113,4 @@ if [ pull ]; then
 fi
 
 # Cleanup
-rm enterprise-agent-${VERSION}.tgz
-rm gloo-mesh-enterprise-${VERSION}.tgz
-rm -rf enterprise-agent
-rm -rf gloo-mesh-enterprise
-rm .images.out
+cleanup
