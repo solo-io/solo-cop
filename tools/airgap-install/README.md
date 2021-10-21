@@ -6,6 +6,7 @@ The following packages need to be installed.
 - wget
 - yq
 - jq
+- docker (for pulling images locally)
 
 This script assumes a *nix environment (Mac OS is fine).
 
@@ -18,3 +19,7 @@ To run the utility, type
 where **version** is the Gloo Mesh Enterprise version (e.g. 1.1.6).
 
 This will print the list of images to stdout.
+
+## Options
+`-p | --pull` - pull the images locally.
+

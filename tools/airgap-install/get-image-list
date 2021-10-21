@@ -46,13 +46,14 @@ die() {
 
 parse_params() {
     # default values of variables set from params
-    flag=0
+    pull=0
     param=''
 
     while :; do
         case "${1-}" in 
         -h | --help) usage ;;
         -v | --verbose) set -x ;;
+        -p | --pull) pull=1 ;;
         --no-color) NO_COLOR=1 ;;
         -?*) die "Unknown option: $1" ;;
         *) break ;;
@@ -83,7 +84,7 @@ wget -q https://storage.googleapis.com/gloo-mesh-enterprise/enterprise-agent/ent
 tar zxf enterprise-agent-${VERSION}.tgz
 find enterprise-agent -name "values.yaml" | while read file; do 
     cat $file | yq eval -o=json | jq -r '.. | .image? | select(. != null) | (if .registry then (if .registry == "docker.io" then "docker.io/library" else .registry end) + "/" else "" end) + .repository + ":" + (.tag | tostring)'
-done | sort -u
+done | sort -u | tee .images.out
 
 echo ""
 echo "###################################"
@@ -93,11 +94,22 @@ wget -q https://storage.googleapis.com/gloo-mesh-enterprise/gloo-mesh-enterprise
 tar zxf gloo-mesh-enterprise-${VERSION}.tgz
 find gloo-mesh-enterprise -name "values.yaml" | while read file; do
     cat $file | yq eval -o=json | jq -r '.. | .image? | select(. != null) | (if .registry then (if .registry == "docker.io" then "docker.io/library" else .registry end) + "/" else "" end) + .repository + ":" + (.tag | tostring)'
-done | sort -u
+done | sort -u | tee -a .images.out
+
+
+if [ pull ]; then
+  echo ""
+  echo "Pulling images locally"
+  cat .images.out | while read image; do
+    src=$(echo $image | sed 's/^docker\.io\///g')
+    dest=$(echo $image | awk -F/ '{ if(NF>2){ print $2"/"$3}else{if($1=="docker.io"){print $2}else{print $1"/"$2}}}')
+    docker pull $image 
+  done
+fi
 
 # Cleanup
 rm enterprise-agent-${VERSION}.tgz
 rm gloo-mesh-enterprise-${VERSION}.tgz
 rm -rf enterprise-agent
 rm -rf gloo-mesh-enterprise
-
+rm .images.out
