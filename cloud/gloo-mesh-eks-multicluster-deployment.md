@@ -152,3 +152,6 @@ spec:
 * Register remote clusters with gloo mesh.
   * [Guide](https://docs.solo.io/gloo-mesh-enterprise/latest/setup/cluster_registration/enterprise_cluster_registration/) for registering worker clusters with gloo mesh
 
+## 4. Healthcheck tweaks
+
+...Include Nick N [recommended healthcheck and timeout tweaks](https://soloio.slab.com/posts/cash-app-east-west-scaling-0a41fj2d)
