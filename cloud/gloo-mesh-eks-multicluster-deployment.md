@@ -53,7 +53,7 @@ metadata:
     # Specifies the consecutive health check failures before a target gets marked unhealthy. Defualt: 3
     service.beta.kubernetes.io/aws-load-balancer-healthcheck-unhealthy-threshold: "2"
     # Specifies the interval between consecutive health checks. Default 10
-    service.beta.kubernetes.io/aws-load-balancer-healthcheck-interval: "10"
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-interval: "10"git 
 ...
 ```
     * Following are required service annotations for setting up the NLB fot the north-south ingress gateway service
@@ -75,7 +75,7 @@ metadata:
     service.beta.kubernetes.io/aws-load-balancer-healthcheck-port: "15021"
     service.beta.kubernetes.io/aws-load-balancer-healthcheck-protocol: "http"
 ...
-...
+```
 
 ## 3. Gloo Mesh Installation
 
