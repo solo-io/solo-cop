@@ -50,8 +50,8 @@ The following recommendations apply to istio installation:
   * Label your istio-ingressgateway-east-west service.
 ```
   labels:
-    ingressgateway.istio/type: internal
-    ingressgateway.istio/direction: east-west
+    ingressgateway.istio.io/type: internal
+    ingressgateway.istio.io/direction: east-west
 ```
   * Following are required istio-ingressgateway-north-south service annotations for setting up aws NLB.
 ```
@@ -60,25 +60,19 @@ The following recommendations apply to istio installation:
     service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: "instance"
     service.beta.kubernetes.io/aws-load-balancer-scheme: "external"
     service.beta.kubernetes.io/aws-load-balancer-type: "external"
-    service.beta.kubernetes.io/aws-load-balancer-healthcheck-healthy-threshold: "2"
-    service.beta.kubernetes.io/aws-load-balancer-healthcheck-unhealthy-threshold: "2"
-    service.beta.kubernetes.io/aws-load-balancer-healthcheck-interval: "10"
-    service.beta.kubernetes.io/aws-load-balancer-healthcheck-path: "/healthz/ready"
-    service.beta.kubernetes.io/aws-load-balancer-healthcheck-port: "15021"
-    service.beta.kubernetes.io/aws-load-balancer-healthcheck-protocol: "http"
 ```
   * Label your istio-ingressgateway-north-south service. The management cluster north-south gateway is expected to be an internal load-balancing connecting to your enterprise network. The worker clusters north-south gateways are expected to be external for exposing your applications.
     * Label management cluster istio-ingressgateway-north-south service.
 ```
   labels:
-    ingressgateway.istio/type: internal
-    ingressgateway.istio/direction: north-south
+    ingressgateway.istio.io/type: internal
+    ingressgateway.istio.io/direction: north-south
 ```
     * Label worker clusters istio-ingressgateway-north-south service.
 ```
   labels:
-    ingressgateway.istio/type: external
-    ingressgateway.istio/direction: north-south
+    ingressgateway.istio.io/type: external
+    ingressgateway.istio.io/direction: north-south
 ```
 
 ## 3. Gloo Mesh Installation
