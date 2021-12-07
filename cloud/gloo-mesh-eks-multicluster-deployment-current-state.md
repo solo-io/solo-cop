@@ -2,11 +2,11 @@ WIP...
 
 # Gloo Mesh Multi-Cluster EKS Deployment
 
-This guide defines best practices for deploying  multi-cluster gloo mesh in eks environment.
+This guide defines production best-practices for deploying multi-cluster gloo mesh in eks environment.
 
 ## 0. Architecture diagram
 
-![](images/gloo-mesh-eks-multicluster-architecture.png)
+![](images/gloo-mesh-eks-multicluster-architecture-current-state.png)
 
 ## 1. Pre-requisistes
 
@@ -31,7 +31,7 @@ The following recommendations apply to istio installation:
   * [Best-practices](https://docs.solo.io/gloo-mesh-enterprise/latest/setup/istio/istio_production/) for using istio in production in gloo mesh documentation.
 * It is recommended to deploy separate istio ingress gateways for east-west (inter-vpc communication) and north-south (communication with the outside world for exposing services or for management). 
   * [Guide](https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.3/guide/service/nlb/) on aws load-balancer controller annotations.
-  * Following are required istio-ingressgateway-east-west service annotations for setting up aws NLB.
+  * Following are required istio-ingressgateway-east-west service annotations for setting up aws NLB. Notice the recommendation of instance-based load-balancing which has been tested to provide better failover at scale. IP-based load-balancing uses a more efficient routing path but has been tested to be slow in responding to depoyment scaling at the time of this writing. 
 ```
   annotations:
     # Enables load-balancing across availability zones
@@ -58,8 +58,10 @@ The following recommendations apply to istio installation:
   annotations:
     service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: "true"
     service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: "instance"
-    service.beta.kubernetes.io/aws-load-balancer-scheme: "external"
     service.beta.kubernetes.io/aws-load-balancer-type: "external"
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-path: "/healthz/ready"
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-port: "15021"
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-protocol: "http"
 ```
   * Label your istio-ingressgateway-north-south service. The management cluster north-south gateway is expected to be an internal load-balancing connecting to your enterprise network. The worker clusters north-south gateways are expected to be external for exposing your applications.
     * Label management cluster istio-ingressgateway-north-south service.
@@ -146,6 +148,3 @@ spec:
 * Register remote clusters with gloo mesh.
   * [Guide](https://docs.solo.io/gloo-mesh-enterprise/latest/setup/cluster_registration/enterprise_cluster_registration/) for registering worker clusters with gloo mesh
 
-## 4. Healthcheck tweaks
-
-...Include Nick N [recommended healthcheck and timeout tweaks](https://soloio.slab.com/posts/cash-app-east-west-scaling-0a41fj2d)
