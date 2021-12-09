@@ -1,0 +1,17 @@
+apiVersion: k3d.io/v1alpha3
+kind: Simple
+name: cluster1
+image: rancher/k3s:v1.21.7-k3s1
+network: vm-network
+ports:
+  - port: 15443:15443 # same as `--port '8080:80@loadbalancer'`
+    nodeFilters:
+      - loadbalancer
+options:
+  k3d: # k3d runtime settings
+    wait: true # wait for cluster to be usable before returining; same as `--wait` (default: true)
+  k3s: # options passed on to K3s itself
+    extraArgs: # additional arguments passed to the `k3s server|agent` command; same as `--k3s-arg`
+      - arg: --disable=traefik
+        nodeFilters:
+          - server:*

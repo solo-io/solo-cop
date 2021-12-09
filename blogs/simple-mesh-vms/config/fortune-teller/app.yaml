@@ -1,0 +1,56 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    istio-injection: enabled
+  name: fortune-teller
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: fortune-teller
+  namespace: fortune-teller
+  labels:
+    app: fortune-teller
+---
+# Service descriptor to expose web fortune-teller
+apiVersion: v1
+kind: Service
+metadata:
+  name: fortune-teller
+  namespace: fortune-teller
+  labels:
+    app: fortune-teller
+spec:
+  selector:
+    app: fortune-teller
+  ports:
+  - name: grpc
+    protocol: TCP
+    port: 50051
+    targetPort: 50051
+---
+# Deployment descriptor for fortune-teller   
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fortune-teller
+  namespace: fortune-teller
+  labels:
+    app: fortune-teller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fortune-teller
+  template:
+    metadata:
+      labels:
+        app: fortune-teller
+    spec:
+      serviceAccountName: fortune-teller    
+      containers:
+      - name: fortune-teller
+        image: quay.io/kubernetes-ingress-controller/grpc-fortune-teller:0.1
+        ports:
+        - containerPort: 50051
