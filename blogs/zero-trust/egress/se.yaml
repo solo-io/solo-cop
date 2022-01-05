@@ -1,0 +1,20 @@
+apiVersion: networking.istio.io/v1beta1
+kind: ServiceEntry
+metadata:
+  name: forumsystems-ldap
+  namespace: istio-system
+spec:
+  addresses:
+  - 248.85.101.6
+  endpoints:
+  - address: ldap.forumsys.com
+    ports:
+      tcp: 389
+  exportTo: []
+  hosts:
+  - ldap.forumsys.com
+  ports:
+  - name: tcp
+    number: 389
+    protocol: TCP
+  resolution: DNS
