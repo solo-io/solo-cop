@@ -1,0 +1,18 @@
+apiVersion: discovery.mesh.gloo.solo.io/v1
+kind: Destination 
+metadata:
+  name: forumsystems-dest
+spec:
+  externalService:
+    endpoints:
+    - address: ldap.forumsys.com
+      ports:
+        tcp: 389
+    hosts:
+    - ldap.forumsys.com
+    name: forumsystems-ldap
+    ports:
+    - name: tcp
+      number: 389
+      protocol: TCP 
+  
