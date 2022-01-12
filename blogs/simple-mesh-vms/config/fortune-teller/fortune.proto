@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package build.stack.fortune;
+import "google/api/annotations.proto";
+
+message PredictionRequest { string user_id = 1; }
+
+message PredictionResponse { string message = 1; }
+
+service FortuneTeller {
+  rpc Predict(PredictionRequest) returns (PredictionResponse) {
+    option (google.api.http) = {
+      get : "/v1/fortune/{user_id}"
+    };
+  };
+}

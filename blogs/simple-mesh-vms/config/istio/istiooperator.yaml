@@ -1,0 +1,52 @@
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+metadata:
+  name: istio-install
+  namespace: istio-system
+spec:
+  # only the control plane components are installed (https://istio.io/latest/docs/setup/additional-setup/config-profiles/)
+  profile: minimal
+  hub: gcr.io/istio-release
+  # Solo.io Gloo Mesh Istio tag
+  tag: 1.12.0
+
+  meshConfig:
+    h2UpgradePolicy: UPGRADE
+    # enable access logging to standard output
+    accessLogFile: /dev/stdout
+
+    # Prints the correct grpc path instead of http one
+    accessLogFormat: |
+      [%START_TIME%] "%REQ(:METHOD)% %REQ(:PATH)% %PROTOCOL%" %RESPONSE_CODE% %RESPONSE_FLAGS% %RESPONSE_CODE_DETAILS% %CONNECTION_TERMINATION_DETAILS%"%UPSTREAM_TRANSPORT_FAILURE_REASON%" %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(X-ENVOY-UPSTREAM-SERVICE-TIME)% "%REQ(X-FORWARDED-FOR)%" "%REQ(USER-AGENT)%" "%REQ(X-REQUEST-ID)%""%REQ(:AUTHORITY)%" "%UPSTREAM_HOST%" %UPSTREAM_CLUSTER% %UPSTREAM_LOCAL_ADDRESS% %DOWNSTREAM_LOCAL_ADDRESS% %DOWNSTREAM_REMOTE_ADDRESS% %REQUESTED_SERVER_NAME% %ROUTE_NAME%
+
+  components:
+    pilot:
+      k8s:
+        env:
+         # Disable validation so VM can have non conforming identity
+          - name: PILOT_SKIP_VALIDATE_TRUST_DOMAIN
+            value: "true"
+    ingressGateways:
+    # enable the default ingress gateway
+    - name: istio-eastwestgateway
+      namespace: istio-system
+      enabled: true
+      label:
+        istio: eastwestgateway
+        app: istio-eastwestgateway
+      k8s:
+        env:
+          # Required for east/west routing
+          - name: ISTIO_META_ROUTER_MODE
+            value: "sni-dnat"
+        service:
+          type: LoadBalancer
+          ports:
+            # health check port (required to be first for aws elbs)
+            - name: status-port
+              port: 15021
+              targetPort: 15021
+            # Port for mTLS passthrough
+            - port: 15443
+              targetPort: 15443
+              name: tls

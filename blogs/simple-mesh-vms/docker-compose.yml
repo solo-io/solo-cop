@@ -1,0 +1,28 @@
+version: "3.7"
+services:
+  envoy:
+    # required to use istio build because you need the builtin istio envoy filters
+    image: gcr.io/istio-release/proxyv2:1.12.0
+    # override the default entrypoint to start envoy directly
+    entrypoint:
+      - envoy
+      - --config-path
+      - /etc/config/envoy.yaml
+      # enable envoy debugging
+      # - -l
+      # - debug
+    volumes:
+      - ./config/:/etc/config/
+      - ./certs/vm:/certs/:ro
+    networks:
+      # deploy vm to its own network
+      - vm-network
+    ports:
+      # exposing http port outside local network
+      - "8080:8080"
+      # enovy admin port
+      - "8081:8081"
+
+networks:
+  vm-network:
+    name: vm-network
