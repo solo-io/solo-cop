@@ -78,6 +78,11 @@ parse_params "$@"
 setup_colors
 
 VERSION="${args[0]}"
+OS=$(uname)
+JSON_FLAG='-j'
+if [ $OS == 'Darwin' ]; then
+    JSON_FLAG="-o=json"
+fi
 
 # Script logic
 echo "Finding images for Gloo Mesh Enterprise version ${VERSION}"
@@ -88,7 +93,7 @@ echo "###################################"
 wget -q https://storage.googleapis.com/gloo-mesh-enterprise/enterprise-agent/enterprise-agent-${VERSION}.tgz
 tar zxf enterprise-agent-${VERSION}.tgz
 find enterprise-agent -name "values.yaml" | while read file; do 
-    cat $file | yq eval -o=json | jq -r '.. | .image? | select(. != null) | (if .registry then (if .registry == "docker.io" then "docker.io/library" else .registry end) + "/" else "" end) + .repository + ":" + (.tag | tostring)'
+    cat $file | yq eval $JSON_FLAG | jq -r '.. | .image? | select(. != null) | (if .registry then (if .registry == "docker.io" then "docker.io/library" else .registry end) + "/" else "" end) + .repository + ":" + (.tag | tostring)'
 done | sort -u | tee .images.out
 
 echo ""
@@ -98,7 +103,7 @@ echo "###################################"
 wget -q https://storage.googleapis.com/gloo-mesh-enterprise/gloo-mesh-enterprise/gloo-mesh-enterprise-${VERSION}.tgz
 tar zxf gloo-mesh-enterprise-${VERSION}.tgz
 find gloo-mesh-enterprise -name "values.yaml" | while read file; do
-    cat $file | yq eval -o=json | jq -r '.. | .image? | select(. != null) | (if .registry then (if .registry == "docker.io" then "docker.io/library" else .registry end) + "/" else "" end) + .repository + ":" + (.tag | tostring)'
+    cat $file | yq eval $JSON_FLAG | jq -r '.. | .image? | select(. != null) | (if .registry then (if .registry == "docker.io" then "docker.io/library" else .registry end) + "/" else "" end) + .repository + ":" + (.tag | tostring)'
 done | sort -u | tee -a .images.out
 
 

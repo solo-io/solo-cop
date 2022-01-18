@@ -1,7 +1,6 @@
 # Air-gap Installation Image List
 This utility scripts the functionality found in the Gloo Mesh Enterprise [documentation](https://docs.solo.io/gloo-mesh-enterprise/latest/setup/installation/airgap_install/).  
 
-**NOTE: This utility is currently supported on Mac OS.  Linux support coming soon.**
 
 ## Pre-requisites
 The following packages need to be installed.
