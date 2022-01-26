@@ -1,7 +1,6 @@
 # Connecting Docker VM to Istio
-
-TODO: Add blog post links once published
-
+Part 1 Simple VM Architectures- https://istio.io/latest/blog/2021/simple-vms/
+Part 2 Implementing Simple VMs - https://www.solo.io/blog/add-virtual-machines-to-istio-service-mesh/
 
 ## Prerequisites
 
