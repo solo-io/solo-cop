@@ -15,3 +15,4 @@ configuration or tools that ease onboarding.  For questions regarding this conte
 Additionally, there is a tools directory here where you can find the following utilites.
 
 - [Image List for Air-gap Install of Gloo Mesh Enterprise](tools/airgap-install/README.md)
+- [Istio Bug-report CRD Parser](tools/crd_parser/README.md)
