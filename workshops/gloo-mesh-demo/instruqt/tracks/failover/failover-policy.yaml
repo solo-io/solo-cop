@@ -1,13 +1,20 @@
----
 apiVersion: resilience.policy.gloo.solo.io/v2
 kind: FailoverPolicy
 metadata:
   name: failover
-  namespace: web-ui
+  namespace: web-team
 spec:
   applyToDestinations:
   - kind: VIRTUAL_DESTINATION
     selector:
-      namespace: web-ui
+      namespace: web-team
   config:
-    localityMappings: []
+    localityMappings:
+    - from:
+        region: us-east-1
+      to:
+        - region: us-west-2
+    - from:
+        region: us-west-2
+      to: 
+        - region: us-east-1
