@@ -4,13 +4,13 @@ metadata:
   name: ops-team
   namespace: ops-team
 spec:
+  importFrom:
+  - workspaces:
+    - name: web-team
   options:
     eastWestGateways:
     - selector:
         labels:
           istio: eastwestgateway
-  importFrom:
-  - workspaces:
-    - name: web-team
     serviceIsolation:
       enabled: true
