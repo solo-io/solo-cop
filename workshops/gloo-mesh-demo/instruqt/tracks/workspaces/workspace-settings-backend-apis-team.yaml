@@ -18,3 +18,4 @@ spec:
       - namespace: backend-apis
     serviceIsolation:
       enabled: true
+      trimProxyConfig: true

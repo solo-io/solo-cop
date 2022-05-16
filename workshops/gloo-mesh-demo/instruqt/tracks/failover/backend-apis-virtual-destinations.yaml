@@ -1,0 +1,51 @@
+# Virtual Destinations for the rest of the online boutique backend apis in cluster1
+apiVersion: networking.gloo.solo.io/v2
+kind: VirtualDestination
+metadata:
+  name: ads
+  namespace: backend-apis-team
+spec:
+  hosts:
+  - ads.mesh.internal
+  services:
+  - labels:
+      app: adservice
+  ports:
+  - number: 80
+    protocol: GRPC
+    targetPort:
+      name: grpc
+---
+apiVersion: networking.gloo.solo.io/v2
+kind: VirtualDestination
+metadata:
+  name: cart
+  namespace: backend-apis-team
+spec:
+  hosts:
+  - cart.mesh.internal
+  services:
+  - labels:
+      app: cartservice
+  ports:
+  - number: 80
+    protocol: GRPC
+    targetPort:
+      name: grpc
+---
+apiVersion: networking.gloo.solo.io/v2
+kind: VirtualDestination
+metadata:
+  name: recommendations
+  namespace: backend-apis-team
+spec:
+  hosts:
+  - recommendations.mesh.internal
+  services:
+  - labels:
+      app: recommendationservice
+  ports:
+  - number: 80
+    protocol: GRPC
+    targetPort:
+      name: grpc

@@ -14,3 +14,4 @@ spec:
           istio: eastwestgateway
     serviceIsolation:
       enabled: true
+      trimProxyConfig: true

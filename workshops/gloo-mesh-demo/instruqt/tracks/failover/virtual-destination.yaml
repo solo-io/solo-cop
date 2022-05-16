@@ -1,0 +1,16 @@
+apiVersion: networking.gloo.solo.io/v2
+kind: VirtualDestination
+metadata:
+  name: frontend
+  namespace: web-team
+spec:
+  hosts:
+  - frontend.mesh.internal
+  services:
+  - labels:
+      app: frontend
+  ports:
+  - number: 80
+    protocol: GRPC
+    targetPort:
+      name: http
