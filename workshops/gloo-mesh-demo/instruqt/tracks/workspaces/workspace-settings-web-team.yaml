@@ -19,3 +19,5 @@ spec:
       enabled: true
       serviceSelector:
       - namespace: web-ui
+    serviceIsolation:
+      enabled: true

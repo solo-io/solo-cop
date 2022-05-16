@@ -12,3 +12,5 @@ spec:
   importFrom:
   - workspaces:
     - name: web-team
+    serviceIsolation:
+      enabled: true

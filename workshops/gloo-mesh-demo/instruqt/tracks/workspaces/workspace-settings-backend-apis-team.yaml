@@ -16,3 +16,5 @@ spec:
       enabled: true
       serviceSelector:
       - namespace: backend-apis
+    serviceIsolation:
+      enabled: true
