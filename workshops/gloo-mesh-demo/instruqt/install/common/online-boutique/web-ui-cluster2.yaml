@@ -1,3 +1,51 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: web-ui
+  labels:
+    istio-injection: enabled
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  labels:
+    app: frontend
+spec:
+  selector:
+    app: frontend
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8080
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: frontend
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: view-nodes
+rules:
+- apiGroups: [""]
+  resources: ["nodes"]
+  verbs: ["get","list","watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: read-nodes
+subjects:
+- kind: ServiceAccount
+  name: frontend
+  namespace: web-ui
+roleRef:
+  kind: ClusterRole
+  name: view-nodes
+  apiGroup: rbac.authorization.k8s.io
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -40,19 +88,19 @@ spec:
             - name: PORT
               value: "8080"
             - name: AD_SERVICE_ADDR
-              value: "ads.mesh.internal:80"
+              value: "ads.backend-apis-team.solo-io.mesh:80"
             - name: CART_SERVICE_ADDR
-              value: "cart.mesh.internal:80"
+              value: "cart.backend-apis-team.solo-io.mesh:80"
             - name: RECOMMENDATION_SERVICE_ADDR
-              value: "recommendations.mesh.internal:80"
+              value: "recommendations.backend-apis-team.solo-io.mesh:80"
             - name: SHIPPING_SERVICE_ADDR
-              value: "shipping.mesh.internal:80"
+              value: "shipping.backend-apis-team.solo-io.mesh:80"
             - name: CHECKOUT_SERVICE_ADDR
-              value: "checkout.mesh.internal:80"
+              value: "checkout.backend-apis-team.solo-io.mesh:80"
             - name: PRODUCT_CATALOG_SERVICE_ADDR
-              value: "product-catalog.mesh.internal:80"
+              value: "product-catalog.backend-apis-team.solo-io.mesh:80"
             - name: CURRENCY_SERVICE_ADDR
-              value: "currency.mesh.internal:80"
+              value: "currency.backend-apis-team.solo-io.mesh:80"
             # # ENV_PLATFORM: One of: local, gcp, aws, azure, onprem
             # # When not set, defaults to "local" unless running in GKE, otherwies auto-sets to gcp 
             - name: ENV_PLATFORM 
@@ -74,7 +122,7 @@ spec:
                 fieldRef:
                   fieldPath: metadata.namespace
             - name: KUBERNETES_CLUSTER_NAME
-              value: cluster1
+              value: cluster2
           # - name: JAEGER_SERVICE_ADDR
           #   value: "jaeger-collector:14268"
           resources:

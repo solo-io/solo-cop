@@ -5,7 +5,7 @@ metadata:
   namespace: backend-apis-team
 spec:
   hosts:
-  - checkout.mesh.internal
+  - checkout.backend-apis-team.solo-io.mesh
   services:
   - labels:
       app: checkoutservice
@@ -22,7 +22,7 @@ metadata:
   namespace: backend-apis-team
 spec:
   hosts:
-  - currency.mesh.internal
+  - currency.backend-apis-team.solo-io.mesh
   services:
   - labels:
       app: currencyservice
@@ -39,7 +39,7 @@ metadata:
   namespace: backend-apis-team
 spec:
   hosts:
-  - product-catalog.mesh.internal
+  - product-catalog.backend-apis-team.solo-io.mesh
   services:
   - labels:
       app: productcatalogservice
@@ -56,7 +56,7 @@ metadata:
   namespace: backend-apis-team
 spec:
   hosts:
-  - shipping.mesh.internal
+  - shipping.backend-apis-team.solo-io.mesh
   services:
   - labels:
       app: shippingservice
@@ -73,7 +73,7 @@ metadata:
   namespace: backend-apis-team
 spec:
   hosts:
-  - cart.mesh.internal
+  - cart.backend-apis-team.solo-io.mesh
   services:
   - labels:
       app: cartservice

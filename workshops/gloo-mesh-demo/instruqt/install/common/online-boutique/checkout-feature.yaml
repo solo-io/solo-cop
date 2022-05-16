@@ -181,17 +181,17 @@ spec:
             - name: PORT
               value: "5050"
             - name: PRODUCT_CATALOG_SERVICE_ADDR
-              value: "product-catalog.mesh.internal:80"
+              value: "product-catalog.backend-apis-team.solo-io.mesh:80"
             - name: SHIPPING_SERVICE_ADDR
-              value: "shipping.mesh.internal:80"
+              value: "shipping.backend-apis-team.solo-io.mesh:80"
             - name: PAYMENT_SERVICE_ADDR
               value: "paymentservice.backend-apis.svc.cluster.local:50051"
             - name: EMAIL_SERVICE_ADDR
               value: "emailservice.backend-apis.svc.cluster.local:5000"
             - name: CURRENCY_SERVICE_ADDR
-              value: "currency.mesh.internal:80"
+              value: "currency.backend-apis-team.solo-io.mesh:80"
             - name: CART_SERVICE_ADDR
-              value: "cart.mesh.internal:80"
+              value: "cart.backend-apis-team.solo-io.mesh:80"
             - name: DISABLE_STATS
               value: "1"
             - name: DISABLE_TRACING
@@ -247,7 +247,7 @@ spec:
                 go get github.com/fullstorydev/grpcurl/cmd/grpcurl@latest && i=0;
                 while [ $i -lt 10000 ];
                 do
-                  grpcurl --plaintext -d "{ \"userCurrency\": \"USD\", \"creditCard\": { \"creditCardNumber\": \"4432-8015-6152-0454\", \"creditCardCvv\": 123, \"creditCardExpirationYear\": 2023, \"creditCardExpirationMonth\": 12 }, \"address\": { \"streetAddress\": \"1600 Amphitheatre Parkway\", \"zipCode\": 94043, \"city\": \"Mountain View\", \"state\": \"CA\", \"country\": \"United States\" }, \"email\": \"someone@example.com\" }" -v --proto /demo.proto -import-path / checkout.mesh.internal:80 hipstershop.CheckoutService/PlaceOrder
+                  grpcurl --plaintext -d "{ \"userCurrency\": \"USD\", \"creditCard\": { \"creditCardNumber\": \"4432-8015-6152-0454\", \"creditCardCvv\": 123, \"creditCardExpirationYear\": 2023, \"creditCardExpirationMonth\": 12 }, \"address\": { \"streetAddress\": \"1600 Amphitheatre Parkway\", \"zipCode\": 94043, \"city\": \"Mountain View\", \"state\": \"CA\", \"country\": \"United States\" }, \"email\": \"someone@example.com\" }" -v --proto /demo.proto -import-path / checkout.backend-apis-team.solo-io.mesh:80 hipstershop.CheckoutService/PlaceOrder
                   grpcurl --plaintext -d "{ \"userCurrency\": \"USD\", \"creditCard\": { \"creditCardNumber\": \"4432-8015-6152-0454\", \"creditCardCvv\": 123, \"creditCardExpirationYear\": 2023, \"creditCardExpirationMonth\": 12 }, \"address\": { \"streetAddress\": \"1600 Amphitheatre Parkway\", \"zipCode\": 94043, \"city\": \"Mountain View\", \"state\": \"CA\", \"country\": \"United States\" }, \"email\": \"someone@example.com\" }" -v --proto /demo.proto -import-path / checkoutservice.backend-apis.svc.cluster.local:5050 hipstershop.CheckoutService/PlaceOrder
                   sleep 1
                 done

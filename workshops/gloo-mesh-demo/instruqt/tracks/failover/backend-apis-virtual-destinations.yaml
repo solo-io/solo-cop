@@ -6,7 +6,7 @@ metadata:
   namespace: backend-apis-team
 spec:
   hosts:
-  - ads.mesh.internal
+  - ads.backend-apis-team.solo-io.mesh
   services:
   - labels:
       app: adservice
@@ -23,7 +23,7 @@ metadata:
   namespace: backend-apis-team
 spec:
   hosts:
-  - cart.mesh.internal
+  - cart.backend-apis-team.solo-io.mesh
   services:
   - labels:
       app: cartservice
@@ -40,7 +40,7 @@ metadata:
   namespace: backend-apis-team
 spec:
   hosts:
-  - recommendations.mesh.internal
+  - recommendations.backend-apis-team.solo-io.mesh
   services:
   - labels:
       app: recommendationservice
