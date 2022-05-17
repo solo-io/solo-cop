@@ -22,7 +22,7 @@ spec:
             clientId: ${KEYCLOAK_CLIENTID}
             clientSecretRef:
               name: oauth
-              namespace: httpbin
+              namespace: gloo-mesh
             issuerUrl: "${KEYCLOAK_URL}/realms/master/"
             session:
               failOnFetchFailure: true
@@ -39,7 +39,7 @@ apiVersion: admin.gloo.solo.io/v2
 kind: ExtAuthServer
 metadata:
   name: ext-auth-server
-  namespace: web-team
+  namespace: ops-team
 spec:
   destinationServer:
     ref:
