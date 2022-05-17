@@ -12,23 +12,9 @@ spec:
       cluster: mgmt
   workloadSelectors: []
   http:
-    - name: cart
-      matchers:
-      - uri:
-          exact: /cart
-      - uri:
-          prefix: /callback
+    - name: frontend
       labels:
         oauth: "true"
-      forwardTo:
-        destinations:
-          - ref:
-              name: frontend
-              namespace: web-ui
-              cluster: cluster1
-            port:
-              number: 80
-    - name: main-page
       forwardTo:
         destinations:
           - ref:
@@ -57,17 +43,15 @@ spec:
       configs:
       - oauth2:
           oidcAuthorizationCode:
-            appUrl: https://${ENDPOINT_HTTPS_GW_CLUSTER1}
+            appUrl: https://nick.localhost:8443
             callbackPath: /callback
-            clientId: ${KEYCLOAK_CLIENTID}
+            clientId: cmnxiBIs3LW0VLSh3KJd0hGtFAtz3alD
             clientSecretRef:
               name: oauth
               namespace: gloo-mesh
-            issuerUrl: "${KEYCLOAK_URL}/realms/master/"
+            issuerUrl: "https://dev-64ktibmv.us.auth0.com/"
             scopes:
             - email
-            headers:
-              idTokenHeader: jwt
 ---
 apiVersion: admin.gloo.solo.io/v2
 kind: ExtAuthServer

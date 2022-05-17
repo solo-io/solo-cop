@@ -1,14 +1,39 @@
+apiVersion: networking.gloo.solo.io/v2
+kind: RouteTable
+metadata:
+  name: frontend
+  namespace: web-team
+spec:
+  hosts:
+    - '*'
+  virtualGateways:
+    - name: north-south-gw
+      namespace: ops-team
+      cluster: mgmt
+  workloadSelectors: []
+  http:
+    - name: frontend
+      labels:
+        waf: "true"
+      forwardTo:
+        destinations:
+          - ref:
+              name: frontend
+              namespace: web-ui
+              cluster: cluster1
+            port:
+              number: 80
+---
 apiVersion: security.policy.gloo.solo.io/v2
 kind: WAFPolicy
 metadata:
   name: log4shell
-  namespace: httpbin
+  namespace: web-team
 spec:
   applyToRoutes:
-  - withDestinations:
-      kind: VIRTUAL_DESTINATION
-      selector:
-        workspace: web-team
+  - route:
+      labels:
+        waf: "true"
   config:
     disableCoreRuleSet: true
     customInterventionMessage: 'Log4Shell malicious payload'

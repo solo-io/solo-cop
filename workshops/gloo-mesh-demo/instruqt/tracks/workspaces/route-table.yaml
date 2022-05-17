@@ -13,6 +13,8 @@ spec:
   workloadSelectors: []
   http:
     - name: frontend
+      labels:
+        oauth: "true"
       forwardTo:
         destinations:
           - ref:
