@@ -18,5 +18,5 @@ spec:
       - namespace: backend-apis
     # disabled to show how to use Auth Policies
     serviceIsolation:
-      enabled: true
-      trimProxyConfig: true
+      enabled: false
+      trimProxyConfig: false
