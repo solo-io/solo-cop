@@ -28,7 +28,7 @@ apiVersion: trafficcontrol.policy.gloo.solo.io/v2
 kind: RateLimitClientConfig
 metadata:
   name: frontend
-  namespace: ops-team
+  namespace: web-team
 spec:
   raw:
     rateLimits:
@@ -40,7 +40,7 @@ apiVersion: admin.gloo.solo.io/v2
 kind: RateLimitServerConfig
 metadata:
   name: frontend
-  namespace: ops-team
+  namespace: web-team
 spec:
   destinationServers:
   - ref:
@@ -62,7 +62,7 @@ apiVersion: trafficcontrol.policy.gloo.solo.io/v2
 kind: RateLimitPolicy
 metadata:
   name: frontend
-  namespace: ops-team
+  namespace: web-team
 spec:
   applyToRoutes:
   - route:
@@ -70,16 +70,16 @@ spec:
         rate-limit: "true"
   config:
     serverSettings:
-      name: rate-limit-server
-      namespace: ops-team
+      name: frontend
+      namespace: web-team
       cluster: mgmt
     ratelimitClientConfig:
-      name: httpbin
-      namespace: ops-team
+      name: frontend
+      namespace: web-team
       cluster: mgmt
     ratelimitServerConfig:
       name: frontend
-      namespace: ops-team
+      namespace: web-team
       cluster: mgmt
     phase:
       postAuthz:
