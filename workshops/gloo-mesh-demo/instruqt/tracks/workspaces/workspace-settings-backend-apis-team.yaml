@@ -17,6 +17,6 @@ spec:
       serviceSelector:
       - namespace: backend-apis
     # disabled to show how to use Auth Policies
-    # serviceIsolation:
-    #   enabled: false
-    #   trimProxyConfig: false
+    serviceIsolation:
+      enabled: true
+      trimProxyConfig: true
