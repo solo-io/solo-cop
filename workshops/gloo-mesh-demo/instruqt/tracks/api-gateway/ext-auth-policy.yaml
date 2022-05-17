@@ -5,9 +5,10 @@ metadata:
   namespace: ops-team
 spec:
   applyToRoutes:
-  - route:
-      labels:
-        oauth: "true"
+  - withDestinations:
+      kind: VIRTUAL_DESTINATION
+      selector:
+        workspace: web-team
   config:
     server:
       name: ext-auth-server
