@@ -1,0 +1,61 @@
+apiVersion: trafficcontrol.policy.gloo.solo.io/v2
+kind: RateLimitClientConfig
+metadata:
+  name: frontend
+  namespace: web-team
+spec:
+  raw:
+    rateLimits:
+    - setActions:
+      - genericKey:
+          descriptorValue: count
+---
+apiVersion: admin.gloo.solo.io/v2
+kind: RateLimitServerConfig
+metadata:
+  name: frontend
+  namespace: web-team
+spec:
+  destinationServers:
+  - ref:
+      cluster: cluster1
+      name: rate-limiter
+      namespace: gloo-mesh-addons
+    port:
+      name: grpc
+  raw:
+    setDescriptors:
+      - simpleDescriptors:
+          - key: generic_key
+            value: count
+        rateLimit:
+          requestsPerUnit: 3
+          unit: MINUTE
+---
+apiVersion: trafficcontrol.policy.gloo.solo.io/v2
+kind: RateLimitPolicy
+metadata:
+  name: frontend
+  namespace: web-team
+spec:
+  applyToRoutes:
+  - withDestinations:
+      kind: VIRTUAL_DESTINATION
+      selector:
+        workspace: web-team
+  config:
+    serverSettings:
+      name: rate-limit-server
+      namespace: web-team
+      cluster: mgmt
+    ratelimitClientConfig:
+      name: httpbin
+      namespace: web-team
+      cluster: mgmt
+    ratelimitServerConfig:
+      name: frontend
+      namespace: web-team
+      cluster: mgmt
+    phase:
+      postAuthz:
+        priority: 3
