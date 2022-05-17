@@ -17,3 +17,4 @@ export NETWORK=$CLUSTER_NAME-network
 kubectl create namespace istio-gateways --context $CLUSTER_NAME
 
 cat $LOCAL_DIR/istiooperator.yaml | envsubst | istioctl install -y --context $CLUSTER_NAME -f -
+
