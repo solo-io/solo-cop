@@ -13,7 +13,10 @@ spec:
   listeners: 
     - http: {}
       port:
-        name: http2
+        number: 443
+      tls:
+        mode: SIMPLE
+        secretName: tls-secret
       allowedRouteTables:
         - host: '*'
           selector:

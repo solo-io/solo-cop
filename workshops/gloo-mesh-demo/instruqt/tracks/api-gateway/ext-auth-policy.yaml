@@ -2,7 +2,7 @@ apiVersion: security.policy.gloo.solo.io/v2
 kind: ExtAuthPolicy
 metadata:
   name: frontend
-  namespace: web-team
+  namespace: ops-team
 spec:
   applyToRoutes:
   - route:
@@ -11,7 +11,7 @@ spec:
   config:
     server:
       name: ext-auth-server
-      namespace: httpbin
+      namespace: gloo-mesh-addons
       cluster: cluster1
     glooAuth:
       configs:
@@ -19,7 +19,7 @@ spec:
           oidcAuthorizationCode:
             appUrl: https://${ENDPOINT_HTTPS_GW_CLUSTER1}
             callbackPath: /callback
-            clientId: ${KEYCLOAK_CLIENT}
+            clientId: ${KEYCLOAK_CLIENTID}
             clientSecretRef:
               name: oauth
               namespace: httpbin
