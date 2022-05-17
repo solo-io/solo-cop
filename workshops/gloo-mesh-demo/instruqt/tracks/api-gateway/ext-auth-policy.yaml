@@ -2,7 +2,7 @@ apiVersion: security.policy.gloo.solo.io/v2
 kind: ExtAuthPolicy
 metadata:
   name: frontend
-  namespace: ops-team
+  namespace: web-team
 spec:
   applyToRoutes:
   - withDestinations:
@@ -12,8 +12,8 @@ spec:
   config:
     server:
       name: ext-auth-server
-      namespace: gloo-mesh-addons
-      cluster: cluster1
+      namespace: web-team
+      cluster: mgmt
     glooAuth:
       configs:
       - oauth2:
@@ -25,12 +25,6 @@ spec:
               name: oauth
               namespace: gloo-mesh
             issuerUrl: "${KEYCLOAK_URL}/realms/master/"
-            session:
-              failOnFetchFailure: true
-              redis:
-                cookieName: keycloak-session
-                options:
-                  host: redis:6379
             scopes:
             - email
             headers:
@@ -40,7 +34,7 @@ apiVersion: admin.gloo.solo.io/v2
 kind: ExtAuthServer
 metadata:
   name: ext-auth-server
-  namespace: ops-team
+  namespace: web-team
 spec:
   destinationServer:
     ref:

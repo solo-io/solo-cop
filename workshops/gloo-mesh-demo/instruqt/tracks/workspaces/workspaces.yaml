@@ -42,7 +42,9 @@ spec:
   - name: '*'
     namespaces:
     - name: web-ui
-
+  - name: '*'
+    namespaces:
+    - name: gloo-mesh-addons
 ---
 # Create Backend Team workspace
 apiVersion: admin.gloo.solo.io/v2
