@@ -13,13 +13,15 @@ export PATH=$HOME/.gloo-mesh/bin:$PATH
 meshctl install \
   --kubecontext $MGMT \
   --set mgmtClusterName=$MGMT \
-  --license $GLOO_MESH_LICENSE_KEY
-
+  --license $GLOO_MESH_LICENSE_KEY \
+  --set glooMeshMgmtServer.image.registry=gcr.io/solo-test-236622 \
+  --set glooMeshMgmtServer.image.tag=2.1.0-beta2-14-gd556fc77d
 # Step 3 - Install Control plane cluster1
 
 meshctl cluster register \
   --kubecontext=$MGMT \
   --remote-context=$CLUSTER1 \
+  --version $GLOO_MESH_VERSION \
   $CLUSTER1
 
 # Step 4 - Install Control plane cluster2
@@ -27,6 +29,7 @@ meshctl cluster register \
 meshctl cluster register \
   --kubecontext=$MGMT \
   --remote-context=$CLUSTER2 \
+  --version $GLOO_MESH_VERSION \
   $CLUSTER2
 
 
