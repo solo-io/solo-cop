@@ -1,0 +1,448 @@
+apiVersion: v1
+items:
+- apiVersion: security.istio.io/v1beta1
+  kind: AuthorizationPolicy
+  metadata:
+    creationTimestamp: "2022-05-18T01:57:40Z"
+    generation: 1
+    labels:
+      agent.gloo.solo.io: gloo-mesh
+      cluster.multicluster.solo.io: ""
+      context.mesh.gloo.solo.io/cluster: cluster1
+      context.mesh.gloo.solo.io/namespace: web-ui
+      context.mesh.gloo.solo.io/workspace: web-team
+      gloo.solo.io/parent_cluster: cluster1
+      gloo.solo.io/parent_group: ""
+      gloo.solo.io/parent_kind: Service
+      gloo.solo.io/parent_name: frontend
+      gloo.solo.io/parent_namespace: web-ui
+      gloo.solo.io/parent_version: v1
+      owner.gloo.solo.io/name: gloo-mesh
+      reconciler.mesh.gloo.solo.io/name: translator
+      relay.solo.io/cluster: cluster1
+    name: settings-frontend-8080-web-team
+    namespace: web-ui
+    resourceVersion: "11719"
+    uid: 54365c69-5c72-4125-8448-c476248e0484
+  spec:
+    rules:
+    - from:
+      - source:
+          principals:
+          - cluster1.solo.io/ns/web-ui/sa/default
+          - cluster1.solo.io/ns/web-ui/sa/frontend
+          - cluster1.solo.io/ns/web-ui/sa/loadgenerator
+      - source:
+          principals:
+          - cluster1.solo.io/ns/istio-gateways/sa/default
+          - cluster1.solo.io/ns/istio-gateways/sa/istio-eastwestgateway-service-account
+          - cluster1.solo.io/ns/istio-gateways/sa/istio-ingressgateway-service-account
+          - cluster2.solo.io/ns/istio-gateways/sa/default
+          - cluster2.solo.io/ns/istio-gateways/sa/istio-eastwestgateway-service-account
+          - cluster2.solo.io/ns/istio-gateways/sa/istio-ingressgateway-service-account
+      to:
+      - operation:
+          ports:
+          - "8080"
+    selector:
+      matchLabels:
+        app: frontend
+- apiVersion: security.istio.io/v1beta1
+  kind: AuthorizationPolicy
+  metadata:
+    creationTimestamp: "2022-05-18T01:57:40Z"
+    generation: 1
+    labels:
+      agent.gloo.solo.io: gloo-mesh
+      cluster.multicluster.solo.io: ""
+      context.mesh.gloo.solo.io/cluster: cluster1
+      context.mesh.gloo.solo.io/namespace: web-ui
+      context.mesh.gloo.solo.io/workspace: web-team
+      gloo.solo.io/parent_cluster: cluster1
+      gloo.solo.io/parent_group: ""
+      gloo.solo.io/parent_kind: Service
+      gloo.solo.io/parent_name: loadgenerator
+      gloo.solo.io/parent_namespace: web-ui
+      gloo.solo.io/parent_version: v1
+      owner.gloo.solo.io/name: gloo-mesh
+      reconciler.mesh.gloo.solo.io/name: translator
+      relay.solo.io/cluster: cluster1
+    name: settings-loadgenerator-8080-web-team
+    namespace: web-ui
+    resourceVersion: "11721"
+    uid: 98827e87-d27d-41d9-8438-ad95310637e0
+  spec:
+    rules:
+    - from:
+      - source:
+          principals:
+          - cluster1.solo.io/ns/web-ui/sa/default
+          - cluster1.solo.io/ns/web-ui/sa/frontend
+          - cluster1.solo.io/ns/web-ui/sa/loadgenerator
+      - source:
+          principals:
+          - cluster1.solo.io/ns/istio-gateways/sa/default
+          - cluster1.solo.io/ns/istio-gateways/sa/istio-eastwestgateway-service-account
+          - cluster1.solo.io/ns/istio-gateways/sa/istio-ingressgateway-service-account
+          - cluster2.solo.io/ns/istio-gateways/sa/default
+          - cluster2.solo.io/ns/istio-gateways/sa/istio-eastwestgateway-service-account
+          - cluster2.solo.io/ns/istio-gateways/sa/istio-ingressgateway-service-account
+      to:
+      - operation:
+          ports:
+          - "8080"
+    selector:
+      matchLabels:
+        app: loadgenerator
+- apiVersion: security.istio.io/v1beta1
+  kind: AuthorizationPolicy
+  metadata:
+    creationTimestamp: "2022-05-18T01:58:07Z"
+    generation: 1
+    labels:
+      agent.gloo.solo.io: gloo-mesh
+      cluster.multicluster.solo.io: ""
+      context.mesh.gloo.solo.io/cluster: cluster1
+      context.mesh.gloo.solo.io/namespace: backend-apis
+      context.mesh.gloo.solo.io/workspace: backend-apis-team
+      gloo.solo.io/parent_cluster: cluster1
+      gloo.solo.io/parent_group: ""
+      gloo.solo.io/parent_kind: Service
+      gloo.solo.io/parent_name: productcatalogservice
+      gloo.solo.io/parent_namespace: backend-apis
+      gloo.solo.io/parent_version: v1
+      owner.gloo.solo.io/name: gloo-mesh
+      reconciler.mesh.gloo.solo.io/name: translator
+      relay.solo.io/cluster: cluster1
+    name: settings-productcatalogservice-3550-backend-apis-team
+    namespace: backend-apis
+    resourceVersion: "11903"
+    uid: 44515d42-dc3c-40de-b06b-36afd10f7328
+  spec:
+    rules:
+    - from:
+      - source:
+          principals:
+          - cluster1.solo.io/ns/backend-apis/sa/ad
+          - cluster1.solo.io/ns/backend-apis/sa/cart
+          - cluster1.solo.io/ns/backend-apis/sa/currency
+          - cluster1.solo.io/ns/backend-apis/sa/default
+          - cluster1.solo.io/ns/backend-apis/sa/email
+          - cluster1.solo.io/ns/backend-apis/sa/product-catalog
+          - cluster1.solo.io/ns/backend-apis/sa/recommendation
+          - cluster2.solo.io/ns/backend-apis/sa/checkout
+          - cluster2.solo.io/ns/backend-apis/sa/checkout-loadgenerator
+          - cluster2.solo.io/ns/backend-apis/sa/default
+          - cluster2.solo.io/ns/backend-apis/sa/payment
+          - cluster2.solo.io/ns/backend-apis/sa/shipping
+      - source:
+          principals:
+          - cluster1.solo.io/ns/web-ui/sa/default
+          - cluster1.solo.io/ns/web-ui/sa/frontend
+          - cluster1.solo.io/ns/web-ui/sa/loadgenerator
+      to:
+      - operation:
+          ports:
+          - "3550"
+    selector:
+      matchLabels:
+        app: productcatalogservice
+- apiVersion: security.istio.io/v1beta1
+  kind: AuthorizationPolicy
+  metadata:
+    creationTimestamp: "2022-05-18T01:58:07Z"
+    generation: 1
+    labels:
+      agent.gloo.solo.io: gloo-mesh
+      cluster.multicluster.solo.io: ""
+      context.mesh.gloo.solo.io/cluster: cluster1
+      context.mesh.gloo.solo.io/namespace: backend-apis
+      context.mesh.gloo.solo.io/workspace: backend-apis-team
+      gloo.solo.io/parent_cluster: cluster1
+      gloo.solo.io/parent_group: ""
+      gloo.solo.io/parent_kind: Service
+      gloo.solo.io/parent_name: currencyservice
+      gloo.solo.io/parent_namespace: backend-apis
+      gloo.solo.io/parent_version: v1
+      owner.gloo.solo.io/name: gloo-mesh
+      reconciler.mesh.gloo.solo.io/name: translator
+      relay.solo.io/cluster: cluster1
+    name: settings-currencyservice-7000-backend-apis-team
+    namespace: backend-apis
+    resourceVersion: "11904"
+    uid: 12879cd2-1bed-406f-a34e-2e90617307ae
+  spec:
+    rules:
+    - from:
+      - source:
+          principals:
+          - cluster1.solo.io/ns/backend-apis/sa/ad
+          - cluster1.solo.io/ns/backend-apis/sa/cart
+          - cluster1.solo.io/ns/backend-apis/sa/currency
+          - cluster1.solo.io/ns/backend-apis/sa/default
+          - cluster1.solo.io/ns/backend-apis/sa/email
+          - cluster1.solo.io/ns/backend-apis/sa/product-catalog
+          - cluster1.solo.io/ns/backend-apis/sa/recommendation
+          - cluster2.solo.io/ns/backend-apis/sa/checkout
+          - cluster2.solo.io/ns/backend-apis/sa/checkout-loadgenerator
+          - cluster2.solo.io/ns/backend-apis/sa/default
+          - cluster2.solo.io/ns/backend-apis/sa/payment
+          - cluster2.solo.io/ns/backend-apis/sa/shipping
+      - source:
+          principals:
+          - cluster1.solo.io/ns/web-ui/sa/default
+          - cluster1.solo.io/ns/web-ui/sa/frontend
+          - cluster1.solo.io/ns/web-ui/sa/loadgenerator
+      to:
+      - operation:
+          ports:
+          - "7000"
+    selector:
+      matchLabels:
+        app: currencyservice
+- apiVersion: security.istio.io/v1beta1
+  kind: AuthorizationPolicy
+  metadata:
+    creationTimestamp: "2022-05-18T01:58:07Z"
+    generation: 1
+    labels:
+      agent.gloo.solo.io: gloo-mesh
+      cluster.multicluster.solo.io: ""
+      context.mesh.gloo.solo.io/cluster: cluster1
+      context.mesh.gloo.solo.io/namespace: backend-apis
+      context.mesh.gloo.solo.io/workspace: backend-apis-team
+      gloo.solo.io/parent_cluster: cluster1
+      gloo.solo.io/parent_group: ""
+      gloo.solo.io/parent_kind: Service
+      gloo.solo.io/parent_name: emailservice
+      gloo.solo.io/parent_namespace: backend-apis
+      gloo.solo.io/parent_version: v1
+      owner.gloo.solo.io/name: gloo-mesh
+      reconciler.mesh.gloo.solo.io/name: translator
+      relay.solo.io/cluster: cluster1
+    name: settings-emailservice-8080-backend-apis-team
+    namespace: backend-apis
+    resourceVersion: "11905"
+    uid: 06578fc4-33ca-477d-b96b-e60439d2257f
+  spec:
+    rules:
+    - from:
+      - source:
+          principals:
+          - cluster1.solo.io/ns/backend-apis/sa/ad
+          - cluster1.solo.io/ns/backend-apis/sa/cart
+          - cluster1.solo.io/ns/backend-apis/sa/currency
+          - cluster1.solo.io/ns/backend-apis/sa/default
+          - cluster1.solo.io/ns/backend-apis/sa/email
+          - cluster1.solo.io/ns/backend-apis/sa/product-catalog
+          - cluster1.solo.io/ns/backend-apis/sa/recommendation
+          - cluster2.solo.io/ns/backend-apis/sa/checkout
+          - cluster2.solo.io/ns/backend-apis/sa/checkout-loadgenerator
+          - cluster2.solo.io/ns/backend-apis/sa/default
+          - cluster2.solo.io/ns/backend-apis/sa/payment
+          - cluster2.solo.io/ns/backend-apis/sa/shipping
+      - source:
+          principals:
+          - cluster1.solo.io/ns/web-ui/sa/default
+          - cluster1.solo.io/ns/web-ui/sa/frontend
+          - cluster1.solo.io/ns/web-ui/sa/loadgenerator
+      to:
+      - operation:
+          ports:
+          - "8080"
+    selector:
+      matchLabels:
+        app: emailservice
+- apiVersion: security.istio.io/v1beta1
+  kind: AuthorizationPolicy
+  metadata:
+    creationTimestamp: "2022-05-18T01:58:07Z"
+    generation: 1
+    labels:
+      agent.gloo.solo.io: gloo-mesh
+      cluster.multicluster.solo.io: ""
+      context.mesh.gloo.solo.io/cluster: cluster1
+      context.mesh.gloo.solo.io/namespace: backend-apis
+      context.mesh.gloo.solo.io/workspace: backend-apis-team
+      gloo.solo.io/parent_cluster: cluster1
+      gloo.solo.io/parent_group: ""
+      gloo.solo.io/parent_kind: Service
+      gloo.solo.io/parent_name: cartservice
+      gloo.solo.io/parent_namespace: backend-apis
+      gloo.solo.io/parent_version: v1
+      owner.gloo.solo.io/name: gloo-mesh
+      reconciler.mesh.gloo.solo.io/name: translator
+      relay.solo.io/cluster: cluster1
+    name: settings-cartservice-7070-backend-apis-team
+    namespace: backend-apis
+    resourceVersion: "11906"
+    uid: 22bbb0d7-13c2-496f-9e67-388c65422f9c
+  spec:
+    rules:
+    - from:
+      - source:
+          principals:
+          - cluster1.solo.io/ns/backend-apis/sa/ad
+          - cluster1.solo.io/ns/backend-apis/sa/cart
+          - cluster1.solo.io/ns/backend-apis/sa/currency
+          - cluster1.solo.io/ns/backend-apis/sa/default
+          - cluster1.solo.io/ns/backend-apis/sa/email
+          - cluster1.solo.io/ns/backend-apis/sa/product-catalog
+          - cluster1.solo.io/ns/backend-apis/sa/recommendation
+          - cluster2.solo.io/ns/backend-apis/sa/checkout
+          - cluster2.solo.io/ns/backend-apis/sa/checkout-loadgenerator
+          - cluster2.solo.io/ns/backend-apis/sa/default
+          - cluster2.solo.io/ns/backend-apis/sa/payment
+          - cluster2.solo.io/ns/backend-apis/sa/shipping
+      - source:
+          principals:
+          - cluster1.solo.io/ns/web-ui/sa/default
+          - cluster1.solo.io/ns/web-ui/sa/frontend
+          - cluster1.solo.io/ns/web-ui/sa/loadgenerator
+      to:
+      - operation:
+          ports:
+          - "7070"
+    selector:
+      matchLabels:
+        app: cartservice
+- apiVersion: security.istio.io/v1beta1
+  kind: AuthorizationPolicy
+  metadata:
+    creationTimestamp: "2022-05-18T01:58:07Z"
+    generation: 1
+    labels:
+      agent.gloo.solo.io: gloo-mesh
+      cluster.multicluster.solo.io: ""
+      context.mesh.gloo.solo.io/cluster: cluster1
+      context.mesh.gloo.solo.io/namespace: backend-apis
+      context.mesh.gloo.solo.io/workspace: backend-apis-team
+      gloo.solo.io/parent_cluster: cluster1
+      gloo.solo.io/parent_group: ""
+      gloo.solo.io/parent_kind: Service
+      gloo.solo.io/parent_name: recommendationservice
+      gloo.solo.io/parent_namespace: backend-apis
+      gloo.solo.io/parent_version: v1
+      owner.gloo.solo.io/name: gloo-mesh
+      reconciler.mesh.gloo.solo.io/name: translator
+      relay.solo.io/cluster: cluster1
+    name: settings-recommendationservice-8080-backend-apis-team
+    namespace: backend-apis
+    resourceVersion: "11907"
+    uid: a00867b3-fdab-4250-ad3d-4bf9bae0adda
+  spec:
+    rules:
+    - from:
+      - source:
+          principals:
+          - cluster1.solo.io/ns/backend-apis/sa/ad
+          - cluster1.solo.io/ns/backend-apis/sa/cart
+          - cluster1.solo.io/ns/backend-apis/sa/currency
+          - cluster1.solo.io/ns/backend-apis/sa/default
+          - cluster1.solo.io/ns/backend-apis/sa/email
+          - cluster1.solo.io/ns/backend-apis/sa/product-catalog
+          - cluster1.solo.io/ns/backend-apis/sa/recommendation
+          - cluster2.solo.io/ns/backend-apis/sa/checkout
+          - cluster2.solo.io/ns/backend-apis/sa/checkout-loadgenerator
+          - cluster2.solo.io/ns/backend-apis/sa/default
+          - cluster2.solo.io/ns/backend-apis/sa/payment
+          - cluster2.solo.io/ns/backend-apis/sa/shipping
+      - source:
+          principals:
+          - cluster1.solo.io/ns/web-ui/sa/default
+          - cluster1.solo.io/ns/web-ui/sa/frontend
+          - cluster1.solo.io/ns/web-ui/sa/loadgenerator
+      to:
+      - operation:
+          ports:
+          - "8080"
+    selector:
+      matchLabels:
+        app: recommendationservice
+- apiVersion: security.istio.io/v1beta1
+  kind: AuthorizationPolicy
+  metadata:
+    creationTimestamp: "2022-05-18T01:58:07Z"
+    generation: 1
+    labels:
+      agent.gloo.solo.io: gloo-mesh
+      cluster.multicluster.solo.io: ""
+      context.mesh.gloo.solo.io/cluster: cluster1
+      context.mesh.gloo.solo.io/namespace: backend-apis
+      context.mesh.gloo.solo.io/workspace: backend-apis-team
+      gloo.solo.io/parent_cluster: cluster1
+      gloo.solo.io/parent_group: ""
+      gloo.solo.io/parent_kind: Service
+      gloo.solo.io/parent_name: adservice
+      gloo.solo.io/parent_namespace: backend-apis
+      gloo.solo.io/parent_version: v1
+      owner.gloo.solo.io/name: gloo-mesh
+      reconciler.mesh.gloo.solo.io/name: translator
+      relay.solo.io/cluster: cluster1
+    name: settings-adservice-9555-backend-apis-team
+    namespace: backend-apis
+    resourceVersion: "11910"
+    uid: 863a303f-6028-425d-9474-88a107f088f5
+  spec:
+    rules:
+    - from:
+      - source:
+          principals:
+          - cluster1.solo.io/ns/backend-apis/sa/ad
+          - cluster1.solo.io/ns/backend-apis/sa/cart
+          - cluster1.solo.io/ns/backend-apis/sa/currency
+          - cluster1.solo.io/ns/backend-apis/sa/default
+          - cluster1.solo.io/ns/backend-apis/sa/email
+          - cluster1.solo.io/ns/backend-apis/sa/product-catalog
+          - cluster1.solo.io/ns/backend-apis/sa/recommendation
+          - cluster2.solo.io/ns/backend-apis/sa/checkout
+          - cluster2.solo.io/ns/backend-apis/sa/checkout-loadgenerator
+          - cluster2.solo.io/ns/backend-apis/sa/default
+          - cluster2.solo.io/ns/backend-apis/sa/payment
+          - cluster2.solo.io/ns/backend-apis/sa/shipping
+      - source:
+          principals:
+          - cluster1.solo.io/ns/web-ui/sa/default
+          - cluster1.solo.io/ns/web-ui/sa/frontend
+          - cluster1.solo.io/ns/web-ui/sa/loadgenerator
+      to:
+      - operation:
+          ports:
+          - "9555"
+    selector:
+      matchLabels:
+        app: adservice
+- apiVersion: security.istio.io/v1beta1
+  kind: AuthorizationPolicy
+  metadata:
+    creationTimestamp: "2022-05-18T01:58:37Z"
+    generation: 1
+    labels:
+      agent.gloo.solo.io: gloo-mesh
+      cluster.multicluster.solo.io: ""
+      context.mesh.gloo.solo.io/cluster: cluster1
+      context.mesh.gloo.solo.io/namespace: istio-gateways
+      context.mesh.gloo.solo.io/workspace: ops-team
+      gloo.solo.io/parent_cluster: cluster1
+      gloo.solo.io/parent_group: ""
+      gloo.solo.io/parent_kind: Service
+      gloo.solo.io/parent_name: istio-eastwestgateway
+      gloo.solo.io/parent_namespace: istio-gateways
+      gloo.solo.io/parent_version: v1
+      owner.gloo.solo.io/name: gloo-mesh
+      reconciler.mesh.gloo.solo.io/name: translator
+      relay.solo.io/cluster: cluster1
+    name: service-isolation-allow-gateway-39586d6ae0fedc91c0b34f13230e27b
+    namespace: gloo-mesh
+    resourceVersion: "12140"
+    uid: cd2ba8b7-e891-42ce-a5b4-69af91780152
+  spec:
+    rules:
+    - {}
+    selector:
+      matchLabels:
+        app: istio-ingressgateway
+        istio: eastwestgateway
+kind: List
+metadata:
+  resourceVersion: ""

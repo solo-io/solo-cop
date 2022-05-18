@@ -21,4 +21,4 @@ spec:
       - namespace: web-ui
     serviceIsolation:
       enabled: true
-      trimProxyConfig: true
+      trimProxyConfig: false
