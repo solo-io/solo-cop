@@ -69,7 +69,7 @@ export ISTIO_IMAGE_TAG=1.12.7-solo
 * Setup
 
 ```sh
-./tracks/04-multi-cluster-routing/setup.sh
+./tracks/04-multi-cluster-routing/skip.sh
 ```
 
 ## Lab 5 - Failover
@@ -85,3 +85,12 @@ export ISTIO_IMAGE_TAG=1.12.7-solo
 ```sh
 ./tracks/05-failover/skip.sh
 ```
+
+## Lab 6 - API Gateway
+
+* Setup
+
+```sh
+./tracks/06-api-gateway/setup.sh
+```
+

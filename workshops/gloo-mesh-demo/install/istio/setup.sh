@@ -16,5 +16,11 @@ export NETWORK=$CLUSTER_NAME-network
 
 kubectl create namespace istio-gateways --context $CLUSTER_NAME
 
-cat $LOCAL_DIR/istiooperator.yaml | envsubst | istioctl install --set hub=$ISTIO_IMAGE_REPO --set tag=$ISTIO_IMAGE_TAG  -y --context $CLUSTER_NAME -f -
+operator_file=istiooperator.yaml
+ARCH=$(uname -m) || ARCH="amd64"
+
+if [[ $ARCH == 'arm64' ]]; then
+  operator_file=istiooperator-arm.yaml
+fi
+cat $LOCAL_DIR/$operator_file | envsubst | istioctl install --set hub=$ISTIO_IMAGE_REPO --set tag=$ISTIO_IMAGE_TAG  -y --context $CLUSTER_NAME -f -
 
