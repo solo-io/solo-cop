@@ -16,5 +16,5 @@ export NETWORK=$CLUSTER_NAME-network
 
 kubectl create namespace istio-gateways --context $CLUSTER_NAME
 
-cat $LOCAL_DIR/istiooperator.yaml | envsubst | istioctl install -y --context $CLUSTER_NAME -f -
+cat $LOCAL_DIR/istiooperator.yaml | envsubst | istioctl install --set hub=$ISTIO_IMAGE_REPO --set tag=$ISTIO_IMAGE_TAG  -y --context $CLUSTER_NAME -f -
 

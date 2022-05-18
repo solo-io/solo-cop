@@ -10,6 +10,8 @@ export CLUSTER1=cluster1
 export CLUSTER2=cluster2
 export GLOO_MESH_VERSION=v2.0.2
 export ISTIO_VERSION=1.12.7
+export ISTIO_IMAGE_REPO=<please ask for repo information>
+export ISTIO_IMAGE_TAG=1.12.7-solo
 ```
 
 ## Infrastructure Setup
