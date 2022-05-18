@@ -10,3 +10,10 @@ kubectl --context ${CLUSTER1} -n istio-gateways create secret generic tls-secret
 
 rm tls.crt
 rm tls.key
+
+# make sure root trust policy is good to go
+sleep 5
+
+kubectl wait --for=condition=Ready pod --all -n web-ui --context $CLUSTER1
+kubectl wait --for=condition=Ready pod --all -n backend-apis --context $CLUSTER1
+kubectl wait --for=condition=Ready pod --all -n backend-apis --context $CLUSTER2
