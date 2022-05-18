@@ -1,8 +1,0 @@
-# This policy is a default deny policy, if placed in istio-system it can only be overridden by resources in istio-system
-# for default deny policies this would have to be placed into each namespace individually
-apiVersion: security.istio.io/v1beta1
-kind: AuthorizationPolicy
-metadata:
- name: allow-nothing
-spec:
-  {}
