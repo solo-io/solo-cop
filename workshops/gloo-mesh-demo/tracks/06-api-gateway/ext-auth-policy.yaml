@@ -12,23 +12,9 @@ spec:
       cluster: mgmt
   workloadSelectors: []
   http:
-    - name: cart
-      matchers:
-      - uri:
-          exact: /cart
-      - uri:
-          prefix: /callback
+    - name: main-page
       labels:
         oauth: "true"
-      forwardTo:
-        destinations:
-          - ref:
-              name: frontend
-              namespace: web-ui
-              cluster: cluster1
-            port:
-              number: 80
-    - name: main-page
       forwardTo:
         destinations:
           - ref:
@@ -57,7 +43,7 @@ spec:
       configs:
       - oauth2:
           oidcAuthorizationCode:
-            appUrl: https://${ENDPOINT_HTTPS_GW_CLUSTER1}:443
+            appUrl: https://${ENDPOINT_HTTPS_GW_CLUSTER1}
             callbackPath: /callback
             clientId: ${KEYCLOAK_CLIENTID}
             clientSecretRef:
