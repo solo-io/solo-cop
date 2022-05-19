@@ -10,6 +10,9 @@ ports:
   - port: 8443:443 # same as `--port '8443:443@loadbalancer'`
     nodeFilters:
       - loadbalancer
+  - port: 9000:9000 # same as `--port '9000:9000@loadbalancer'`
+    nodeFilters:
+      - loadbalancer
 options:
   k3d: # k3d runtime settings
     wait: true # wait for cluster to be usable before returining; same as `--wait` (default: true)

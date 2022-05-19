@@ -26,6 +26,7 @@ export ENDPOINT_HTTPS_GW_CLUSTER1_EXT=localhost:8443
 ## Ports
 
 * http://localhost:8091 - Gloo Mesh Dashboard
+* http://localhost:9000 - Keycloak cluster1
 * http://localhost:8080 - cluster1 Istio ingress gateway port 80
 * https://localhost:8443 - cluster1 Istio ingress gateway port 443
 
@@ -95,3 +96,17 @@ export ENDPOINT_HTTPS_GW_CLUSTER1_EXT=localhost:8443
 ./tracks/06-api-gateway/setup.sh
 ```
 
+
+
+```
+./install/setup.sh
+./tracks/01-install-gloo-mesh/skip.sh
+./tracks/02-workspaces/setup.sh
+./tracks/02-workspaces/skip.sh
+./tracks/03-security/setup.sh
+./tracks/03-security/skip.sh
+./tracks/04-multi-cluster-routing/skip.sh
+./tracks/05-failover/setup.sh
+./tracks/05-failover/skip.sh
+./tracks/06-api-gateway/setup.sh
+```
