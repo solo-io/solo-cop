@@ -6,7 +6,7 @@ kubectl create namespace keycloak --context $CLUSTER1
 
 kubectl apply --context $CLUSTER1 -n keycloak -f $LOCAL_DIR/keycloak.yaml
 sleep 2
-kubectl wait --for=condition=ready pod -l app=keycloak -n keycloak --timeout 60s --context $CLUSTER1
+kubectl wait deployment --for condition=Available=True -n keycloak --timeout 60s --context $CLUSTER1 --all
 
 POD_NAME=$(kubectl get pods -n keycloak -l app=keycloak --context $CLUSTER1 -o json | jq -r '.items[0].metadata.name')
 # Get Keycloak URL and token

@@ -6,4 +6,4 @@ kubectl apply -n backend-apis-team --context $MGMT -f $LOCAL_DIR/backend-apis-vi
 
 kubectl apply -n web-ui --context $CLUSTER2 -f $LOCAL_DIR/../../install/online-boutique/web-ui-cluster2.yaml
 
-kubectl wait --for=condition=Ready pod --all -n web-ui --context $CLUSTER2
+kubectl wait deployment/frontend -n web-ui --context $CLUSTER2 --for condition=Available=True
