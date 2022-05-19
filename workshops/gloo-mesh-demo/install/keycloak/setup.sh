@@ -13,13 +13,16 @@ POD_NAME=$(kubectl get pods -n keycloak -l app=keycloak --context $CLUSTER1 -o j
 if [ -z "$EXTERNAL_IP" ]
 then
   # Running locally
-  export KEYCLOAK_URL=http://$(kubectl --context $CLUSTER1 -n keycloak get service keycloak -o jsonpath='{.status.loadBalancer.ingress[0].*}'):9000/auth
+  export KEYCLOAK_URL=http://$(kubectl --context ${CLUSTER1} -n keycloak get service keycloak -o jsonpath='{.status.loadBalancer.ingress[0].*}'):9000/auth
+  echo "Using LOCAL Keycloak URL: $KEYCLOAK_URL"
 else
+  
   # we are running in instruqt
   export ENDPOINT_KEYCLOAK=$EXTERNAL_IP:$(kubectl --context ${CLUSTER1} -n keycloak get svc keycloak -o jsonpath='{.spec.ports[?(@.port==9000)].nodePort}')
   export HOST_KEYCLOAK=$(echo ${ENDPOINT_KEYCLOAK} | cut -d: -f1)
   export PORT_KEYCLOAK=$(echo ${ENDPOINT_KEYCLOAK} | cut -d: -f2)
   export KEYCLOAK_URL=http://${ENDPOINT_KEYCLOAK}/auth
+  echo "Using Instruqt Keycloak URL: $KEYCLOAK_URL"
 fi
 
 echo "Keycloak URL: $KEYCLOAK_URL"
