@@ -19,8 +19,6 @@ else
   
   # we are running in instruqt
   export ENDPOINT_KEYCLOAK=$EXTERNAL_IP:$(kubectl --context ${CLUSTER1} -n keycloak get svc keycloak -o jsonpath='{.spec.ports[?(@.port==9000)].nodePort}')
-  export HOST_KEYCLOAK=$(echo ${ENDPOINT_KEYCLOAK} | cut -d: -f1)
-  export PORT_KEYCLOAK=$(echo ${ENDPOINT_KEYCLOAK} | cut -d: -f2)
   export KEYCLOAK_URL=http://${ENDPOINT_KEYCLOAK}/auth
   echo "Using Instruqt Keycloak URL: $KEYCLOAK_URL"
 fi
