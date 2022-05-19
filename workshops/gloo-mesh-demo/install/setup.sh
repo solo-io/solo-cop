@@ -22,7 +22,3 @@ kubectl create namespace gloo-mesh --context $MGMT
 
 # install the gloo mesh dashboard using istio
 $LOCAL_DIR/istio/gloo-mesh-dashboard.sh
-
-# Used for OIDC
-GW1=$(kubectl --context ${CLUSTER1} -n istio-gateways get svc istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].*}'):443
-export ENDPOINT_HTTPS_GW_CLUSTER1=$GW1

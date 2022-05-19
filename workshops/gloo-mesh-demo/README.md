@@ -12,7 +12,7 @@ export GLOO_MESH_VERSION=v2.0.3
 export ISTIO_VERSION=1.12.7
 export ISTIO_IMAGE_REPO=<please ask for repo information>
 export ISTIO_IMAGE_TAG=1.12.7-solo
-export ENDPOINT_HTTPS_GW_CLUSTER1=localhost:8443
+export ENDPOINT_HTTPS_GW_CLUSTER1_EXT=localhost:8443
 ```
 
 ## Infrastructure Setup
