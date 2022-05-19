@@ -28,4 +28,6 @@ kubectl apply --context $CLUSTER1 -f $LOCAL_DIR/keycloak-setup-pod.yaml
 kubectl wait --for=condition=ready pod -l app=keycloak-setup -n keycloak --context $CLUSTER1
 
 kubectl --context $CLUSTER1 -n keycloak cp $LOCAL_DIR/gen-clientid.sh keycloak-setup:/tmp/gen-clientid.sh
-kubectl exec --context $CLUSTER1 -n keycloak -it keycloak-setup -- env KEYCLOAK_URL=$KEYCLOAK_URL ENDPOINT_HTTPS_GW_CLUSTER1_EXT=$ENDPOINT_HTTPS_GW_CLUSTER1_EXT /tmp/gen-clientid.sh
+
+echo "Keycloak authorized endpoint: $ENDPOINT_HTTPS_GW_CLUSTER1_EXT"
+kubectl exec --context $CLUSTER1 -n keycloak -it keycloak-setup -- env KEYCLOAK_URL=$KEYCLOAK_URL /tmp/gen-clientid.sh $ENDPOINT_HTTPS_GW_CLUSTER1_EXT
