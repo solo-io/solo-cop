@@ -47,7 +47,7 @@ spec:
             callbackPath: /callback
             clientId: cmnxiBIs3LW0VLSh3KJd0hGtFAtz3alD
             clientSecretRef:
-              name: oauth
+              name: oauth-auth0
               namespace: gloo-mesh
             issuerUrl: "https://dev-64ktibmv.us.auth0.com/"
             scopes:
