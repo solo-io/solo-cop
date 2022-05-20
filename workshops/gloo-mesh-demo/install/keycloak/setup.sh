@@ -5,8 +5,7 @@ LOCAL_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 kubectl create namespace keycloak --context $CLUSTER1
 
 kubectl apply --context $CLUSTER1 -n keycloak -f $LOCAL_DIR/keycloak.yaml
-sleep 2
-kubectl wait deployment --for condition=Available=True -n keycloak --timeout 60s --context $CLUSTER1 --all --timeout 60s
+kubectl wait deployment --for condition=Available=True -n keycloak --timeout 60s --context $CLUSTER1 --all --timeout 180s
 
 POD_NAME=$(kubectl get pods -n keycloak -l app=keycloak --context $CLUSTER1 -o json | jq -r '.items[0].metadata.name')
 
