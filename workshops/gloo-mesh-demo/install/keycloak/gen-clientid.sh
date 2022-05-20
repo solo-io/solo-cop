@@ -18,7 +18,7 @@ curl -v -H "Authorization: Bearer ${KEYCLOAK_TOKEN}" -X PUT -H "Content-Type: ap
 curl -v -H "Authorization: Bearer ${KEYCLOAK_TOKEN}" -X POST -H "Content-Type: application/json" -d '{"name": "group", "protocol": "openid-connect", "protocolMapper": "oidc-usermodel-attribute-mapper", "config": {"claim.name": "group", "jsonType.label": "String", "user.attribute": "group", "id.token.claim": "true", "access.token.claim": "true"}}' $KEYCLOAK_URL/admin/realms/master/clients/${id}/protocol-mappers/models
 
 # Create first user
-curl -v -H "Authorization: Bearer ${KEYCLOAK_TOKEN}" -X POST -H "Content-Type: application/json" -d '{"username": "gloo-mesh", "email": "gloo-mesh@solo.io", "enabled": true, "attributes": {"group": "users"}, "credentials": [{"type": "password", "value": "solo", "temporary": false}]}' $KEYCLOAK_URL/admin/realms/master/users
+curl -v -H "Authorization: Bearer ${KEYCLOAK_TOKEN}" -X POST -H "Content-Type: application/json" -d '{"username": "gloo-mesh", "email": "gloo-mesh@solo.io", "enabled": true, "attributes": {"group": "users"}, "credentials": [{"type": "password", "value": "solo.io", "temporary": false}]}' $KEYCLOAK_URL/admin/realms/master/users
 
 echo "Client ID: ${client}"
 echo "Client Secret: ${secret}"

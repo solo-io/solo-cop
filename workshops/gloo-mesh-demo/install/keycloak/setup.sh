@@ -30,3 +30,6 @@ kubectl --context $CLUSTER1 -n keycloak cp $LOCAL_DIR/gen-clientid.sh keycloak-s
 
 echo "Keycloak authorized endpoint: $ENDPOINT_HTTPS_GW_CLUSTER1_EXT"
 kubectl exec --context $CLUSTER1 -n keycloak -it keycloak-setup -- env KEYCLOAK_URL=$KEYCLOAK_URL /tmp/gen-clientid.sh $ENDPOINT_HTTPS_GW_CLUSTER1_EXT
+
+export KEYCLOAK_CLIENTID=$(kubectl get configmap -n gloo-mesh --context $CLUSTER1 keycloak-info -o json | jq -r '.data."client-id"')
+echo "ClientId: $KEYCLOAK_CLIENTID"
