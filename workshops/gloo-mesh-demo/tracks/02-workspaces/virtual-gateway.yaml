@@ -1,0 +1,23 @@
+apiVersion: networking.gloo.solo.io/v2
+kind: VirtualGateway
+metadata:
+  name: north-south-gw
+  namespace: ops-team
+spec:
+  workloads:
+    - selector:
+        labels:
+          istio: ingressgateway
+        cluster: cluster1
+        namespace: istio-gateways
+  listeners: 
+    - http: {}
+      port:
+        number: 443
+      tls:
+        mode: SIMPLE
+        secretName: tls-secret
+      allowedRouteTables:
+        - host: '*'
+          selector:
+            workspace: web-team

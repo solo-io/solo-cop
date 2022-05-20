@@ -248,6 +248,7 @@ spec:
                 while [ $i -lt 10000 ];
                 do
                   grpcurl --plaintext -d "{ \"userCurrency\": \"USD\", \"creditCard\": { \"creditCardNumber\": \"4432-8015-6152-0454\", \"creditCardCvv\": 123, \"creditCardExpirationYear\": 2023, \"creditCardExpirationMonth\": 12 }, \"address\": { \"streetAddress\": \"1600 Amphitheatre Parkway\", \"zipCode\": 94043, \"city\": \"Mountain View\", \"state\": \"CA\", \"country\": \"United States\" }, \"email\": \"someone@example.com\" }" -v --proto /demo.proto -import-path / checkout.backend-apis-team.solo-io.mesh:80 hipstershop.CheckoutService/PlaceOrder
+                  grpcurl --plaintext -d "{ \"userCurrency\": \"USD\", \"creditCard\": { \"creditCardNumber\": \"4432-8015-6152-0454\", \"creditCardCvv\": 123, \"creditCardExpirationYear\": 2023, \"creditCardExpirationMonth\": 12 }, \"address\": { \"streetAddress\": \"1600 Amphitheatre Parkway\", \"zipCode\": 94043, \"city\": \"Mountain View\", \"state\": \"CA\", \"country\": \"United States\" }, \"email\": \"someone@example.com\" }" -v --proto /demo.proto -import-path / checkoutservice.backend-apis.svc.cluster.local:5050 hipstershop.CheckoutService/PlaceOrder
                   sleep 1
                 done
         volumeMounts:

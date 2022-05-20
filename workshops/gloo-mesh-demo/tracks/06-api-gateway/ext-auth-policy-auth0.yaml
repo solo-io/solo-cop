@@ -1,0 +1,68 @@
+apiVersion: networking.gloo.solo.io/v2
+kind: RouteTable
+metadata:
+  name: frontend
+  namespace: web-team
+spec:
+  hosts:
+    - '*'
+  virtualGateways:
+    - name: north-south-gw
+      namespace: ops-team
+      cluster: mgmt
+  workloadSelectors: []
+  http:
+    - name: frontend
+      labels:
+        oauth: "true"
+      forwardTo:
+        destinations:
+          - ref:
+              name: frontend
+              namespace: web-ui
+              cluster: cluster1
+            port:
+              number: 80
+---
+apiVersion: security.policy.gloo.solo.io/v2
+kind: ExtAuthPolicy
+metadata:
+  name: frontend
+  namespace: web-team
+spec:
+  applyToRoutes:
+  - route:
+      labels:
+        oauth: "true"
+  config:
+    server:
+      name: ext-auth-server
+      namespace: web-team
+      cluster: mgmt
+    glooAuth:
+      configs:
+      - oauth2:
+          oidcAuthorizationCode:
+            appUrl: https://nick.localhost:8443
+            callbackPath: /callback
+            clientId: cmnxiBIs3LW0VLSh3KJd0hGtFAtz3alD
+            clientSecretRef:
+              name: oauth-auth0
+              namespace: gloo-mesh
+            issuerUrl: "https://dev-64ktibmv.us.auth0.com/"
+            scopes:
+            - email
+---
+apiVersion: admin.gloo.solo.io/v2
+kind: ExtAuthServer
+metadata:
+  name: ext-auth-server
+  namespace: web-team
+spec:
+  destinationServer:
+    ref:
+      cluster: cluster1
+      name: ext-auth-service
+      namespace: gloo-mesh-addons
+    port:
+      name: grpc

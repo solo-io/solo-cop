@@ -69,7 +69,7 @@ metadata:
 spec:
   # Global hostname available everywhere
   hosts:
-  - checkout.mesh.internal
+  - checkout.backend-apis-team.solo-io.mesh
   # services that available at the above address
   services:
   - labels:
@@ -101,13 +101,13 @@ kubectl apply -n backend-apis-team -f gloo-mesh-config/virtual-destinations.yaml
 
 ```yaml
   - name: SHIPPING_SERVICE_ADDR
-    value: "shipping.mesh.internal:80"
+    value: "shipping.backend-apis-team.solo-io.mesh:80"
   - name: CHECKOUT_SERVICE_ADDR
-    value: "checkout.mesh.internal:80"
+    value: "checkout.backend-apis-team.solo-io.mesh:80"
   - name: PRODUCT_CATALOG_SERVICE_ADDR
-    value: "product-catalog.mesh.internal:80"
+    value: "product-catalog.backend-apis-team.solo-io.mesh:80"
   - name: CURRENCY_SERVICE_ADDR
-    value: "currency.mesh.internal:80"
+    value: "currency.backend-apis-team.solo-io.mesh:80"
 ```
 
 ```sh

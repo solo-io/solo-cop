@@ -1,0 +1,36 @@
+
+# Install an istio gateway for exposing the gloo mesh dashboard
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: gloo-mesh
+  namespace: istio-system
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - port:
+      number: 8091
+      name: http
+      protocol: HTTP
+    hosts:
+    - '*'
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: gloo-mesh-dashboard
+  namespace: gloo-mesh
+spec:
+  hosts:
+  - '*'
+  gateways:
+  - istio-system/gloo-mesh
+  http:
+  - match:
+    - port: 8091
+    route:
+    - destination:
+        host: gloo-mesh-ui
+        port:
+          number: 8090

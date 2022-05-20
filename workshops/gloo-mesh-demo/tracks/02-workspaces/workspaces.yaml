@@ -1,0 +1,62 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ops-team
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: backend-apis-team
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: web-team
+---
+# operations team workspace and settings
+apiVersion: admin.gloo.solo.io/v2
+kind: Workspace
+metadata:
+  name: ops-team
+  namespace: gloo-mesh
+spec:
+  workloadClusters:
+  - name: 'mgmt'
+    namespaces:
+    - name: ops-team
+  - name: '*'
+    namespaces:
+    - name: istio-gateways
+---
+# Create Web Team workspace
+apiVersion: admin.gloo.solo.io/v2
+kind: Workspace
+metadata:
+  name: web-team
+  namespace: gloo-mesh
+spec:
+  workloadClusters:
+  - name: 'mgmt'
+    namespaces:
+    - name: web-team
+  - name: '*'
+    namespaces:
+    - name: web-ui
+  - name: '*'
+    namespaces:
+    - name: gloo-mesh-addons
+---
+# Create Backend Team workspace
+apiVersion: admin.gloo.solo.io/v2
+kind: Workspace
+metadata:
+  name: backend-apis-team
+  namespace: gloo-mesh
+spec:
+  workloadClusters:
+  - name: 'mgmt'
+    namespaces:
+    - name: backend-apis-team
+  - name: '*'
+    namespaces:
+    - name: backend-apis

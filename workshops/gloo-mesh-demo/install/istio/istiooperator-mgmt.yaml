@@ -1,0 +1,64 @@
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+metadata:
+  name: gloo-mesh-mgmt-istio
+  namespace: istio-system
+spec:
+  # only the control plane components are installed (https://istio.io/latest/docs/setup/additional-setup/config-profiles/)
+  profile: minimal
+  # Solo.io Istio distribution repository
+  hub: gcr.io/istio-release
+  # Solo.io Gloo Mesh Istio tag
+  tag: ${ISTIO_VERSION}
+
+  meshConfig:
+    # enable access logging to standard output
+    accessLogFile: /dev/stdout
+
+    defaultConfig:
+      # wait for the istio-proxy to start before application pods
+      holdApplicationUntilProxyStarts: true
+    # Specify if http1.1 connections should be upgraded to http2 by default. 
+    # Can be overridden using DestinationRule
+    h2UpgradePolicy: UPGRADE
+  components:
+    ingressGateways:
+    # enable the default ingress gateway
+    - name: istio-ingressgateway
+      namespace: istio-system
+      enabled: true
+      k8s:
+        affinity:
+          nodeAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              nodeSelectorTerms:
+                - matchExpressions:
+                    - key: kubernetes.io/arch
+                      operator: In
+                      values:
+                        - arm64
+                        - amd64
+        service:
+          type: LoadBalancer
+          ports:
+            # gloo mesh dashboard
+            - name: http-gm-dashboard
+              port: 8091
+              targetPort: 8091
+    pilot:
+      k8s:
+        affinity:
+          nodeAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              nodeSelectorTerms:
+                - matchExpressions:
+                    - key: kubernetes.io/arch
+                      operator: In
+                      values:
+                        - arm64
+                        - amd64
+  values:
+    gateways:
+      istio-ingressgateway:
+        # Enable gateway injection
+        injectionTemplate: gateway

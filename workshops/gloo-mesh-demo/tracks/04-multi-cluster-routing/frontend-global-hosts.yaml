@@ -55,7 +55,7 @@ spec:
               value: "currency.backend-apis-team.solo-io.mesh:80"
             # # ENV_PLATFORM: One of: local, gcp, aws, azure, onprem
             # # When not set, defaults to "local" unless running in GKE, otherwies auto-sets to gcp 
-            - name: ENV_PLATFORM 
+            - name: ENV_PLATFORM
               value: "onprem"
             - name: DISABLE_TRACING
               value: "1"

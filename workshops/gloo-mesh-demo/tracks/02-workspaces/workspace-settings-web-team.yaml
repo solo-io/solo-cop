@@ -1,0 +1,24 @@
+apiVersion: admin.gloo.solo.io/v2
+kind: WorkspaceSettings
+metadata:
+  name: web-team
+  namespace: web-team
+spec:
+  importFrom:
+  - workspaces:
+    - name: backend-apis-team
+  exportTo:
+  - workspaces:
+    - name: ops-team
+  options:
+    eastWestGateways:
+    - selector:
+        labels:
+          istio: eastwestgateway
+    federation:
+      enabled: true
+      serviceSelector:
+      - namespace: web-ui
+    serviceIsolation:
+      enabled: true
+      trimProxyConfig: true
