@@ -14,6 +14,6 @@ rm tls.key
 # make sure root trust policy is good to go
 sleep 5
 
-kubectl wait deployment -n web-ui --context $CLUSTER1 --for condition=Available=True --all
-kubectl wait deployment -n backend-apis --context $CLUSTER1 --for condition=Available=True --all
-kubectl wait deployment -n backend-apis --context $CLUSTER2 --for condition=Available=True --all
+kubectl wait deployment -n web-ui --context $CLUSTER1 --for condition=Available=True --all --timeout 60s
+kubectl wait deployment -n backend-apis --context $CLUSTER1 --for condition=Available=True --all --timeout 60s
+kubectl wait deployment -n backend-apis --context $CLUSTER2 --for condition=Available=True --all --timeout 60s
