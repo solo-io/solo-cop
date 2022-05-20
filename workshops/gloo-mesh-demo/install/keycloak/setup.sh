@@ -10,12 +10,16 @@ kubectl wait deployment --for condition=Available=True -n keycloak --timeout 60s
 
 POD_NAME=$(kubectl get pods -n keycloak -l app=keycloak --context $CLUSTER1 -o json | jq -r '.items[0].metadata.name')
 
-if [ -z "$KEYCLOAK_URL" ]
+if [ -z "$EXTERNAL_IP" ]
 then
   # Running locally
   export KEYCLOAK_URL=http://$(kubectl --context ${CLUSTER1} -n keycloak get service keycloak -o jsonpath='{.status.loadBalancer.ingress[0].*}'):9000/auth
   echo "Using LOCAL Keycloak URL: $KEYCLOAK_URL"
 else
+  
+  # we are running in instruqt
+  export ENDPOINT_KEYCLOAK=$EXTERNAL_IP:$(kubectl --context ${CLUSTER1} -n keycloak get svc keycloak -o jsonpath='{.spec.ports[?(@.port==9000)].nodePort}')
+  export KEYCLOAK_URL=http://${ENDPOINT_KEYCLOAK}/auth
   echo "Using Instruqt Keycloak URL: $KEYCLOAK_URL"
 fi
 
