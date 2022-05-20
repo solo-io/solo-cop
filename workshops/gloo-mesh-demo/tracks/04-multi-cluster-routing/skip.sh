@@ -8,5 +8,5 @@ kubectl apply -n backend-apis-team --context $MGMT -f $LOCAL_DIR/virtual-destina
 
 # Step 2 - Update frontend
 kubectl apply -n web-ui --context $CLUSTER1 -f $LOCAL_DIR/frontend-global-hosts.yaml
-
-kubectl wait deployment/frontend -n web-ui --context $CLUSTER1 --for condition=Available=True --timeout 60s
+sleep 5
+kubectl wait pod -l app=frontend -n web-ui --context $CLUSTER1 --for condition=ready --timeout 60s

@@ -3,6 +3,8 @@ kind: RouteTable
 metadata:
   name: frontend
   namespace: web-team
+  labels:
+    lab: failover
 spec:
   hosts:
     - '*'
