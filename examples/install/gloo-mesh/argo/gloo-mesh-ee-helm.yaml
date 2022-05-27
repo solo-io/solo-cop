@@ -14,7 +14,7 @@ spec:
     chart: gloo-mesh-enterprise
     helm:
       values: |
-        licenseKey: eyJleHAiOjE2NTU3MTI0MzgsImlhdCI6MTY1MzEyMDQzOCwiayI6ImpzNUx4USIsImx0IjoidHJpYWwiLCJwcm9kdWN0IjoiZ2xvbyJ9.Ds2m__SaSBfqlSqe5EasBoLSJ9HIjzPBo_uYjZ8wjuM
+        licenseKey: ${LICENSE_KEY}
         mgmtClusterName: mgmt
         glooMeshMgmtServer:
           ports:
