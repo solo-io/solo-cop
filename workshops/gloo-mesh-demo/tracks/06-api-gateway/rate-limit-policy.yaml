@@ -24,6 +24,20 @@ spec:
             port:
               number: 80
 ---
+apiVersion: admin.gloo.solo.io/v2
+kind: RateLimitServerSettings
+metadata:
+  name: frontend
+  namespace: web-team
+spec:
+  destinationServer:
+    port:
+      number: 8083
+    ref:
+      name: rate-limiter
+      namespace: gloo-mesh-addons
+      cluster: cluster1
+---
 apiVersion: trafficcontrol.policy.gloo.solo.io/v2
 kind: RateLimitClientConfig
 metadata:
@@ -32,9 +46,9 @@ metadata:
 spec:
   raw:
     rateLimits:
-    - setActions:
+    - actions:
       - genericKey:
-          descriptorValue: count
+          descriptorValue: counter
 ---
 apiVersion: admin.gloo.solo.io/v2
 kind: RateLimitServerConfig
@@ -50,13 +64,12 @@ spec:
     port:
       name: grpc
   raw:
-    setDescriptors:
-      - simpleDescriptors:
-          - key: generic_key
-            value: count
-        rateLimit:
-          requestsPerUnit: 3
-          unit: MINUTE
+    descriptors:
+    - key: generic_key
+      rateLimit:
+        requestsPerUnit: 2
+        unit: MINUTE
+      value: counter
 ---
 apiVersion: trafficcontrol.policy.gloo.solo.io/v2
 kind: RateLimitPolicy

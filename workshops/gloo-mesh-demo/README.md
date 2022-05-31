@@ -67,6 +67,12 @@ export ENDPOINT_HTTPS_GW_CLUSTER1_EXT=localhost:8443
 ./tracks/03-security/setup.sh
 ```
 
+* Skip
+
+```sh
+./tracks/03-security/skip.sh
+```
+
 ## Lab 4 - Multi Cluster Routing
 
 * Setup
@@ -99,7 +105,7 @@ export ENDPOINT_HTTPS_GW_CLUSTER1_EXT=localhost:8443
 
 
 
-```
+```sh
 ./install/setup.sh
 ./tracks/01-install-gloo-mesh/skip.sh
 ./tracks/02-workspaces/setup.sh
