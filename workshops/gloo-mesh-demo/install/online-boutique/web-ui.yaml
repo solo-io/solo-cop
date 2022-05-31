@@ -50,6 +50,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: frontend
+  labels:
+    checkout-enabled: "false"
 spec:
   selector:
     matchLabels:

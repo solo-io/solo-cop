@@ -8,10 +8,10 @@ export GLOO_MESH_LICENSE_KEY=<licence_key>
 export MGMT=mgmt
 export CLUSTER1=cluster1
 export CLUSTER2=cluster2
-export GLOO_MESH_VERSION=v2.0.3
-export ISTIO_VERSION=1.12.7
+export GLOO_MESH_VERSION=v2.0.5
+export ISTIO_VERSION=1.13.4
 export ISTIO_IMAGE_REPO=<please ask for repo information>
-export ISTIO_IMAGE_TAG=1.12.7-solo
+export ISTIO_IMAGE_TAG=1.13.4-solo
 export ENDPOINT_HTTPS_GW_CLUSTER1=localhost:8443
 export ENDPOINT_HTTPS_GW_CLUSTER1_EXT=localhost:8443
 ```
