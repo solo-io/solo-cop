@@ -14,33 +14,26 @@
         "First",
         "Second"
       ],
-      // Mark as the default build task so cmd/ctrl+shift+b will create them
       "group": {
         "kind": "build",
         "isDefault": true
       },
-      // Try start the task on folder open
       "runOptions": {
         "runOn": "folderOpen"
       }
     },
     {
-      // The name that shows up in terminal tab
       "label": "First",
-      // The task will launch a shell
       "type": "shell",
       "command": "",
-      // Set the shell type
       "options": {
         "shell": {
           "executable": "cmd.exe",
           "args": []
         }
       },
-      // Mark as a background task to avoid the spinner animation on the terminal tab
       "isBackground": true,
       "problemMatcher": [],
-      // Create the tasks in a terminal group
       "presentation": {
         "group": "my-group"
       }
