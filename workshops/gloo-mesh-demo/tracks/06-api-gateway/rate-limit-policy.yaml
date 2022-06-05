@@ -69,5 +69,5 @@ spec:
       namespace: web-team
       cluster: mgmt
     phase:
-      postAuthz:
-        priority: 3
+      preAuthz:
+        priority: 1

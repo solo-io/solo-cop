@@ -1,29 +1,3 @@
-apiVersion: networking.gloo.solo.io/v2
-kind: RouteTable
-metadata:
-  name: frontend
-  namespace: web-team
-spec:
-  hosts:
-    - '*'
-  virtualGateways:
-    - name: north-south-gw
-      namespace: ops-team
-      cluster: mgmt
-  workloadSelectors: []
-  http:
-    - name: main-page
-      labels:
-        oauth: "true"
-      forwardTo:
-        destinations:
-          - ref:
-              name: frontend
-              namespace: web-ui
-              cluster: cluster1
-            port:
-              number: 80
----
 apiVersion: security.policy.gloo.solo.io/v2
 kind: ExtAuthPolicy
 metadata:
@@ -54,17 +28,3 @@ spec:
             - email
             headers:
               idTokenHeader: jwt
----
-apiVersion: admin.gloo.solo.io/v2
-kind: ExtAuthServer
-metadata:
-  name: ext-auth-server
-  namespace: web-team
-spec:
-  destinationServer:
-    ref:
-      cluster: cluster1
-      name: ext-auth-service
-      namespace: gloo-mesh-addons
-    port:
-      name: grpc
