@@ -1,33 +1,7 @@
-apiVersion: networking.gloo.solo.io/v2
-kind: RouteTable
-metadata:
-  name: frontend
-  namespace: web-team
-spec:
-  hosts:
-    - '*'
-  virtualGateways:
-    - name: north-south-gw
-      namespace: ops-team
-      cluster: mgmt
-  workloadSelectors: []
-  http:
-    - name: frontend
-      labels:
-        rate-limit: "true"
-      forwardTo:
-        destinations:
-          - ref:
-              name: frontend
-              namespace: web-ui
-              cluster: cluster1
-            port:
-              number: 80
----
 apiVersion: admin.gloo.solo.io/v2
 kind: RateLimitServerSettings
 metadata:
-  name: frontend
+  name: rate-limit-server-settings
   namespace: web-team
 spec:
   destinationServer:
@@ -41,7 +15,7 @@ spec:
 apiVersion: trafficcontrol.policy.gloo.solo.io/v2
 kind: RateLimitClientConfig
 metadata:
-  name: frontend
+  name: rate-limit-client-config
   namespace: web-team
 spec:
   raw:
@@ -53,7 +27,7 @@ spec:
 apiVersion: admin.gloo.solo.io/v2
 kind: RateLimitServerConfig
 metadata:
-  name: frontend
+  name: rate-limit-server-config
   namespace: web-team
 spec:
   destinationServers:
@@ -74,24 +48,24 @@ spec:
 apiVersion: trafficcontrol.policy.gloo.solo.io/v2
 kind: RateLimitPolicy
 metadata:
-  name: frontend
+  name: rate-limit-policy
   namespace: web-team
 spec:
-  applyToRoutes:
-  - route:
+  applyToDestinations:
+  - selector:
       labels:
-        rate-limit: "true"
+        app: frontend
   config:
     serverSettings:
-      name: frontend
+      name: rate-limit-server-settings
       namespace: web-team
       cluster: mgmt
     ratelimitClientConfig:
-      name: frontend
+      name: rate-limit-client-config
       namespace: web-team
       cluster: mgmt
     ratelimitServerConfig:
-      name: frontend
+      name: rate-limit-server-config
       namespace: web-team
       cluster: mgmt
     phase:

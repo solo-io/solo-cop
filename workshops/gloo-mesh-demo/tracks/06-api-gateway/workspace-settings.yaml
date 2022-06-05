@@ -1,0 +1,83 @@
+# import the gloo-mesh-addons services into the other workspaces
+apiVersion: admin.gloo.solo.io/v2
+kind: WorkspaceSettings
+metadata:
+  name: ops-team
+  namespace: ops-team
+spec:
+  importFrom:
+  - workspaces:
+    - name: web-team
+  exportTo:
+  - workspaces:
+    - name: "*"
+    resources:
+    - kind: SERVICE
+      namespace: gloo-mesh-addons
+    - kind: VIRTUAL_DESTINATION
+      namespace: gloo-mesh-addons
+  options:
+    federation:
+      enabled: true
+      serviceSelector:
+      - namespace: gloo-mesh-addons
+    eastWestGateways:
+    - selector:
+        labels:
+          istio: eastwestgateway
+    serviceIsolation:
+      enabled: true
+      trimProxyConfig: true
+---
+apiVersion: admin.gloo.solo.io/v2
+kind: WorkspaceSettings
+metadata:
+  name: web-team
+  namespace: web-team
+spec:
+  importFrom:
+  - workspaces:
+    - name: backend-apis-team
+  - workspaces:
+    - name: ops-team
+  exportTo:
+  - workspaces:
+    - name: ops-team
+  options:
+    eastWestGateways:
+    - selector:
+        labels:
+          istio: eastwestgateway
+    federation:
+      enabled: true
+      serviceSelector:
+      - namespace: web-ui
+    serviceIsolation:
+      enabled: true
+      trimProxyConfig: true
+---
+apiVersion: admin.gloo.solo.io/v2
+kind: WorkspaceSettings
+metadata:
+  name: backend-apis-team
+  namespace: backend-apis-team
+spec:
+  exportTo:
+  - workspaces:
+    - name: web-team
+  importFrom:
+  - workspaces:
+    - name: ops-team
+  options:
+    eastWestGateways:
+    - selector:
+        labels:
+          istio: eastwestgateway
+    federation:
+      enabled: true
+      serviceSelector:
+      - namespace: backend-apis
+    # disabled to show how to use Auth Policies
+    serviceIsolation:
+      enabled: false
+      trimProxyConfig: false
