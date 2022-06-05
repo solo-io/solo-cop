@@ -27,6 +27,7 @@ spec:
   - name: '*'
     namespaces:
     - name: istio-gateways
+    - name: gloo-mesh-addons
 ---
 # Create Web Team workspace
 apiVersion: admin.gloo.solo.io/v2
@@ -42,9 +43,6 @@ spec:
   - name: '*'
     namespaces:
     - name: web-ui
-  - name: '*'
-    namespaces:
-    - name: gloo-mesh-addons
 ---
 # Create Backend Team workspace
 apiVersion: admin.gloo.solo.io/v2
