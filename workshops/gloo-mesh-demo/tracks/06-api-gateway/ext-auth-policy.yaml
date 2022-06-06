@@ -24,6 +24,8 @@ spec:
               name: oauth
               namespace: gloo-mesh
             issuerUrl: "${KEYCLOAK_URL}/realms/master/"
+            logoutPath: /logout
+            afterLogoutUrl: https://solo.io
             scopes:
             - email
             headers:

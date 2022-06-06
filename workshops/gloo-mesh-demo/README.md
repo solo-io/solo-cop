@@ -103,6 +103,28 @@ export ENDPOINT_HTTPS_GW_CLUSTER1_EXT=localhost:8443
 ./tracks/06-api-gateway/setup.sh
 ```
 
+* WAF
+```
+kubectl apply --context $MGMT -f tracks/06-api-gateway/waf-policy.yaml
+```
+
+* Ext Atuh
+```sh
+
+export KEYCLOAK_URL=$(kubectl get configmap -n gloo-mesh --context $CLUSTER1 keycloak-info -o json | jq -r '.data."keycloak-url"')
+export KEYCLOAK_CLIENTID=$(kubectl get configmap -n gloo-mesh --context $CLUSTER1 keycloak-info -o json | jq -r '.data."client-id"')
+
+kubectl apply --context $MGMT -f tracks/06-api-gateway/ext-auth-route-table.yaml
+kubectl apply --context $MGMT -f tracks/06-api-gateway/ext-auth-server.yaml
+cat tracks/06-api-gateway/ext-auth-policy.yaml| envsubst | kubectl apply --context $MGMT -f -
+```
+
+
+* Rate limiting
+```
+kubectl apply --context $MGMT -f tracks/06-api-gateway/rate-limit-policy.yaml
+```
+
 
 
 ```sh
@@ -117,3 +139,4 @@ export ENDPOINT_HTTPS_GW_CLUSTER1_EXT=localhost:8443
 ./tracks/05-failover/skip.sh
 ./tracks/06-api-gateway/setup.sh
 ```
+
