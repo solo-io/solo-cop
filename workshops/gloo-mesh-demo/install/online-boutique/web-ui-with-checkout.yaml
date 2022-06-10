@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: frontend
+  namespace: web-ui
   labels:
     checkout-enabled: "true"
 spec:
@@ -77,8 +78,6 @@ spec:
                   fieldPath: metadata.namespace
             - name: KUBERNETES_CLUSTER_NAME
               value: cluster1
-          # - name: JAEGER_SERVICE_ADDR
-          #   value: "jaeger-collector:14268"
           resources:
             requests:
               cpu: 100m

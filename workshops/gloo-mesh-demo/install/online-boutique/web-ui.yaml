@@ -9,6 +9,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: frontend
+  namespace: web-ui
   labels:
     app: frontend
 spec:
@@ -23,6 +24,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: frontend
+  namespace: web-ui
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -50,6 +52,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: frontend
+  namespace: web-ui
   labels:
     checkout-enabled: "false"
 spec:
@@ -127,8 +130,6 @@ spec:
               value: cluster1
             - name: CART_DISABLED
               value: "true"
-          # - name: JAEGER_SERVICE_ADDR
-          #   value: "jaeger-collector:14268"
           resources:
             requests:
               cpu: 100m

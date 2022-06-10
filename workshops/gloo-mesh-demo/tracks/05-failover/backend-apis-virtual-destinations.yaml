@@ -1,4 +1,3 @@
-# Virtual Destinations for the rest of the online boutique backend apis in cluster1
 apiVersion: networking.gloo.solo.io/v2
 kind: VirtualDestination
 metadata:
