@@ -168,6 +168,8 @@ kubectl apply --context $CLUSTER1 -f install/online-boutique/web-ui.yaml
 ## Lab 5 - Configure Gloo Mesh Workspaces <a name="Lab-5"></a>
 
 
+![online-boutique](images/online-boutique-workspaces.png)
+
 1. Create config namespaces in the `mgmt` cluster for each workspace.
 
 ```sh
