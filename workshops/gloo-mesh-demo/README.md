@@ -1,7 +1,7 @@
-# Gloo Mesh Demo
+# Gloo Mesh Online Boutique Demo Workshop
 
 ![Gloo Mesh Enterprise](images/gloo-mesh-2.0-banner.png)
-# <center>Gloo Mesh Demo</center>
+# <center>Gloo Mesh Online Boutique Demo Workshop</center>
 
 ## Table of Contents
 * [Introduction](#introduction)
@@ -22,26 +22,19 @@
 
 Gloo Mesh also has enterprise features around multi-tenancy, global failover and routing, observability, and east-west rate limiting and policy enforcement (through AuthZ/AuthN plugins). 
 
-### Istio support
+![Gloo Mesh Value](images/gloo-mesh-value.png)
 
-The Gloo Mesh Enterprise subscription includes end to end Istio support:
+### Observability & UI
 
-- Upstream first
-- Specialty builds available (FIPS, ARM, etc)
-- Long Term Support (LTS) N-4 
-- Critical security patches
-- Production break-fix
-- One hour SLA Severity 1
-- Install / upgrade
-- Architecture and operational guidance, best practices
+When you install Gloo Mesh Enterprise, you get the Gloo Mesh user interface (UI) by default. With the UI, you can review the health and configuration of Gloo Mesh custom resources, including registered clusters, workspaces, networking, policies, and more.
 
-### Observability
+![Gloo Mesh graph](images/gloo-mesh-ui.png)
 
-Gloo Mesh is also using these agents to consolidate all the metrics and access logs from the different clusters. Graphs can then be used to monitor all the communication happening globally.
+Gloo Mesh uses agents to consolidate all the metrics and access logs from the different clusters. A Service Graph can then be used to monitor all the communication happening globally.
 
 ![Gloo Mesh graph](images/gloo-mesh-graph.png)
 
-### Want to learn more about Gloo Mesh
+### Want to learn more about Gloo Mesh?
 
 You can find more information about Gloo Mesh in the official documentation:
 
@@ -49,15 +42,13 @@ You can find more information about Gloo Mesh in the official documentation:
 
 
 ## Environment Variables
+
+To begin, set these environment variables which will be used throughout the workshop. 
+
 ```sh
-# Used to enable gloo mesh (please ask for a key)
+# Used to enable gloo mesh (please ask for a trail key)
 export GLOO_MESH_LICENSE_KEY=<licence_key>
 export GLOO_MESH_VERSION=v2.0.6
-
-# Kubernetes context names of each cluster
-export MGMT=mgmt
-export CLUSTER1=cluster1
-export CLUSTER2=cluster2
 
 # Istio version information
 export ISTIO_IMAGE_REPO=<please ask for repo information>
@@ -65,25 +56,21 @@ export ISTIO_IMAGE_TAG=1.13.4-solo
 export ISTIO_VERSION=1.13.4
 ```
 
-## Lab 1 - Deploy the Kubernetes clusters manually <a name="Lab-1"></a>
+## Lab 1 - Configure/Deploy the Kubernetes clusters <a name="Lab-1"></a>
 
-This workshop can run on many different kubernetes distributions.
+You will need to create three Kubernetes Clusters. Two will be used as your workload clusters and the last one will be used as the managment plane.
 
-Local Options
-* Using k3d - [Setup Instructions](./infra/k3d/README.md)
+![arch-1](images/arch-1.png)
 
-Remote Options
-* EKS
-* GKE
-* OpenShift
-* Rancher Kubernetes Service
 
-You may need to rename the Kubernete contexts of each Kubernetes cluster to match `mgmt`, `cluster1` and `cluster2`.
+This workshop can run on many different kubernetes distributions such as EKS, GKE, OpenShift, RKE, etc or you can [create local k3d clusters](./infra/k3d/README.md).
 
-Here is an example showing how to rename a Kubernetes context:
-
-```sh
-kubectl config rename-context <context to rename> <new context name>
+Once you have your Kubernetes cluster, set the environment variables to match the kubectl context names of your clusters. 
+```
+# kubectl context names of each cluster. Update the values as necessary.
+export MGMT=mgmt
+export CLUSTER1=cluster1
+export CLUSTER2=cluster2
 ```
 
 Run the following command to make `mgmt` the current cluster.
@@ -113,7 +100,9 @@ meshctl install \
   --license $GLOO_MESH_LICENSE_KEY
 ```
 
-3. Finally, you need to register the two other clusters.
+As seen in the diagram above, the management server exposes a grpc endpoint which the agents in the workload connect to.
+
+3. Finally, you need to register the two other clusters by deploying the gloo mesh agents.
 
 ```sh
 meshctl cluster register \
@@ -127,41 +116,11 @@ meshctl cluster register \
   $CLUSTER2
 ```
 
-** Optionally specify the management server endpoint **
+** Problems? ** 
+meshctl tries to automatically detect the management server endpoint, but sometimes this can fail. If that happens, it can be supplied manually. Follow the steps [here](problems-manual-registration.md) if you run into this.
 
-Sometimes meshctl cannot auto discover the management plane loadbalancer address so it can be supplied manually
 
-* Discover the management server address
-
-```sh
-export GLOO_MESH_ENDPOINT=$(kubectl --context ${MGMT} -n gloo-mesh get svc gloo-mesh-mgmt-server -o jsonpath='{.status.loadBalancer.ingress[0].*}'):9900
-
-echo "Gloo Mesh Endpoint: $GLOO_MESH_ENDPOINT"
-```
-
-* register the clusters with 
-
-```sh
-meshctl cluster register \
-  --kubecontext=$MGMT \
-  --remote-context=$CLUSTER1 \
-  --relay-server-address $GLOO_MESH_ENDPOINT \
-  $CLUSTER1
-
-meshctl cluster register \
-  --kubecontext=$MGMT \
-  --remote-context=$CLUSTER2 \
-  --relay-server-address $GLOO_MESH_ENDPOINT \
-  $CLUSTER2
-```
-
-4. Verify Installation by opening the gloo mesh UI
-
-```sh
-export GLOO_MESH_UI_ENDPOINT=$(kubectl --context ${MGMT} -n gloo-mesh get svc gloo-mesh-ui -o jsonpath='{.status.loadBalancer.ingress[0].*}'):8090
-
-echo "Gloo Mesh UI Endpoint: http://$GLOO_MESH_UI_ENDPOINT"
-```
+4. Verify Installation by opening the Gloo Mesh UI by running `meshctl dashboard`. Click [here](problems-dashboard.md) if that did not work.
 
 
 ## Lab 3 - Deploy Istio <a name="Lab-3"></a>
@@ -175,7 +134,7 @@ export PATH=$PWD/istio-${ISTIO_VERSION}/bin:$PATH
 istioctl version
 ```
 
-2. Install Istio to each of the remote clusters
+2. Install Istio to each of the remote clusters. If you're using local Kubernetes clusters on a Mac M1 or M2, use [these ARM instructions](problems-istio-arm.md) instead.
 
 ```sh
 export CLUSTER_NAME=$CLUSTER1
@@ -187,24 +146,14 @@ kubectl create namespace istio-gateways --context $CLUSTER2
 cat install/istio/istiooperator.yaml| envsubst | istioctl install --set hub=$ISTIO_IMAGE_REPO --set tag=$ISTIO_IMAGE_TAG  -y --context $CLUSTER_NAME -f -
 ```
 
-**NOTE: If you are using an M1 or M2 macbook and doing a local kubernetes deployment use this arm based istiooperator file**
-
-* Istio installation compatible with ARM / M1 / M2 macbooks
-```sh
-export CLUSTER_NAME=$CLUSTER1
-cat install/istio/istiooperator-arm.yaml| envsubst | istioctl install --set hub=$ISTIO_IMAGE_REPO --set tag=$ISTIO_IMAGE_TAG  -y --context $CLUSTER_NAME -f -
-
-
-export CLUSTER_NAME=$CLUSTER2
-cat install/istio/istiooperator-arm.yaml| envsubst | istioctl install --set hub=$ISTIO_IMAGE_REPO --set tag=$ISTIO_IMAGE_TAG  -y --context $CLUSTER_NAME -f -
-```
-
-3. Verify in the Gloo Mesh UI that isio information is now being added
+3. Verify in the Gloo Mesh UI that Istio information is now being added.
 
 
 ## Lab 4 - Deploy Online Boutique <a name="Lab-4"></a>
 
-1. Deploy the online boutique backend APIs to `cluster1` in the `backend-apis` namespace.
+![online-boutique](images/online-boutique.png)
+
+1. Deploy the Online Boutique backend APIs to `cluster1` in the `backend-apis` namespace.
 
 ```sh
 kubectl apply --context $CLUSTER1 -f install/online-boutique/backend-apis.yaml
