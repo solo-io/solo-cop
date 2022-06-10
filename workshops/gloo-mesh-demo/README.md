@@ -14,6 +14,7 @@
 * [Lab 7 - Zero Trust Networking](#Lab-7)
 * [Lab 8 - Multicluster Routing](#Lab-8)
 * [Lab 9 - Multicluster Failover](#Lab-9)
+* [Lab 10 - API Gateway](#Lab-10)
 
 ## Introduction <a name="introduction"></a>
 
@@ -629,7 +630,7 @@ EOF
 1. Deploy the frontend application to `cluster2`
 
 ```sh
-kubectl apply -f install/online-boutique/web-ui-cluster2.yaml
+kubectl apply --context $CLUSTER2 -f install/online-boutique/web-ui-cluster2.yaml
 ```
 
 2. Create VirtualDestination for frontend application
@@ -714,7 +715,6 @@ EOF
 
 4. Update the RouteTable so the VirtualGateway will route to both frontend applications
 
-
 ```yaml
 cat << EOF | kubectl --context ${MGMT} apply -f -
 apiVersion: networking.gloo.solo.io/v2
@@ -753,3 +753,94 @@ EOF
 * cluster2 header
 ![cluster2 header](images/cluster1-frontend-header.png)
 
+* Alternatively you can test this using curl
+```sh
+for i in {1..6}; do curl -sSk http://$HTTP_GATEWAY_ENDPOINT | grep "Cluster Name:"; done
+```
+
+6. Apply the FailoverPolicy.
+
+```yaml
+cat << EOF | kubectl --context ${MGMT} apply -f -
+apiVersion: resilience.policy.gloo.solo.io/v2
+kind: FailoverPolicy
+metadata:
+  name: failover
+  namespace: web-team
+spec:
+  applyToDestinations:
+  - kind: VIRTUAL_DESTINATION
+    selector:
+      namespace: web-team
+  config:
+    localityMappings:
+    - from:
+        region: us-east-1
+      to:
+        - region: us-west-2
+    - from:
+        region: us-west-2
+      to: 
+        - region: us-east-1
+EOF
+```
+
+7. Apply the OutlierDetectionPolicy.
+
+```yaml
+cat << EOF | kubectl --context ${MGMT} apply -f -
+apiVersion: resilience.policy.gloo.solo.io/v2
+kind: OutlierDetectionPolicy
+metadata:
+  name: outlier-detection
+  namespace: web-team
+spec:
+  applyToDestinations:
+  - kind: VIRTUAL_DESTINATION
+    selector:
+      namespace: web-team
+  config:
+    consecutiveErrors: 2
+    interval: 5s
+    baseEjectionTime: 30s
+    maxEjectionPercent: 100
+EOF
+```
+
+8. Make it so that the frontend application in cluster1 cannot respond to requests.
+
+```sh
+kubectl --context $CLUSTER1 -n web-ui patch deploy frontend --patch '{"spec":{"template":{"spec":{"containers":[{"name":"server","command":["sleep","20h"],"readinessProbe":null,"livenessProbe":null}]}}}}'
+```
+
+9. Test failover to cluster2 frontend application
+
+
+* Optionally view the cluster failover using curl
+
+```sh
+for i in {1..6}; do curl -sSk http://$HTTP_GATEWAY_ENDPOINT | grep "Cluster Name:"; done
+```
+
+10. Fix frontend in cluster1
+
+```sh
+kubectl --context $CLUSTER1 -n web-ui patch deploy frontend --patch '{"spec":{"template":{"spec":{"containers":[{"name":"server","command":[],"readinessProbe":null,"livenessProbe":null}]}}}}'
+sleep 5
+kubectl wait pod -l app=frontend -n web-ui --context $CLUSTER1 --for condition=ready
+```
+
+11. Test that the frontend in cluster1 is working again
+
+
+
+## Lab 10 - API Gateway <a name="Lab-10"></a>
+
+1. Deploy Keycloak
+
+```sh
+export ENDPOINT_HTTPS_GW_CLUSTER1_EXT=$HTTP_GATEWAY_ENDPOINT
+./install/keycloak/setup.sh
+```
+
+2. 
