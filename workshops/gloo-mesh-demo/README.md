@@ -597,10 +597,26 @@ kubectl apply --context $CLUSTER1 -f install/online-boutique/web-ui-with-checkou
 4. Try and buy some items. You should see an error. 
 ![Gloo Mesh Multi Cluster Error](images/ssl-multi-cluster-error.png)
 
-5. 
+5. Apply the RootTustPolicy to deploy a common root between clusters.
 
+```yaml
+cat << EOF | kubectl --context ${MGMT} apply -f -
+apiVersion: admin.gloo.solo.io/v2
+kind: RootTrustPolicy
+metadata:
+  name: root-trust-policy
+  namespace: gloo-mesh
+spec:
+  config:
+    mgmtServerCa:
+      generated: {}
+    autoRestartPods: true
+EOF
+```
 
+6. Wait a minute or two until all the pods are automatically rotated
 
+7. Try and buy some items
 ![Gloo Mesh Graph](images/checkout-page.png)
 
 5. Explore the gloo mesh ui
