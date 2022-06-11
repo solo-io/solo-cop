@@ -702,7 +702,7 @@ EOF
 ![cluster1 header](images/cluster1-frontend-header.png)
 
 * cluster2 header
-![cluster2 header](images/cluster1-frontend-header.png)
+![cluster2 header](images/cluster2-frontend-header.png)
 
 * Alternatively you can test this using curl
 ```sh
