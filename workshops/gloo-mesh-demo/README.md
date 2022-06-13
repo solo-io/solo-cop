@@ -108,7 +108,7 @@ meshctl install \
   --license $GLOO_MESH_LICENSE_KEY
 ```
 
-As seen in the diagram above, the management server exposes a grpc endpoint which the agents in the workload connect to (`kubectl get svc gloo-mesh-mgmt-server -n gloo-mesh`).
+The management server exposes a grpc endpoint (`kubectl get svc gloo-mesh-mgmt-server -n gloo-mesh`) which the agents in the workload clusters will connect to.
 
 3. Finally, you need to register the two other clusters by deploying the gloo mesh agents.
 
@@ -124,12 +124,11 @@ meshctl cluster register \
   $CLUSTER2
 ```
 
-** Problems? ** 
-meshctl tries to automatically detect the management server endpoint, but sometimes this can fail. If that happens, it can be supplied manually. Follow the steps [here](problems-manual-registration.md) if you run into this.
+** Problems? ** meshctl tries to automatically detect the management server endpoint, but sometimes this can fail. If that happens, it can be supplied manually. Follow the steps [here](problems-manual-registration.md) if you run into this.
 
 4. Verify proper installation by opening the Gloo Mesh UI by running `meshctl dashboard`. Click [here](problems-dashboard.md) if that command did not work. You should see 
 
-## Lab 3 - Deploy Istio <a name="Lab-3"></a>
+## Lab 3 - Deploy Istio on the Workload Clusters<a name="Lab-3"></a>
 
 1. Install [istioctl](https://istio.io/latest/docs/setup/getting-started/)
 
