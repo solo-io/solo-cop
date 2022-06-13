@@ -16,17 +16,18 @@
 * [Lab 9 - Multicluster Failover](#Lab-9)
 * [Lab 10 - API Gateway](#Lab-10)
 
-## Introduction <a name="introduction" /></a>
+## Introduction <a name="introduction"></a>
 
-[Gloo Mesh Enterprise](https://www.solo.io/products/gloo-mesh/) is a distribution of [Istio Service Mesh](https://istio.io) with production support, CVE patching, FIPS builds, and a multi-cluster operational management plane to simplify running a service mesh across multiple clusters or a hybrid deployment. 
+[Gloo Mesh Enterprise](https://www.solo.io/products/gloo-mesh/) simplifies the adoption of a service mesh across single or many clusters. It is Enterprise [Istio](https://istio.io) with production support, N-4 support, CVE patching, FIPS builds, and a multi-cluster operational management plane to simplify running a service mesh across multiple clusters or a hybrid deployment. 
 
-Gloo Mesh also has enterprise features around multi-tenancy, global failover and routing, observability, and east-west rate limiting and policy enforcement (through AuthZ/AuthN plugins).
+Gloo Mesh also has features around multi-tenancy, global failover and routing, observability, and east-west rate limiting and policy enforcement (through AuthZ/AuthN plugins). 
 
 ![Gloo Mesh Value](images/gloo-mesh-value.png)
 
 ### Observability & UI
 
-When you install Gloo Mesh Enterprise, you get the Gloo Mesh user interface (UI) by default. With the UI, you can review the health and configuration of Gloo Mesh custom resources, including registered clusters, workspaces, networking, policies, and more.
+When you install Gloo Mesh Enterprise, you get the Gloo Mesh UI which allows you to review the health and configuration of Gloo Mesh custom resources, including registered clusters, workspaces, networking, policies, and more.
+
 
 ![Gloo Mesh graph](images/gloo-mesh-ui.png)
 
@@ -41,14 +42,14 @@ You can find more information about Gloo Mesh in the official documentation:
 [https://docs.solo.io/gloo-mesh/latest/](https://docs.solo.io/gloo-mesh/latest/)
 
 
-## Environment Variables
+## Begin
 
-To begin, set these environment variables which will be used throughout the workshop. 
+To begin, set these environment variables which will be used throughout the workshop.
 
 ```sh
 # Used to enable gloo mesh (please ask for a trail key)
 export GLOO_MESH_LICENSE_KEY=<licence_key>
-export GLOO_MESH_VERSION=v2.0.6
+export GLOO_MESH_VERSION=v2.0.7
 
 # Istio version information
 export ISTIO_IMAGE_REPO=<please ask for repo information>
@@ -62,16 +63,23 @@ You will need to create three Kubernetes Clusters. Two will be used as your work
 
 ![arch-1](images/arch-1.png)
 
+This workshop can run on many different Kubernetes distributions such as EKS, GKE, OpenShift, RKE, etc or you can [create local k3d clusters](./infra/k3d/README.md).
 
-This workshop can run on many different kubernetes distributions such as EKS, GKE, OpenShift, RKE, etc or you can [create local k3d clusters](./infra/k3d/README.md).
-
-Once you have your Kubernetes cluster, set the environment variables to match the kubectl context names of your clusters. 
+Set these environment variables to represent your three clusters.
 ```
-# kubectl context names of each cluster. Update the values as necessary.
 export MGMT=mgmt
 export CLUSTER1=cluster1
 export CLUSTER2=cluster2
 ```
+
+Rename the kubectl config contexts of each of your three clusters to `mgmt`, `cluster1` and `cluster2` respectively.
+
+```
+# UPDATE <context-to-rename> BEFORE APPLYING
+kubectl config rename-context <context-to-rename> ${MGMT} 
+kubectl config rename-context <context to rename> ${CLUSTER1} 
+kubectl config rename-context <context to rename> ${CLUSTER2}
+``` 
 
 Run the following command to make `mgmt` the current cluster.
 
@@ -81,7 +89,7 @@ kubectl config use-context ${MGMT}
 
 ## Lab 2 - Deploy Gloo Mesh <a name="Lab-2"></a>
 
-1. Install `meshctl` command line tool and add it to your path
+1. Download `meshctl` command line tool and add it to your path
 
 ```sh
 curl -sL https://run.solo.io/meshctl/install | GLOO_MESH_VERSION=${GLOO_MESH_VERSION} sh -
@@ -100,7 +108,7 @@ meshctl install \
   --license $GLOO_MESH_LICENSE_KEY
 ```
 
-As seen in the diagram above, the management server exposes a grpc endpoint which the agents in the workload connect to.
+As seen in the diagram above, the management server exposes a grpc endpoint which the agents in the workload connect to (`kubectl get svc gloo-mesh-mgmt-server -n gloo-mesh`).
 
 3. Finally, you need to register the two other clusters by deploying the gloo mesh agents.
 
@@ -119,7 +127,7 @@ meshctl cluster register \
 ** Problems? ** 
 meshctl tries to automatically detect the management server endpoint, but sometimes this can fail. If that happens, it can be supplied manually. Follow the steps [here](problems-manual-registration.md) if you run into this.
 
-4. Verify Installation by opening the Gloo Mesh UI by running `meshctl dashboard`. Click [here](problems-dashboard.md) if that did not work.
+4. Verify proper installation by opening the Gloo Mesh UI by running `meshctl dashboard`. Click [here](problems-dashboard.md) if that command did not work. You should see 
 
 ## Lab 3 - Deploy Istio <a name="Lab-3"></a>
 
