@@ -768,7 +768,7 @@ With the Gloo Mesh WAF policy custom resource, you can create reusable policies 
   * In the WAF policy config, the default core rule set is disabled. Instead, a custom rule set is created for the `log4j` attack.
 
 ```yaml
-cat << EOF | kubectl --context ${MGMT} apply -f -
+kubectl --context ${MGMT} apply -f - <<'EOF'
 apiVersion: networking.gloo.solo.io/v2
 kind: RouteTable
 metadata:
@@ -981,7 +981,7 @@ An `ExtAuthServer` is also required to define the external auth server destinati
 * Apply the `ExtAuthServer`
 
 ```yaml
-cat << EOF | kubectl --context ${MGMT} apply -f -
+kubectl --context ${MGMT} apply -f - <<'EOF'
 apiVersion: admin.gloo.solo.io/v2
 kind: ExtAuthServer
 metadata:
@@ -1003,7 +1003,7 @@ Associating this `ExtAuthPolicy` with the gateway `RouteTable` will ensure that 
 * Apply the `RouteTable`
 
 ```sh
-cat << EOF | kubectl --context ${MGMT} apply -f -
+kubectl --context ${MGMT} apply -f - <<'EOF'
 apiVersion: networking.gloo.solo.io/v2
 kind: RouteTable
 metadata:
