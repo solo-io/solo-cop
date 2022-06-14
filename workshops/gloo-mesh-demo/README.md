@@ -28,7 +28,6 @@ Gloo Mesh also has features around multi-tenancy, global failover and routing, o
 
 When you install Gloo Mesh Enterprise, you get the Gloo Mesh UI which allows you to review the health and configuration of Gloo Mesh custom resources, including registered clusters, workspaces, networking, policies, and more.
 
-
 ![Gloo Mesh graph](images/gloo-mesh-ui.png)
 
 Gloo Mesh uses agents to consolidate all the metrics and access logs from the different clusters. A Service Graph can then be used to monitor all the communication happening globally.
@@ -40,7 +39,6 @@ Gloo Mesh uses agents to consolidate all the metrics and access logs from the di
 You can find more information about Gloo Mesh in the official documentation:
 
 [https://docs.solo.io/gloo-mesh/latest/](https://docs.solo.io/gloo-mesh/latest/)
-
 
 ## Begin
 
@@ -103,7 +101,6 @@ export PATH=$HOME/.gloo-mesh/bin:$PATH
 meshctl install \
   --kubecontext $MGMT \
   --set mgmtClusterName=$MGMT \
-  --set glooMeshMgmtServer.ports.healthcheck=8091 \
   --license $GLOO_MESH_LICENSE_KEY
 ```
 
@@ -721,6 +718,9 @@ In order to use the various features of the Gloo API gateway you will need to de
 ```sh
 kubectl --context ${CLUSTER1} create namespace gloo-mesh-addons
 kubectl --context ${CLUSTER1} label namespace gloo-mesh-addons istio-injection=enabled
+
+helm repo add gloo-mesh-agent https://storage.googleapis.com/gloo-mesh-enterprise/gloo-mesh-agent
+helm repo update
 
 helm upgrade --install gloo-mesh-agent-addons gloo-mesh-agent/gloo-mesh-agent \
   --namespace gloo-mesh-addons \
