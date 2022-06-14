@@ -144,18 +144,12 @@ istioctl version
 
 2. Install Istio to each of the remote clusters. If you're using local Kubernetes clusters on a Mac M1 or M2, use [these ARM instructions](problems-istio-arm.md) instead.
 
-TODO: Update all raw links to main branch
-
 ```sh
-curl -0l https://raw.githubusercontent.com/solo-io/solo-cop/workshop/workshops/gloo-mesh-demo/install/istio/istiooperator.yaml > istiooperator.yaml
-
-export CLUSTER_NAME=$CLUSTER1
 kubectl create namespace istio-gateways --context $CLUSTER1
-cat istiooperator.yaml| envsubst | istioctl install --set hub=$ISTIO_IMAGE_REPO --set tag=$ISTIO_IMAGE_TAG  -y --context $CLUSTER_NAME -f -
+istioctl install --set hub=$ISTIO_IMAGE_REPO --set tag=$ISTIO_IMAGE_TAG  -y --context $CLUSTER1 -f install/istio/istiooperator-cluster1.yaml
 
-export CLUSTER_NAME=$CLUSTER2
 kubectl create namespace istio-gateways --context $CLUSTER2
-cat istiooperator.yaml| envsubst | istioctl install --set hub=$ISTIO_IMAGE_REPO --set tag=$ISTIO_IMAGE_TAG  -y --context $CLUSTER_NAME -f -
+istioctl install --set hub=$ISTIO_IMAGE_REPO --set tag=$ISTIO_IMAGE_TAG  -y --context $CLUSTER2 -f install/istio/istiooperator-cluster2.yaml
 ```
 
 3. Verify in the Gloo Mesh UI that the deployed Istio information was discovered.
@@ -239,87 +233,12 @@ spec:
 EOF
 ```
 
-3. Apply the ops-team WorkspaceSettings to the `ops-team` namespace.
+3. Apply the settings for each workspace. These `WorkspaceSettings` objects are used to tune each indiviual workspace as well as import/export other workspaces. 
 
-```yaml
-cat << EOF | kubectl --context ${MGMT} apply -f -
-apiVersion: admin.gloo.solo.io/v2
-kind: WorkspaceSettings
-metadata:
-  name: ops-team
-  namespace: ops-team
-spec:
-  importFrom:
-  - workspaces:
-    - name: web-team
-  options:
-    eastWestGateways:
-    - selector:
-        labels:
-          istio: eastwestgateway
-    serviceIsolation:
-      enabled: true
-      trimProxyConfig: true
-EOF
-```
-
-4. Apply the web-team WorkspaceSettings to the web-team namespace.
-
-```yaml
-cat << EOF | kubectl --context ${MGMT} apply -f -
-apiVersion: admin.gloo.solo.io/v2
-kind: WorkspaceSettings
-metadata:
-  name: web-team
-  namespace: web-team
-spec:
-  importFrom:
-  - workspaces:
-    - name: backend-apis-team
-  exportTo:
-  - workspaces:
-    - name: ops-team
-  options:
-    eastWestGateways:
-    - selector:
-        labels:
-          istio: eastwestgateway
-    federation:
-      enabled: true
-      serviceSelector:
-      - namespace: web-ui
-    serviceIsolation:
-      enabled: true
-      trimProxyConfig: true
-EOF
-```
-
-5. Apply the backend-apis-team WorkspaceSettings to the backend-apis-team namespace.
-
-```yaml
-cat << EOF | kubectl --context ${MGMT} apply -f -
-apiVersion: admin.gloo.solo.io/v2
-kind: WorkspaceSettings
-metadata:
-  name: backend-apis-team
-  namespace: backend-apis-team
-spec:
-  exportTo:
-  - workspaces:
-    - name: web-team
-  options:
-    eastWestGateways:
-    - selector:
-        labels:
-          istio: eastwestgateway
-    federation:
-      enabled: true
-      serviceSelector:
-      - namespace: backend-apis
-    serviceIsolation:
-      enabled: false
-      trimProxyConfig: false
-EOF
+```sh
+kubectl apply --context $MGMT -f tracks/02-workspaces/workspace-settings-ops-team.yaml
+kubectl apply --context $MGMT -f tracks/02-workspaces/workspace-settings-web-team.yaml
+kubectl apply --context $MGMT -f tracks/02-workspaces/workspace-settings-backend-apis-team.yaml
 ```
 
 ## Lab 6 - Expose the Online Boutique <a name="Lab-6"></a>
