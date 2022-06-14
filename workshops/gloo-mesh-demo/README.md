@@ -126,7 +126,7 @@ meshctl cluster register \
 
 ** Problems? ** meshctl tries to automatically detect the management server endpoint, but sometimes this can fail. If that happens, it can be supplied manually. Follow the steps [here](problems-manual-registration.md) if you run into this.
 
-4. Verify proper installation by opening the Gloo Mesh UI by running `meshctl dashboard`. Click [here](problems-dashboard.md) if that command did not work. You should see 
+4. Verify proper installation by opening the Gloo Mesh UI by running `meshctl dashboard`. Click [here](problems-dashboard.md) if that command did not work. 
 
 ## Lab 3 - Deploy Istio on the Workload Clusters<a name="Lab-3"></a>
 
