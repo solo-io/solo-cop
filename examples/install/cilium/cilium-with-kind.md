@@ -1,4 +1,4 @@
-***Using Cilium in Kind***
+**Using Cilium in Kind**
 
 Follow these steps to get a KinD cluster up and running and then proceed to install the cilium CNI and CLI
 
