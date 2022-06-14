@@ -2,7 +2,7 @@
 
 Follow these steps to get a KinD cluster up and running and then proceed to install the cilium CNI and CLI
 
-1. kubectl apply -f [gitlocation]
+1. kubectl apply -f https://raw.githubusercontent.com/solo-io/solo-cop/marinow-additions/examples/install/cilium/cilium-kind-cluster.yaml
 2. curl cilium cli download
 3. cilium install
 4. cilium status
