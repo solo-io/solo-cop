@@ -103,7 +103,6 @@ export PATH=$HOME/.gloo-mesh/bin:$PATH
 meshctl install \
   --kubecontext $MGMT \
   --set mgmtClusterName=$MGMT \
-  --set glooMeshUi.serviceType=LoadBalancer \
   --set glooMeshMgmtServer.ports.healthcheck=8091 \
   --license $GLOO_MESH_LICENSE_KEY
 ```
