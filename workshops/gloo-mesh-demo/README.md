@@ -141,17 +141,23 @@ istioctl version
 
 2. Install Istio to each of the remote clusters. If you're using local Kubernetes clusters on a Mac M1 or M2, use [these ARM instructions](problems-istio-arm.md) instead.
 
+TODO: Update all raw links to main branch
+
 ```sh
+curl -0l https://raw.githubusercontent.com/solo-io/solo-cop/workshop/workshops/gloo-mesh-demo/install/istio/istiooperator.yaml > istiooperator.yaml
+
 export CLUSTER_NAME=$CLUSTER1
 kubectl create namespace istio-gateways --context $CLUSTER1
-cat install/istio/istiooperator.yaml| envsubst | istioctl install --set hub=$ISTIO_IMAGE_REPO --set tag=$ISTIO_IMAGE_TAG  -y --context $CLUSTER_NAME -f -
+cat istiooperator.yaml| envsubst | istioctl install --set hub=$ISTIO_IMAGE_REPO --set tag=$ISTIO_IMAGE_TAG  -y --context $CLUSTER_NAME -f -
 
 export CLUSTER_NAME=$CLUSTER2
 kubectl create namespace istio-gateways --context $CLUSTER2
-cat install/istio/istiooperator.yaml| envsubst | istioctl install --set hub=$ISTIO_IMAGE_REPO --set tag=$ISTIO_IMAGE_TAG  -y --context $CLUSTER_NAME -f -
+cat istiooperator.yaml| envsubst | istioctl install --set hub=$ISTIO_IMAGE_REPO --set tag=$ISTIO_IMAGE_TAG  -y --context $CLUSTER_NAME -f -
 ```
 
-3. Verify in the Gloo Mesh UI that Istio information is now being added.
+3. Verify in the Gloo Mesh UI that the deployed Istio information was discovered.
+
+![istio-installed](images/istio-installed.png)
 
 ## Lab 4 - Deploy Online Boutique <a name="Lab-4"></a>
 
@@ -160,13 +166,13 @@ cat install/istio/istiooperator.yaml| envsubst | istioctl install --set hub=$IST
 1. Deploy the Online Boutique backend APIs to `cluster1` in the `backend-apis` namespace.
 
 ```sh
-kubectl apply --context $CLUSTER1 -f install/online-boutique/backend-apis.yaml
+kubectl apply --context $CLUSTER1 -f https://raw.githubusercontent.com/solo-io/solo-cop/workshop/workshops/gloo-mesh-demo/install/online-boutique/backend-apis.yaml
 ```
 
 2. Deploy the frontend UI to the `web-ui` namespace in `cluster1`.
 
 ```sh
-kubectl apply --context $CLUSTER1 -f install/online-boutique/web-ui.yaml
+kubectl apply --context $CLUSTER1 -f https://raw.githubusercontent.com/solo-io/solo-cop/workshop/workshops/gloo-mesh-demo/install/online-boutique/web-ui.yaml
 ```
 
 ## Lab 5 - Configure Gloo Mesh Workspaces <a name="Lab-5"></a>
