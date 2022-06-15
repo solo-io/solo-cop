@@ -406,8 +406,6 @@ Next, lets deploy checkout microservice to cluster2 and let Gloo Mesh handle the
 kubectl apply --context $CLUSTER2 -f install/online-boutique/checkout-feature.yaml
 ```
 
-TODO: Explain VirtualDestination and look into hiding creating a VD for services other than checkout.
-
 2. Create a VirtualDestination with hostname `checkout.backend-apis-team.solo-io.mesh` for the checkout service.
 
 ```yaml
