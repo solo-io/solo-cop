@@ -46,7 +46,7 @@ To get started with this workshop, checkout this repo.
 
 ```sh
 git clone https://github.com/solo-io/solo-cop.git
-cd solo-cop/workshops/gloo-mesh-demo && git checkout v1.0.0
+cd solo-cop/workshops/gloo-mesh-demo && git checkout v1.0.1
 ```
 
 Set these environment variables which will be used throughout the workshop.
@@ -71,7 +71,7 @@ You will need to create three Kubernetes Clusters. Two will be used as your work
 This workshop can run on many different Kubernetes distributions such as EKS, GKE, OpenShift, RKE, etc or you can [create local k3d clusters](./infra/k3d/README.md).
 
 Set these environment variables to represent your three clusters.
-```
+```sh
 export MGMT=mgmt
 export CLUSTER1=cluster1
 export CLUSTER2=cluster2
@@ -79,7 +79,7 @@ export CLUSTER2=cluster2
 
 Rename the kubectl config contexts of each of your three clusters to `mgmt`, `cluster1` and `cluster2` respectively.
 
-```
+```sh
 # UPDATE <context-to-rename> BEFORE APPLYING
 kubectl config rename-context <context-to-rename> ${MGMT} 
 kubectl config rename-context <context to rename> ${CLUSTER1} 
@@ -208,7 +208,7 @@ kubectl create namespace backend-apis-team --context $MGMT
 2. Apply the workspaces to the Gloo Mesh Management Plane root config namespace `gloo-mesh`.
 
 ```yaml
-cat << EOF | kubectl --context ${MGMT} apply -f -
+kubectl --context ${MGMT} apply -f - <<'EOF'
 apiVersion: admin.gloo.solo.io/v2
 kind: Workspace
 metadata:
@@ -269,7 +269,7 @@ kubectl apply --context $MGMT -f tracks/02-workspaces/workspace-settings-backend
 1. Apply the VirtualGateway to define the listeners and hosts for `cluster1` ingress gateway.
 
 ```yaml
-cat << EOF | kubectl --context ${MGMT} apply -f -
+kubectl --context ${MGMT} apply -f - <<'EOF'
 apiVersion: networking.gloo.solo.io/v2
 kind: VirtualGateway
 metadata:
@@ -296,7 +296,7 @@ EOF
 2. Apply the RouteTable for the web team to define where traffic for the gateway should go.
 
 ```yaml
-cat << EOF | kubectl --context ${MGMT} apply -f -
+kubectl --context ${MGMT} apply -f - <<'EOF'
 apiVersion: networking.gloo.solo.io/v2
 kind: RouteTable
 metadata:
@@ -352,7 +352,7 @@ EOF
 3. Add AccessPolicies to explicitly allow traffic from the frontend to the backend apis
 
 ```yaml
-cat << EOF | kubectl --context ${MGMT} apply -f -
+kubectl --context ${MGMT} apply -f - <<'EOF'
 apiVersion: security.policy.gloo.solo.io/v2
 kind: AccessPolicy
 metadata:
@@ -389,7 +389,7 @@ EOF
 
 5. Next, click on an item and click Add to Cart. You should see this error message:
 
-![Under Contruction](images/online-boutique-under-construction.png)
+![Without Checkout Feature](images/checkout-feature-error.png)
 
 This is because checkout microservice is not deploy yet! `kubectl get deployments -n backend-apis --context $CLUSTER1`
 
@@ -411,7 +411,7 @@ TODO: Explain VirtualDestination and look into hiding creating a VD for services
 2. Create a VirtualDestination with hostname `checkout.backend-apis-team.solo-io.mesh` for the checkout service.
 
 ```yaml
-cat << EOF | kubectl --context ${MGMT} apply -f -
+kubectl --context ${MGMT} apply -f - <<'EOF'
 apiVersion: networking.gloo.solo.io/v2
 kind: VirtualDestination
 metadata:
@@ -434,13 +434,7 @@ EOF
 3. Lets go ahead and create VirtualDestinations for currency, shipping and cart services as well.
 
 ```sh
-kubectl apply --context $CLUSTER1 -f install/online-boutique/web-ui-with-checkout.yaml
-```
-
-3. Update frontend application to use multicluster services
-
-```sh
-kubectl apply --context $CLUSTER1 -f install/online-boutique/web-ui-with-checkout.yaml
+kubectl apply --context $MGMT -f tracks/04-multi-cluster-routing/virtual-destinations.yaml
 ```
 
 4. Wait a few seconds for the new frontend microservice and then try to add items to your cart again. You should see the checkout page served by cluster2:
@@ -462,7 +456,7 @@ kubectl apply --context $CLUSTER2 -f install/online-boutique/web-ui-cluster2.yam
 2. Create VirtualDestination for frontend application
 
 ```yaml
-cat << EOF | kubectl --context ${MGMT} apply -f -
+kubectl --context ${MGMT} apply -f - <<'EOF'
 apiVersion: networking.gloo.solo.io/v2
 kind: VirtualDestination
 metadata:
@@ -485,7 +479,7 @@ EOF
 3. Create VirtualDestinations for the rest of the backend-apis so the cluster2 frontend can reach them
 
 ```yaml
-cat << EOF | kubectl --context ${MGMT} apply -f -
+kubectl --context ${MGMT} apply -f - <<'EOF'
 apiVersion: networking.gloo.solo.io/v2
 kind: VirtualDestination
 metadata:
@@ -542,7 +536,7 @@ EOF
 4. Update the RouteTable so the VirtualGateway will route to both frontend applications
 
 ```yaml
-cat << EOF | kubectl --context ${MGMT} apply -f -
+kubectl --context ${MGMT} apply -f - <<'EOF'
 apiVersion: networking.gloo.solo.io/v2
 kind: RouteTable
 metadata:
@@ -588,7 +582,7 @@ for i in {1..6}; do curl -sSk http://$HTTP_GATEWAY_ENDPOINT | grep "Cluster Name
 6. Apply the FailoverPolicy.
 
 ```yaml
-cat << EOF | kubectl --context ${MGMT} apply -f -
+kubectl --context ${MGMT} apply -f - <<'EOF'
 apiVersion: resilience.policy.gloo.solo.io/v2
 kind: FailoverPolicy
 metadata:
@@ -615,7 +609,7 @@ EOF
 7. Apply the OutlierDetectionPolicy.
 
 ```yaml
-cat << EOF | kubectl --context ${MGMT} apply -f -
+kubectl --context ${MGMT} apply -f - <<'EOF'
 apiVersion: resilience.policy.gloo.solo.io/v2
 kind: OutlierDetectionPolicy
 metadata:
@@ -795,7 +789,7 @@ The `RateLimitPolicy` pulls together the `RateLimitClientConfig`, `RateLimitServ
 * Apply the `RateLimitPolicy`
 
 ```yaml
-cat << EOF | kubectl --context ${MGMT} apply -f -
+kubectl --context ${MGMT} apply -f - <<'EOF'
 apiVersion: admin.gloo.solo.io/v2
 kind: RateLimitServerSettings
 metadata:
