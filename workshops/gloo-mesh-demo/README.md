@@ -1024,6 +1024,40 @@ spec:
 EOF
 ```
 
+* Because its hard to validate rate limiting with authentication on we will disable external authentication for now.
+
+```sh
+kubectl --context ${MGMT} apply -f - <<'EOF'
+apiVersion: networking.gloo.solo.io/v2
+kind: RouteTable
+metadata:
+  name: frontend
+  namespace: web-team
+spec:
+  hosts:
+    - '*'
+  virtualGateways:
+    - name: north-south-gw
+      namespace: ops-team
+      cluster: mgmt
+  workloadSelectors: []
+  http:
+    - name: main-page
+      labels:
+        oauth: "false"
+      forwardTo:
+        destinations:
+          - ref:
+              name: frontend
+              namespace: web-ui
+              cluster: cluster1
+            port:
+              number: 80
+EOF
+```
+
+
+
 * Test Rate Limiting
 
 ```sh
