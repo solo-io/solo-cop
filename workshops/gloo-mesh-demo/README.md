@@ -395,7 +395,8 @@ This is because checkout microservice is not deploy yet! `kubectl get deployment
 
 ## Lab 8 - Multi Cluster Routing <a name="Lab-8"></a>
 
-Next, lets deploy checkout microservice to cluster2 and let Gloo Mesh handle the routing between the two clusters.
+Next, lets deploy checkout microservice to cluster2 and let Gloo Mesh handle the routing between the two clusters. Gloo Mesh uses Virtual Destinations, which allow you to define unique internal hostnames for apps that are spread across multiple clusters.
+
 
 ![Checkout Feature](images/checkout-feature-banner.png)
 
@@ -407,7 +408,7 @@ kubectl apply --context $CLUSTER2 -f install/online-boutique/checkout-feature.ya
 
 TODO: Explain VirtualDestination and look into hiding creating a VD for services other than checkout.
 
-2. Create muticluster services
+2. Create a VirtualDestination with hostname `checkout.backend-apis-team.solo-io.mesh` for the checkout service.
 
 ```yaml
 cat << EOF | kubectl --context ${MGMT} apply -f -
@@ -427,86 +428,22 @@ spec:
     protocol: GRPC
     targetPort:
       name: grpc
----
-apiVersion: networking.gloo.solo.io/v2
-kind: VirtualDestination
-metadata:
-  name: currency
-  namespace: backend-apis-team
-spec:
-  hosts:
-  - currency.backend-apis-team.solo-io.mesh
-  services:
-  - labels:
-      app: currencyservice
-  ports:
-  - number: 80
-    protocol: GRPC
-    targetPort:
-      name: grpc
----
-apiVersion: networking.gloo.solo.io/v2
-kind: VirtualDestination
-metadata:
-  name: product-catalog
-  namespace: backend-apis-team
-spec:
-  hosts:
-  - product-catalog.backend-apis-team.solo-io.mesh
-  services:
-  - labels:
-      app: productcatalogservice
-  ports:
-  - number: 80
-    protocol: GRPC
-    targetPort:
-      name: grpc
----
-apiVersion: networking.gloo.solo.io/v2
-kind: VirtualDestination
-metadata:
-  name: shipping
-  namespace: backend-apis-team
-spec:
-  hosts:
-  - shipping.backend-apis-team.solo-io.mesh
-  services:
-  - labels:
-      app: shippingservice
-  ports:
-  - number: 80
-    protocol: GRPC
-    targetPort:
-      name: grpc
----
-apiVersion: networking.gloo.solo.io/v2
-kind: VirtualDestination
-metadata:
-  name: cart
-  namespace: backend-apis-team
-spec:
-  hosts:
-  - cart.backend-apis-team.solo-io.mesh
-  services:
-  - labels:
-      app: cartservice
-  ports:
-  - number: 80
-    protocol: GRPC
-    targetPort:
-      name: grpc
 EOF
 ```
 
-3. Update frontend to use multicluster services
+3. Lets go ahead and create VirtualDestinations for currency, shipping and cart services as well.
 
 ```sh
 kubectl apply --context $CLUSTER1 -f install/online-boutique/web-ui-with-checkout.yaml
 ```
 
-4. Wait a few seconds for the new frontend microservice and then try to add items to your cart again. 
+3. Update frontend application to use multicluster services
 
-7. Try and buy some items again! You should see the checkout page served by cluster2:
+```sh
+kubectl apply --context $CLUSTER1 -f install/online-boutique/web-ui-with-checkout.yaml
+```
+
+4. Wait a few seconds for the new frontend microservice and then try to add items to your cart again. You should see the checkout page served by cluster2:
 ![Gloo Mesh Graph](images/checkout-page.png)
 
 5. Explore the Graph feature in the Gloo Mesh Dashboard by running `meshctl dashboard` again.
