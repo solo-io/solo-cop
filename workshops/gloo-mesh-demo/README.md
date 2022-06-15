@@ -623,7 +623,7 @@ spec:
   config:
     consecutiveErrors: 2
     interval: 5s
-    baseEjectionTime: 30s
+    baseEjectionTime: 15s
     maxEjectionPercent: 100
 EOF
 ```
@@ -776,7 +776,166 @@ Log4Shell malicious payload
 
 Your frontend app is no longer susceptible to `log4j` attacks, nice!
 
-### 2. Add Rate Limiting
+
+### 2. External Authorization (OIDC)
+
+Another valuable feature of API gateways is integration into your IdP (Identity Provider).  In this section of the lab, we see how Gloo Mesh Gateway can be configured to redirect unauthenticated users via OIDC.  We will use Keycloak as our IdP, but you could use other OIDC-compliant providers in your production clusters.
+
+1. In order for OIDC to work we need to enable HTTPS on our gateway. To do so we need to create and upload a self-signed certificate
+
+```sh
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+   -keyout tls.key -out tls.crt -subj "/CN=*"
+
+kubectl --context ${CLUSTER1} -n istio-gateways create secret generic tls-secret \
+--from-file=tls.key=tls.key \
+--from-file=tls.crt=tls.crt
+```
+
+
+2. Adding HTTPS to our gateway is simple as updating the virtual gateway to use our ssl certificate
+```yaml
+kubectl --context ${MGMT} apply -f - <<'EOF'
+apiVersion: networking.gloo.solo.io/v2
+kind: VirtualGateway
+metadata:
+  name: north-south-gw
+  namespace: ops-team
+spec:
+  workloads:
+    - selector:
+        labels:
+          istio: ingressgateway
+        cluster: cluster1
+        namespace: istio-gateways
+  listeners:
+    - http: {}
+      port:
+        number: 80
+      allowedRouteTables:
+        - host: '*'
+          selector:
+            workspace: web-team
+    - http: {}
+      port:
+        number: 443
+      tls:
+        mode: SIMPLE
+        secretName: tls-secret
+      allowedRouteTables:
+        - host: '*'
+          selector:
+            workspace: web-team
+EOF
+```
+
+3. Test out the new HTTPS endpoint (you may need to allow insecure traffic in your browser)
+
+```sh
+export ENDPOINT_HTTPS_GW_CLUSTER1_EXT=$(kubectl --context ${CLUSTER1} -n istio-gateways get svc istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].*}'):443
+echo "Secure Online Boutique URL: https://$ENDPOINT_HTTPS_GW_CLUSTER1_EXT"
+```
+
+4. Finally, we need to deploy our OIDC server keycloak. We provided you with a script to deploy and configure keycloak for our workshop. 
+
+* Deploy and configure Keycloak
+
+```sh
+./install/keycloak/setup.sh
+
+export KEYCLOAK_URL=$(kubectl get configmap -n gloo-mesh --context $CLUSTER1 keycloak-info -o json | jq -r '.data."keycloak-url"')
+export KEYCLOAK_CLIENTID=$(kubectl get configmap -n gloo-mesh --context $CLUSTER1 keycloak-info -o json | jq -r '.data."client-id"')
+```
+
+The `ExtAuthPolicy` defines the provider connectivity including any callback paths that we need to configure on our application.
+
+* View the `ExtAuthPolicy` with environment variables replaced
+
+```sh
+( echo "cat <<EOF" ; cat tracks/06-api-gateway/ext-auth-policy.yaml ; echo EOF ) | sh
+```
+
+* Apply the `ExtAuthPolicy`
+
+```sh
+( echo "cat <<EOF" ; cat tracks/06-api-gateway/ext-auth-policy.yaml ; echo EOF ) | sh | kubectl apply -n web-team --context $MGMT -f -
+```
+
+An `ExtAuthServer` is also required to define the external auth server destination we want to use.  We will use the ext-auth-server in the gloo-mesh-addons namespace.
+
+* Apply the `ExtAuthServer`
+
+```yaml
+kubectl --context ${MGMT} apply -f - <<'EOF'
+apiVersion: admin.gloo.solo.io/v2
+kind: ExtAuthServer
+metadata:
+  name: ext-auth-server
+  namespace: web-team
+spec:
+  destinationServer:
+    ref:
+      cluster: cluster1
+      name: ext-auth-service
+      namespace: gloo-mesh-addons
+    port:
+      name: grpc
+EOF
+```
+
+Associating this `ExtAuthPolicy` with the gateway `RouteTable` will ensure that the policy is enforced.
+
+* Apply the `RouteTable`
+
+```sh
+kubectl --context ${MGMT} apply -f - <<'EOF'
+apiVersion: networking.gloo.solo.io/v2
+kind: RouteTable
+metadata:
+  name: frontend
+  namespace: web-team
+spec:
+  hosts:
+    - '*'
+  virtualGateways:
+    - name: north-south-gw
+      namespace: ops-team
+      cluster: mgmt
+  workloadSelectors: []
+  http:
+    - name: main-page
+      labels:
+        oauth: "true"
+      forwardTo:
+        destinations:
+          - ref:
+              name: frontend
+              namespace: web-ui
+              cluster: cluster1
+            port:
+              number: 80
+EOF
+```
+
+Now if you refresh the application, you should be redirected to Keycloak to login.
+
+* Login using the following credentials
+
+```sh
+user: gloo-mesh
+password: solo
+```
+
+* To logout simply call the `/logout` endpoint in your browser
+
+
+```sh
+echo "Logout URL: https://$ENDPOINT_HTTPS_GW_CLUSTER1_EXT/logout"
+```
+
+And the application is now accessible.
+
+### 3. Add Rate Limiting
 
 Secondly, we will look at rate limiting with Gloo Mesh Gateway.  The rate limiting feature relies on a rate limit server that has been installed in our gloo-mesh-addons namespace.
 
@@ -880,148 +1039,3 @@ date: Sun, 05 Jun 2022 18:50:53 GMT
 server: istio-envoy
 x-envoy-upstream-service-time: 7
 ```
-
-### 3. External Authorization (OIDC)
-
-Another valuable feature of API gateways is integration into your IdP (Identity Provider).  In this section of the lab, we see how Gloo Mesh Gateway can be configured to redirect unauthenticated users via OIDC.  We will use Keycloak as our IdP, but you could use other OIDC-compliant providers in your production clusters.
-
-1. In order for OIDC to work we need to enable HTTPS on our gateway. To do so we need to create and upload a self-signed certificate
-
-```sh
-openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-   -keyout tls.key -out tls.crt -subj "/CN=*"
-
-kubectl --context ${CLUSTER1} -n istio-gateways create secret generic tls-secret \
---from-file=tls.key=tls.key \
---from-file=tls.crt=tls.crt
-```
-
-
-2. Adding HTTPS to our gateway is simple as updating the virtual gateway to use our ssl certificate
-```yaml
-kubectl --context ${MGMT} apply -f - <<'EOF'
-apiVersion: networking.gloo.solo.io/v2
-kind: VirtualGateway
-metadata:
-  name: north-south-gw
-  namespace: ops-team
-spec:
-  workloads:
-    - selector:
-        labels:
-          istio: ingressgateway
-        cluster: cluster1
-        namespace: istio-gateways
-  listeners:
-    - http: {}
-      port:
-        number: 80
-      allowedRouteTables:
-        - host: '*'
-          selector:
-            workspace: web-team
-    - http: {}
-      port:
-        number: 443
-      tls:
-        mode: SIMPLE
-        secretName: tls-secret
-      allowedRouteTables:
-        - host: '*'
-          selector:
-            workspace: web-team
-EOF
-```
-
-3. Finally, we need to deploy our OIDC server keycloak. We provided you with a script to deploy and configure keycloak for our workshop. 
-
-* Deploy and configure Keycloak
-
-```sh
-export ENDPOINT_HTTPS_GW_CLUSTER1_EXT=$(kubectl --context ${CLUSTER1} -n istio-gateways get svc istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].*}'):443
-./install/keycloak/setup.sh
-
-export KEYCLOAK_URL=$(kubectl get configmap -n gloo-mesh --context $CLUSTER1 keycloak-info -o json | jq -r '.data."keycloak-url"')
-export KEYCLOAK_CLIENTID=$(kubectl get configmap -n gloo-mesh --context $CLUSTER1 keycloak-info -o json | jq -r '.data."client-id"')
-```
-
-The `ExtAuthPolicy` defines the provider connectivity including any callback paths that we need to configure on our application.
-
-* View the `ExtAuthPolicy` with environment variables replaced
-
-```sh
-( echo "cat <<EOF" ; cat tracks/06-api-gateway/ext-auth-policy.yaml ; echo EOF ) | sh
-```
-
-* Apply the `ExtAuthPolicy`
-
-```sh
-( echo "cat <<EOF" ; cat tracks/06-api-gateway/ext-auth-policy.yaml ; echo EOF ) | sh | kubectl apply -n web-team --context $MGMT -f -
-```
-
-An `ExtAuthServer` is also required to define the external auth server destination we want to use.  We will use the ext-auth-server in the gloo-mesh-addons namespace.
-
-* Apply the `ExtAuthServer`
-
-```yaml
-kubectl --context ${MGMT} apply -f - <<'EOF'
-apiVersion: admin.gloo.solo.io/v2
-kind: ExtAuthServer
-metadata:
-  name: ext-auth-server
-  namespace: web-team
-spec:
-  destinationServer:
-    ref:
-      cluster: cluster1
-      name: ext-auth-service
-      namespace: gloo-mesh-addons
-    port:
-      name: grpc
-EOF
-```
-
-Associating this `ExtAuthPolicy` with the gateway `RouteTable` will ensure that the policy is enforced.
-
-* Apply the `RouteTable`
-
-```sh
-kubectl --context ${MGMT} apply -f - <<'EOF'
-apiVersion: networking.gloo.solo.io/v2
-kind: RouteTable
-metadata:
-  name: frontend
-  namespace: web-team
-spec:
-  hosts:
-    - '*'
-  virtualGateways:
-    - name: north-south-gw
-      namespace: ops-team
-      cluster: mgmt
-  workloadSelectors: []
-  http:
-    - name: main-page
-      labels:
-        oauth: "true"
-      forwardTo:
-        destinations:
-          - ref:
-              name: frontend
-              namespace: web-ui
-              cluster: cluster1
-            port:
-              number: 80
-EOF
-```
-
-Now if you refresh the application, you should be redirected to Keycloak to login.
-
-* Login using the following credentials
-
-```sh
-user: gloo-mesh
-password: solo
-```
-
-And the application is now accessible.

@@ -78,7 +78,3 @@ spec:
                   fieldPath: metadata.namespace
             - name: KUBERNETES_CLUSTER_NAME
               value: cluster1
-          resources:
-            requests:
-              cpu: 100m
-              memory: 64Mi

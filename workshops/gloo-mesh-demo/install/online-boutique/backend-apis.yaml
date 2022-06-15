@@ -146,10 +146,6 @@ spec:
           value: "1"
         - name: DISABLE_DEBUGGER
           value: "1"
-        resources:
-          requests:
-            cpu: 100m
-            memory: 220Mi
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -193,10 +189,6 @@ spec:
         livenessProbe:
           exec:
             command: ["/bin/grpc_health_probe", "-addr=:3550"]
-        resources:
-          requests:
-            cpu: 100m
-            memory: 64Mi
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -239,10 +231,6 @@ spec:
           periodSeconds: 5
           exec:
             command: ["/bin/grpc_health_probe", "-addr=:8080"]
-        resources:
-          requests:
-            cpu: 100m
-            memory: 64Mi
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -287,10 +275,6 @@ spec:
         livenessProbe:
           exec:
             command: ["/bin/grpc_health_probe", "-addr=:7000"]
-        resources:
-          requests:
-            cpu: 100m
-            memory: 64Mi
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -322,10 +306,6 @@ spec:
         env:
         - name: REDIS_ADDR
           value: ""
-        resources:
-          requests:
-            cpu: 200m
-            memory: 64Mi
         readinessProbe:
           initialDelaySeconds: 15
           exec:
@@ -370,10 +350,6 @@ spec:
               value: "1"
             - name: DISABLE_TRACING
               value: "1"
-          resources:
-            requests:
-              cpu: 200m
-              memory: 180Mi
           readinessProbe:
             initialDelaySeconds: 20
             periodSeconds: 15
