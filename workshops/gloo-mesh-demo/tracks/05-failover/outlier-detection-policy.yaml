@@ -11,5 +11,5 @@ spec:
   config:
     consecutiveErrors: 2
     interval: 5s
-    baseEjectionTime: 30s
+    baseEjectionTime: 15s
     maxEjectionPercent: 100

@@ -3,7 +3,7 @@
 LOCAL_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
 # docker network
-network=k3d-cluster-network
+network=gloo-mesh-network
 
 # create docker network if it does not exist
 docker network create $network > /dev/null 2>&1 || true

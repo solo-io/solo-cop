@@ -6,10 +6,6 @@ metadata:
 spec:
   # only the control plane components are installed (https://istio.io/latest/docs/setup/additional-setup/config-profiles/)
   profile: minimal
-  # Solo.io Istio distribution repository
-  hub: gcr.io/istio-release
-  # Solo.io Gloo Mesh Istio tag
-  tag: ${ISTIO_VERSION}
 
   meshConfig:
     # enable access logging to standard output
@@ -33,14 +29,14 @@ spec:
         ISTIO_META_DNS_AUTO_ALLOCATE: "true"
         # Used for gloo mesh metrics aggregation
         # should match trustDomain (required for Gloo Mesh UI)
-        GLOO_MESH_CLUSTER_NAME: ${CLUSTER_NAME}
+        GLOO_MESH_CLUSTER_NAME: cluster2
     # Specify if http1.1 connections should be upgraded to http2 by default. 
     # Can be overridden using DestinationRule
     h2UpgradePolicy: UPGRADE
 
     # The trust domain corresponds to the trust root of a system. 
     # For Gloo Mesh this should be the name of the cluster that cooresponds with the CA certificate CommonName identity
-    trustDomain: ${CLUSTER_NAME}.solo.io
+    trustDomain: cluster2.solo.io
   components:
     ingressGateways:
     # enable the default ingress gateway
@@ -48,16 +44,6 @@ spec:
       namespace: istio-gateways
       enabled: true
       k8s:
-        affinity:
-          nodeAffinity:
-            requiredDuringSchedulingIgnoredDuringExecution:
-              nodeSelectorTerms:
-                - matchExpressions:
-                    - key: kubernetes.io/arch
-                      operator: In
-                      values:
-                        - arm64
-                        - amd64
         service:
           type: LoadBalancer
           ports:
@@ -75,16 +61,6 @@ spec:
       label:
         istio: eastwestgateway
       k8s:
-        affinity:
-          nodeAffinity:
-            requiredDuringSchedulingIgnoredDuringExecution:
-              nodeSelectorTerms:
-                - matchExpressions:
-                    - key: kubernetes.io/arch
-                      operator: In
-                      values:
-                        - arm64
-                        - amd64
         env:
           # Required by Gloo Mesh for east/west routing
           - name: ISTIO_META_ROUTER_MODE
@@ -102,16 +78,6 @@ spec:
               name: tls
     pilot:
       k8s:
-        affinity:
-          nodeAffinity:
-            requiredDuringSchedulingIgnoredDuringExecution:
-              nodeSelectorTerms:
-                - matchExpressions:
-                    - key: kubernetes.io/arch
-                      operator: In
-                      values:
-                        - arm64
-                        - amd64
         env:
          # Allow multiple trust domains (Required for Gloo Mesh east/west routing)
           - name: PILOT_SKIP_VALIDATE_TRUST_DOMAIN
@@ -124,7 +90,7 @@ spec:
     # https://istio.io/v1.5/docs/reference/config/installation-options/#global-options
     global:
       # needed for connecting VirtualMachines to the mesh
-      network: ${CLUSTER_NAME}
+      network: cluster2
       # needed for annotating istio metrics with cluster (should match trust domain and GLOO_MESH_CLUSTER_NAME)
       multiCluster:
-        clusterName: ${CLUSTER_NAME}
+        clusterName: cluster2

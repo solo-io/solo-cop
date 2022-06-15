@@ -12,6 +12,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: shippingservice
+  namespace: backend-apis
   labels:
     app: shippingservice
 spec:
@@ -27,6 +28,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: paymentservice
+  namespace: backend-apis
   labels:
     app: paymentservice
 spec:
@@ -41,6 +43,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: checkoutservice
+  namespace: backend-apis
   labels:
     app: checkoutservice
 spec:
@@ -58,11 +61,13 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: shipping
+  namespace: backend-apis
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: shippingservice
+  namespace: backend-apis
 spec:
   selector:
     matchLabels:
@@ -105,11 +110,13 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: payment
+  namespace: backend-apis
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: paymentservice
+  namespace: backend-apis
 spec:
   selector:
     matchLabels:
@@ -150,11 +157,13 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: checkout
+  namespace: backend-apis
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: checkoutservice
+  namespace: backend-apis
 spec:
   selector:
     matchLabels:
@@ -168,7 +177,7 @@ spec:
       containers:
         - name: server
           image: gcr.io/solo-test-236622/checkoutservice:solo-build
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5050
           readinessProbe:

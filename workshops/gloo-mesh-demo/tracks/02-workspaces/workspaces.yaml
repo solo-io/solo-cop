@@ -13,7 +13,6 @@ kind: Namespace
 metadata:
   name: web-team
 ---
-# operations team workspace and settings
 apiVersion: admin.gloo.solo.io/v2
 kind: Workspace
 metadata:
@@ -29,7 +28,6 @@ spec:
     - name: istio-gateways
     - name: gloo-mesh-addons
 ---
-# Create Web Team workspace
 apiVersion: admin.gloo.solo.io/v2
 kind: Workspace
 metadata:
@@ -44,7 +42,6 @@ spec:
     namespaces:
     - name: web-ui
 ---
-# Create Backend Team workspace
 apiVersion: admin.gloo.solo.io/v2
 kind: Workspace
 metadata:
