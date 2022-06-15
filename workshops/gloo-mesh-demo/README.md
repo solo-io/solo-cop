@@ -129,7 +129,24 @@ meshctl cluster register \
 
 ** Problems? ** meshctl tries to automatically detect the management server endpoint, but sometimes this can fail. If that happens, it can be supplied manually. Follow the steps [here](problems-manual-registration.md) if you run into this.
 
-4. Verify proper installation by opening the Gloo Mesh UI by running `meshctl dashboard`. Click [here](problems-dashboard.md) if that command did not work. **Its best to run this command in a separate terminal.**
+4. Apply the RootTustPolicy to tell the management plane to handle setting up a [shared trust](https://docs.solo.io/gloo-mesh-enterprise/latest/setup/prod/certs/federate-identity/) between the two workload clusters. 
+
+```yaml
+cat << EOF | kubectl --context ${MGMT} apply -f -
+apiVersion: admin.gloo.solo.io/v2
+kind: RootTrustPolicy
+metadata:
+  name: root-trust-policy
+  namespace: gloo-mesh
+spec:
+  config:
+    mgmtServerCa:
+      generated: {}
+    autoRestartPods: true
+EOF
+```
+
+6. Verify proper installation by opening the Gloo Mesh UI by running `meshctl dashboard`. Click [here](problems-dashboard.md) if that command did not work. **Its best to run this command in a separate terminal.**
 
 ```sh
 meshctl dashboard
@@ -487,31 +504,9 @@ EOF
 kubectl apply --context $CLUSTER1 -f install/online-boutique/web-ui-with-checkout.yaml
 ```
 
-4. Wait a few seconds for the new frontend microservice and then try to add items to your cart again. You should see an error. 
-![Gloo Mesh Multi Cluster Error](images/ssl-multi-cluster-error.png)
+4. Wait a few seconds for the new frontend microservice and then try to add items to your cart again. 
 
-TODO: Move this RootTustPolicy to the top. It breaks the flow of showing how seamless multi-cluster routing is. 
-
-5. Apply the RootTustPolicy to deploy a common root between clusters.
-
-```yaml
-cat << EOF | kubectl --context ${MGMT} apply -f -
-apiVersion: admin.gloo.solo.io/v2
-kind: RootTrustPolicy
-metadata:
-  name: root-trust-policy
-  namespace: gloo-mesh
-spec:
-  config:
-    mgmtServerCa:
-      generated: {}
-    autoRestartPods: true
-EOF
-```
-
-6. Wait a minute or two until all the pods are automatically rotated
-
-7. Try and buy some items
+7. Try and buy some items again! You should see the checkout page served by cluster2:
 ![Gloo Mesh Graph](images/checkout-page.png)
 
 5. Explore the Graph feature in the Gloo Mesh Dashboard by running `meshctl dashboard` again.
