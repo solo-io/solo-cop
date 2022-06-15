@@ -2,15 +2,6 @@
 
 # <center>Gloo Mesh Online Boutique Demo Workshop</center>
 
-## Get Started
-
-To get started with this workshop, checkout out this repo and follow the guide below
-
-```sh
-git clone https://github.com/solo-io/solo-cop.git
-cd workshops/gloo-mesh-demo && git checkout v1.0.0
-```
-
 ## Table of Contents
 
 * [Introduction](#introduction)
@@ -51,7 +42,14 @@ You can find more information about Gloo Mesh in the official documentation:
 
 ## Begin
 
-To begin, set these environment variables which will be used throughout the workshop.
+To get started with this workshop, checkout this repo.
+
+```sh
+git clone https://github.com/solo-io/solo-cop.git
+cd solo-cop/workshops/gloo-mesh-demo && git checkout v1.0.0
+```
+
+Set these environment variables which will be used throughout the workshop.
 
 ```sh
 # Used to enable gloo mesh (please ask for a trail key)
@@ -239,7 +237,7 @@ spec:
 EOF
 ```
 
-3. Apply the settings for each workspace. These `WorkspaceSettings` objects are used to tune each indiviual workspace as well as import/export other workspaces. 
+3. Apply the settings for each workspace. These `WorkspaceSettings` objects are used to tune each indiviual workspace as well as import/export resources from other workspaces. 
 
 ```sh
 kubectl apply --context $MGMT -f tracks/02-workspaces/workspace-settings-ops-team.yaml
@@ -251,7 +249,7 @@ kubectl apply --context $MGMT -f tracks/02-workspaces/workspace-settings-backend
 
 ![Online Boutique ](images/expose-frontend.png)
 
-1. Apply the VirtualGateway to define the listeners and hosts
+1. Apply the VirtualGateway to define the listeners and hosts for `cluster1` ingress gateway.
 
 ```yaml
 cat << EOF | kubectl --context ${MGMT} apply -f -
@@ -313,12 +311,12 @@ EOF
 ```sh
 export HTTP_GATEWAY_ENDPOINT=$(kubectl --context ${CLUSTER1} -n istio-gateways get svc istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].*}'):80
 
-echo "Online Boutiqe available at http://$HTTP_GATEWAY_ENDPOINT"
+echo "Online Boutique available at http://$HTTP_GATEWAY_ENDPOINT"
 ```
 
 ## Lab 7 - Zero Trust Networking <a name="Lab-7"></a>
 
-1. Add a default deny all to the backend-apis namespace
+1. Add a default deny-all policy to the backend-apis namespace
 
 ```yaml
 cat << EOF | kubectl --context ${CLUSTER1} apply -f -
@@ -332,9 +330,9 @@ spec:
 EOF
 ```
 
-2. Check the Online Boutique and see that pages are no longer loading correctly
+2. Refresh the Online Boutique webpage. You should see an error with message "RBAC: access denied"
 
-3. Add AccessPolicies to allow traffic from the frontend to the backend apis
+3. Add AccessPolicies to explicitly allow traffic from the frontend to the backend apis
 
 ```yaml
 cat << EOF | kubectl --context ${MGMT} apply -f -
@@ -370,11 +368,17 @@ spec:
 EOF
 ```
 
-4. Try and purchase some items
+4. Refresh the Online Boutique webpage. You should be able to view it again. 
+
+5. Next, click on an item and click Add to Cart. You should see this error message:
 
 ![Under Contruction](images/online-boutique-under-construction.png)
 
+This is because checkout microservice is not deploy yet! `kubectl get deployments -n backend-apis --context $CLUSTER1`
+
 ## Lab 8 - Multi Cluster Routing <a name="Lab-8"></a>
+
+Next, lets deploy checkout microservice to cluster2 and let Gloo Mesh handle the routing between the two clusters.
 
 ![Checkout Feature](images/checkout-feature-banner.png)
 
@@ -383,6 +387,8 @@ EOF
 ```sh
 kubectl apply --context $CLUSTER2 -f install/online-boutique/checkout-feature.yaml
 ```
+
+TODO: Explain VirtualDestination and look into hiding creating a VD for services other than checkout.
 
 2. Create muticluster services
 
@@ -479,12 +485,12 @@ EOF
 
 ```sh
 kubectl apply --context $CLUSTER1 -f install/online-boutique/web-ui-with-checkout.yaml
-sleep 5
-kubectl wait pod -l app=frontend -n web-ui --context $CLUSTER1 --for condition=ready
 ```
 
-4. Try and buy some items. You should see an error. 
+4. Wait a few seconds for the new frontend microservice and then try to add items to your cart again. You should see an error. 
 ![Gloo Mesh Multi Cluster Error](images/ssl-multi-cluster-error.png)
+
+TODO: Move this RootTustPolicy to the top. It breaks the flow of showing how seamless multi-cluster routing is. 
 
 5. Apply the RootTustPolicy to deploy a common root between clusters.
 
@@ -508,7 +514,7 @@ EOF
 7. Try and buy some items
 ![Gloo Mesh Graph](images/checkout-page.png)
 
-5. Explore the gloo mesh ui
+5. Explore the Graph feature in the Gloo Mesh Dashboard by running `meshctl dashboard` again.
 ![Gloo Mesh Graph](images/checkout-feature-graph-ui.png)
 
 ## Lab 9 - Multicluster Failover <a name="Lab-9"></a>
