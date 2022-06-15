@@ -94,6 +94,12 @@ kubectl config use-context ${MGMT}
 
 ## Lab 2 - Deploy Gloo Mesh <a name="Lab-2"></a>
 
+![Management Plane Architecture](images/gloo-mesh-mgmt-plane.png)
+
+Gloo Mesh provides a management plane to interact with the clusters and services in your service mesh. The management plane exposes port `9900` via gRPC to connect to the Gloo Mesh agents that run in your remote workload clusters. With the management plane, you can easily set up multi-tenancy for your service mesh with workspaces, view the Gloo Mesh resources that you configured by using the Gloo Mesh UI, and collect service mesh metrics to verify the health of your service mesh and find bottlenecks.
+
+The `meshctl` command line utility provides convenient functions to quickly set up Gloo Mesh, register workload clusters, run sanity checks, and debug issues. Let's start by installing this utility.
+
 1. Download `meshctl` command line tool and add it to your path
 
 ```sh
@@ -101,6 +107,9 @@ curl -sL https://run.solo.io/meshctl/install | GLOO_MESH_VERSION=${GLOO_MESH_VER
 
 export PATH=$HOME/.gloo-mesh/bin:$PATH
 ```
+
+In this lab, you install Gloo Mesh in the management plane by using the `meshctl` command line utility. But you can also install it via Helm. Everything that is provided by Gloo Mesh is compatible with a GitOps approach.
+
 
 2. Run the following commands to deploy the Gloo Mesh management plane:
 
@@ -112,6 +121,8 @@ meshctl install \
 ```
 
 The management server exposes a grpc endpoint (`kubectl get svc gloo-mesh-mgmt-server -n gloo-mesh`) which the agents in the workload clusters will connect to.
+
+Use `meshctl` to install the Gloo Mesh agent in the service mesh clusters and register them with the Gloo Mesh management plane. When a cluster is registered with the management plane, the agent is configured with the token and certificate to securely connect to the Gloo Mesh management plane via mutual TLS (mTLS).
 
 3. Finally, you need to register the two other clusters by deploying the gloo mesh agents.
 
@@ -127,7 +138,7 @@ meshctl cluster register \
   $CLUSTER2
 ```
 
-** Problems? ** meshctl tries to automatically detect the management server endpoint, but sometimes this can fail. If that happens, it can be supplied manually. Follow the steps [here](problems-manual-registration.md) if you run into this.
+**Problems?** meshctl tries to automatically detect the management server endpoint, but sometimes this can fail. If that happens, it can be supplied manually. Follow the steps [here](problems-manual-registration.md) if you run into this.
 
 4. Apply the RootTustPolicy to tell the management plane to handle setting up a [shared trust](https://docs.solo.io/gloo-mesh-enterprise/latest/setup/prod/certs/federate-identity/) between the two workload clusters. 
 
@@ -146,13 +157,23 @@ spec:
 EOF
 ```
 
+The `RootTrustPolicy` custom resource that ensures mTLS connections between the management plane and all remote workload clusters by setting up a certificate chain of trust. In this lab, you set up a root trust policy that creates a common root certificate and issues an intermediate signing certificate authority (CA) to each of the remote clusters that contain a common root.
+
+Gloo Mesh also integrates with various vendor technologies, including Vault, AWSCA, and more to ensure the CA meets your company's requirements.
+
 6. Verify proper installation by opening the Gloo Mesh UI by running `meshctl dashboard`. Click [here](problems-dashboard.md) if that command did not work. **Its best to run this command in a separate terminal.**
 
 ```sh
 meshctl dashboard
 ```
 
+After the agents in the remote clusters are registered with the management plane, you can open the Gloo Mesh UI to review details about the remote clusters.
+
+1. From the menu bar, click the **Gloo Mesh UI** tab.
+2. From the **Overview** page in the **Clusters** panel, review the details of your clusters. You can see the Gloo Mesh and Istio version that was installed in the management plane and each of the remote clusters. If you don't, try clicking the **refresh** icon a couple times.
+
 ## Lab 3 - Deploy Istio on the Workload Clusters<a name="Lab-3"></a>
+
 
 1. Install [istioctl](https://istio.io/latest/docs/setup/getting-started/)
 
@@ -194,6 +215,15 @@ kubectl apply --context $CLUSTER1 -f install/online-boutique/web-ui.yaml
 ```
 
 ## Lab 5 - Configure Gloo Mesh Workspaces <a name="Lab-5"></a>
+
+In this lab, you learn about the Gloo Mesh **Workspaces** feature. Workspaces bring multi-tenancy controls to Istio. With workspaces, you can explore how multiple personas work inside the service mesh independently without conflicting with each other's configuration.
+
+Imagine that you have the following teams. Each team represents a "tenant" in Gloo Mesh.
+- The Ops team, who is responsible for the platform and ingress traffic.
+- The Web team, who is responsible for the frontend web application or client-facing services.
+- The Backend API team, who is responsible for backend services that power the frontend app.
+
+All the workspaces are created by using the Gloo Mesh management plane.
 
 ![online-boutique](images/online-boutique-workspaces.png)
 
@@ -262,9 +292,18 @@ kubectl apply --context $MGMT -f tracks/02-workspaces/workspace-settings-web-tea
 kubectl apply --context $MGMT -f tracks/02-workspaces/workspace-settings-backend-apis-team.yaml
 ```
 
+The `WorkspaceSettings` custom resource lets each team define the services and gateways that they want other workspaces from other teams to be able to access. This way, you can control the discovery of services in your service mesh and enable each team to access only what they need.
+
+Each workspace can have only one workspace settings resource.
+
 ## Lab 6 - Expose the Online Boutique <a name="Lab-6"></a>
 
 ![Online Boutique ](images/expose-frontend.png)
+
+You use a virtual gateway to configure the Istio ingress gateway consistently across many clusters. Note the following settings.
+  * The virtual gateway selects the Istio ingress gateway workload by label, as well as name and namespace.
+  * The Ops team delegates incoming traffic to the Web team by adding an allowed route table to the Web team's workspace. This delegation works because you set up the Ops and Web workspaces to import and export correctly.
+
 
 1. Apply the VirtualGateway to define the listeners and hosts for `cluster1` ingress gateway.
 
@@ -323,6 +362,11 @@ spec:
 EOF
 ```
 
+Note the following settings.
+  * The route table selects the virtual gateway in the Ops team workspace.
+  * For simplicity, the route table doesn't specify a path matcher. Instead, it uses a wildcard to match any host.
+  * The `frontend` route is set up to forward traffic from any host on the Istio ingress gateway to the `frontend` destination that listens on port 80.
+
 3. Open the Online Boutique in your browser
 
 ```sh
@@ -332,6 +376,8 @@ echo "Online Boutique available at http://$HTTP_GATEWAY_ENDPOINT"
 ```
 
 ## Lab 7 - Zero Trust Networking <a name="Lab-7"></a>
+
+The backend APIs team employs a "Zero Trust" networking approach by enforcing service isolation. With service isolation, all inbound traffic to their applications is denied, even within their own namespace.
 
 1. Add a default deny-all policy to the backend-apis namespace
 
@@ -395,8 +441,10 @@ This is because checkout microservice is not deploy yet! `kubectl get deployment
 
 ## Lab 8 - Multi Cluster Routing <a name="Lab-8"></a>
 
-Next, lets deploy checkout microservice to cluster2 and let Gloo Mesh handle the routing between the two clusters. Gloo Mesh uses Virtual Destinations, which allow you to define unique internal hostnames for apps that are spread across multiple clusters.
 
+Currently the `Checkout` feature is missing from the Online Boutique app. The backend APIs team has finished the feature and plans to deploy it to `cluster2`. Normally, this setup would cause issues because the `frontend` application, which depends on this feature, is deployed to `cluster1`.
+
+Gloo Mesh has the ability to create globally addressable, multi-cluster services by using a `VirtualDestination` configuration. The `VirtualDestination` allows the user to create a unique hostname that allows the selected services to be reachable from anywhere Gloo Mesh is deployed. Because users can select their services with labels, VirtualDestinations are dynamic, adding and removing services as they come and go.
 
 ![Checkout Feature](images/checkout-feature-banner.png)
 
@@ -443,6 +491,8 @@ kubectl apply --context $MGMT -f tracks/04-multi-cluster-routing/virtual-destina
 
 ## Lab 9 - Multicluster Failover <a name="Lab-9"></a>
 
+In this lab, you learn how Gloo Mesh orchestrates failover with simple and declarative policy definitions that you apply to routes defined in your `RouteTables`.
+
 ![Multicluster Failover](images/multicluster-failover-banner.png)
 
 1. Deploy the frontend application to `cluster2`
@@ -450,6 +500,8 @@ kubectl apply --context $MGMT -f tracks/04-multi-cluster-routing/virtual-destina
 ```sh
 kubectl apply --context $CLUSTER2 -f install/online-boutique/web-ui-cluster2.yaml
 ```
+
+In order to see the full power of Gloo Mesh failover policies, make sure that the frontend application is available on both clusters. To do so, create a resource called a `VirtualDestination`. The `VirtualDestination` is a Gloo Mesh resource that enables routing across clusters by defining a multicluster hostname for your service.
 
 2. Create VirtualDestination for frontend application
 
@@ -476,59 +528,8 @@ EOF
 
 3. Create VirtualDestinations for the rest of the backend-apis so the cluster2 frontend can reach them
 
-```yaml
-kubectl --context ${MGMT} apply -f - <<'EOF'
-apiVersion: networking.gloo.solo.io/v2
-kind: VirtualDestination
-metadata:
-  name: ads
-  namespace: backend-apis-team
-spec:
-  hosts:
-  - ads.backend-apis-team.solo-io.mesh
-  services:
-  - labels:
-      app: adservice
-  ports:
-  - number: 80
-    protocol: GRPC
-    targetPort:
-      name: grpc
----
-apiVersion: networking.gloo.solo.io/v2
-kind: VirtualDestination
-metadata:
-  name: cart
-  namespace: backend-apis-team
-spec:
-  hosts:
-  - cart.backend-apis-team.solo-io.mesh
-  services:
-  - labels:
-      app: cartservice
-  ports:
-  - number: 80
-    protocol: GRPC
-    targetPort:
-      name: grpc
----
-apiVersion: networking.gloo.solo.io/v2
-kind: VirtualDestination
-metadata:
-  name: recommendations
-  namespace: backend-apis-team
-spec:
-  hosts:
-  - recommendations.backend-apis-team.solo-io.mesh
-  services:
-  - labels:
-      app: recommendationservice
-  ports:
-  - number: 80
-    protocol: GRPC
-    targetPort:
-      name: grpc
-EOF
+```sh
+kubectl --context ${MGMT} apply -f tracks/05-failover/backend-apis-virtual-destinations.yaml
 ```
 
 4. Update the RouteTable so the VirtualGateway will route to both frontend applications
@@ -563,6 +564,11 @@ spec:
 EOF
 ```
 
+Review the following update to the `RouteTable` resource. You must configure the route table to use the virtual destination for multicluster routing. Otherwise, the route table tries to route requests only to apps that run in the same cluster. Note the following aspects about this route table.
+   * The route table can match with any host, `*`, which includes the frontend host, `frontend.web-ui-team.solo-io.mesh`.
+   * The route table selects the ingress gateway to use. This gateway is in a workspace that the route table's workspace exports to.
+   * The `frontend` route is set up to forward to destinations of the kind `VIRTUAL_DESTINATION`. It selects the virtual destination that you created by name and namespace.
+
 5. Test routing between frontend services
 
 * cluster1 header
@@ -577,7 +583,7 @@ EOF
 for i in {1..6}; do curl -sSk http://$HTTP_GATEWAY_ENDPOINT | grep "Cluster Name:"; done
 ```
 
-6. Apply the FailoverPolicy.
+6. You can create a Gloo Mesh `FailoverPolicy` custom resource to configure locality-based load balancing across your virtual destinations. Apply this policy now.
 
 ```yaml
 kubectl --context ${MGMT} apply -f - <<'EOF'
@@ -603,8 +609,10 @@ spec:
         - region: us-east-1
 EOF
 ```
+   * The policy applies to destinations of the kind `VIRTUAL_DESTINATION`. It selects the virtual destination that you created by label.
+   * The policy configures locality mapping. Requests from the us-east-1 region are mapped to us-west-2, and vice versa. This way, if a request cannot be fulfilled by an app in that region first, it is sent to the next closest region.
 
-7. Apply the OutlierDetectionPolicy.
+7. The failover policy tells Gloo Mesh _where_ to reroute failover traffic. But, you also need to tell Gloo Mesh _when_. To do so, create an outlier detection policy. This policy sets up several conditions, such as retries and ejection percentages, for Gloo Mesh to use before failing over traffic.
 
 ```yaml
 kubectl --context ${MGMT} apply -f - <<'EOF'
@@ -625,6 +633,10 @@ spec:
     maxEjectionPercent: 100
 EOF
 ```
+  * The policy applies to destinations of the kind `VIRTUAL_DESTINATION`. It selects the virtual destination that you created by label.
+   * `consecutiveErrors` and `interval`: The number and wait time in between attempts to retry the request before failing over.
+   * `maxEjectionPercent`: The percentage of traffic to fail over.
+   * `baseEjectionTime`: The timeout to use to try to route back to the local service, after Kubernetes detects the service is healthy again.
 
 8. Make it so that the frontend application in cluster1 cannot respond to requests.
 
@@ -651,6 +663,11 @@ kubectl wait pod -l app=frontend -n web-ui --context $CLUSTER1 --for condition=r
 11. Test that the frontend in cluster1 is working again
 
 ## Lab 10 - API Gateway <a name="Lab-10"></a>
+
+
+Gloo Mesh Gateway adds API gateway features directly into the Istio ingress gateway. This way, you don't need an external API gateway or extra hops in your cluster to manage features like OIDC, WAF, rate limiting, and more.
+
+In this lab, you explore just a few of these features to see how powerful adding Gloo Mesh Gateway to your service mesh is.
 
 In order to use the various features of the Gloo API gateway you will need to deploy the `Gloo Mesh Addons` package which has the components to use features such as `rate limiting` and `external authorization`.
 
