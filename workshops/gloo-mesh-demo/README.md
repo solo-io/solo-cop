@@ -837,10 +837,15 @@ echo "Secure Online Boutique URL: https://$ENDPOINT_HTTPS_GW_CLUSTER1_EXT"
 
 ```sh
 ./install/keycloak/setup.sh
+```
 
+Get the keycloak URL and Client ID.
+
+```sh
 export KEYCLOAK_URL=$(kubectl get configmap -n gloo-mesh --context $CLUSTER1 keycloak-info -o json | jq -r '.data."keycloak-url"')
 export KEYCLOAK_CLIENTID=$(kubectl get configmap -n gloo-mesh --context $CLUSTER1 keycloak-info -o json | jq -r '.data."client-id"')
 ```
+
 
 The `ExtAuthPolicy` defines the provider connectivity including any callback paths that we need to configure on our application.
 
