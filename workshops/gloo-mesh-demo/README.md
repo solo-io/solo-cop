@@ -579,15 +579,8 @@ spec:
     selector:
       namespace: web-team
   config:
-    localityMappings:
-    - from:
-        region: us-east-1
-      to:
-        - region: us-west-2
-    - from:
-        region: us-west-2
-      to: 
-        - region: us-east-1
+    # enable default locality based load balancing
+    localityMappings: []
 EOF
 ```
    * The policy applies to destinations of the kind `VIRTUAL_DESTINATION`. It selects the virtual destination that you created by label.
