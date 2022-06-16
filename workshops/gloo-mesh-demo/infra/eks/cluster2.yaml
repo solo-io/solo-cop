@@ -2,7 +2,7 @@ apiVersion: eksctl.io/v1alpha5
 kind: ClusterConfig
 
 metadata:
-  name: nickn-cluster2
+  name: gloo-cluster2
   region: us-east-2
   version: "1.21"
 
