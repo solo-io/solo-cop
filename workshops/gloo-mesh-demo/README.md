@@ -88,12 +88,6 @@ kubectl config rename-context <context-to-rename> ${CLUSTER1}
 kubectl config rename-context <context-to-rename> ${CLUSTER2}
 ``` 
 
-Run the following command to make `mgmt` the current cluster.
-
-```sh
-kubectl config use-context ${MGMT}
-```
-
 ## Lab 2 - Deploy Gloo Mesh <a name="Lab-2"></a>
 
 ![Management Plane Architecture](images/gloo-mesh-mgmt-plane.png)
