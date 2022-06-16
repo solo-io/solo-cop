@@ -276,9 +276,7 @@ EOF
 3. Apply the settings for each workspace. These `WorkspaceSettings` objects are used to tune each indiviual workspace as well as import/export resources from other workspaces. 
 
 ```sh
-kubectl apply --context $MGMT -f tracks/02-workspaces/workspace-settings-ops-team.yaml
-kubectl apply --context $MGMT -f tracks/02-workspaces/workspace-settings-web-team.yaml
-kubectl apply --context $MGMT -f tracks/02-workspaces/workspace-settings-backend-apis-team.yaml
+kubectl apply --context $MGMT -f tracks/02-workspaces/workspace-settings.yaml
 ```
 
 The `WorkspaceSettings` custom resource lets each team define the services and gateways that they want other workspaces from other teams to be able to access. This way, you can control the discovery of services in your service mesh and enable each team to access only what they need.
@@ -426,7 +424,7 @@ EOF
 
 ![Without Checkout Feature](images/checkout-feature-error.png)
 
-This is because checkout microservice is not deploy yet! See `kubectl get deployments -n backend-apis --context $CLUSTER1`
+This is because checkout microservice is not deployed yet! See `kubectl get deployments -n backend-apis --context $CLUSTER1`
 
 ## Lab 8 - Multi Cluster Routing <a name="Lab-8"></a>
 
@@ -466,7 +464,7 @@ spec:
 EOF
 ```
 
-3. Lets go ahead and create VirtualDestinations for currency, shipping and cart services as well.
+3. Lets go ahead and create VirtualDestinations for the other backend api services as well.
 
 ```sh
 kubectl apply --context $MGMT -f tracks/04-multi-cluster-routing/virtual-destinations.yaml
@@ -662,12 +660,6 @@ helm upgrade --install gloo-mesh-agent-addons gloo-mesh-agent/gloo-mesh-agent \
   --set rate-limiter.enabled=true \
   --set ext-auth-service.enabled=true \
   --version $GLOO_MESH_VERSION
-```
-
-2. Update the workspace settings to import and export the `gloo-mesh-addons`
-
-```
-kubectl apply -f tracks/06-api-gateway/workspace-settings.yaml --context $MGMT
 ```
 
 #### Web Application Firewall (WAF)
