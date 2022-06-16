@@ -909,7 +909,7 @@ EOF
 * Because its hard to validate rate limiting with authentication on we will disable external authentication for now.
 
 ```sh
-kubectl --context ${MGMT} delete RateLimitPolicy rate-limit-policy -n web-team
+kubectl --context ${MGMT} delete ExtAuthPolicy frontend -n web-team
 ```
 
 * Test Rate Limiting
