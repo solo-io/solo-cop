@@ -905,7 +905,7 @@ Now if you refresh the application, you should be redirected to Keycloak to logi
 
 ```sh
 user: gloo-mesh
-password: solo
+password: solo.io
 ```
 
 * To logout simply call the `/logout` endpoint in your browser
