@@ -68,7 +68,9 @@ You will need to create three Kubernetes Clusters. Two will be used as your work
 
 ![arch-1](images/arch-1.png)
 
-This workshop can run on many different Kubernetes distributions such as EKS, GKE, OpenShift, RKE, etc or you can [create local k3d clusters](./infra/k3d/README.md).
+This workshop can run on many different Kubernetes distributions such as EKS, GKE, OpenShift, RKE, etc or you can 
+* [create local k3d clusters](infra/k3d/README.md)
+* [create eks clusters using eksctl](infra/eks/README.md).
 
 Set these environment variables to represent your three clusters.
 ```sh
