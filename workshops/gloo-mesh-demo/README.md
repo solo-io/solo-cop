@@ -519,13 +519,7 @@ spec:
 EOF
 ```
 
-3. Create VirtualDestinations for the rest of the backend-apis so the cluster2 frontend can reach them
-
-```sh
-kubectl --context ${MGMT} apply -f tracks/05-failover/backend-apis-virtual-destinations.yaml
-```
-
-4. Update the RouteTable so the VirtualGateway will route to both frontend applications. This can be accomplished by simply routing to the frontend's VirtualDestination.
+3. Update the RouteTable so the VirtualGateway will route to both frontend applications. This can be accomplished by simply routing to the frontend's VirtualDestination.
 
 ```yaml
 kubectl --context ${MGMT} apply -f - <<'EOF'
@@ -562,7 +556,7 @@ Review the following update to the `RouteTable` resource. You must configure the
    * The route table selects the ingress gateway to use. This gateway is in a workspace that the route table's workspace exports to.
    * The `frontend` route is set up to forward to destinations of the kind `VIRTUAL_DESTINATION`. It selects the virtual destination that you created by name and namespace.
 
-5. Test routing between frontend services by refreshing your Online Boutique webpage several times. You should see both cluster1 and cluster2.
+4. Test routing between frontend services by refreshing your Online Boutique webpage several times. You should see both cluster1 and cluster2.
 
 * cluster1 header
 ![cluster1 header](images/cluster1-frontend-header.png)
@@ -576,7 +570,7 @@ Review the following update to the `RouteTable` resource. You must configure the
 for i in {1..6}; do curl -sSk http://$HTTP_GATEWAY_ENDPOINT | grep "Cluster Name:"; done
 ```
 
-6. You can create a Gloo Mesh `FailoverPolicy` custom resource to configure locality-based load balancing across your virtual destinations. Apply this policy now.
+5. You can create a Gloo Mesh `FailoverPolicy` custom resource to configure locality-based load balancing across your virtual destinations. Apply this policy now.
 
 ```yaml
 kubectl --context ${MGMT} apply -f - <<'EOF'
@@ -605,7 +599,7 @@ EOF
    * The policy applies to destinations of the kind `VIRTUAL_DESTINATION`. It selects the virtual destination that you created by label.
    * The policy configures locality mapping. Requests from the us-east-1 region are mapped to us-west-2, and vice versa. This way, if a request cannot be fulfilled by an app in that region first, it is sent to the next closest region.
 
-7. The failover policy tells Gloo Mesh _where_ to re-route failover traffic. But, you also need to tell Gloo Mesh _when_. To do so, create an outlier detection policy. This policy sets up several conditions, such as retries and ejection percentages, for Gloo Mesh to use before failing over traffic.
+6. The failover policy tells Gloo Mesh _where_ to re-route failover traffic. But, you also need to tell Gloo Mesh _when_. To do so, create an outlier detection policy. This policy sets up several conditions, such as retries and ejection percentages, for Gloo Mesh to use before failing over traffic.
 
 ```yaml
 kubectl --context ${MGMT} apply -f - <<'EOF'
@@ -631,21 +625,21 @@ EOF
    * `maxEjectionPercent`: The percentage of traffic to fail over.
    * `baseEjectionTime`: The timeout to use to try to route back to the local service, after Kubernetes detects the service is healthy again.
 
-8. Purposefully break the frontend microservice on cluster1 so that it cannot respond to requests. This command tells the container to sleep.
+7. Purposefully break the frontend microservice on cluster1 so that it cannot respond to requests. This command tells the container to sleep.
 
 ```sh
 kubectl --context $CLUSTER1 -n web-ui patch deploy frontend --patch '{"spec":{"template":{"spec":{"containers":[{"name":"server","command":["sleep","20h"],"readinessProbe":null,"livenessProbe":null}]}}}}'
 ```
 
-9. Test failover to cluster2 frontend application by refreshing your Online Boutique webpage several times. You should always see cluster2.
+8. Test failover to cluster2 frontend application by refreshing your Online Boutique webpage several times. You should always see cluster2.
 
-10. Fix frontend in cluster1
+9. Fix frontend in cluster1
 
 ```sh
 kubectl --context $CLUSTER1 -n web-ui patch deploy frontend --patch '{"spec":{"template":{"spec":{"containers":[{"name":"server","command":[],"readinessProbe":null,"livenessProbe":null}]}}}}'
 ```
 
-11. Wait a few seconds and test that the frontend in cluster1 is working again.
+10. Wait a few seconds and test that the frontend in cluster1 is working again.
 
 ## Lab 10 - API Gateway <a name="Lab-10"></a>
 

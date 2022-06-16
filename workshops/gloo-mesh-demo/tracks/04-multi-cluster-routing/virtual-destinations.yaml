@@ -82,3 +82,37 @@ spec:
     protocol: GRPC
     targetPort:
       name: grpc
+---
+apiVersion: networking.gloo.solo.io/v2
+kind: VirtualDestination
+metadata:
+  name: ads
+  namespace: backend-apis-team
+spec:
+  hosts:
+  - ads.backend-apis-team.solo-io.mesh
+  services:
+  - labels:
+      app: adservice
+  ports:
+  - number: 80
+    protocol: GRPC
+    targetPort:
+      name: grpc
+---
+apiVersion: networking.gloo.solo.io/v2
+kind: VirtualDestination
+metadata:
+  name: recommendations
+  namespace: backend-apis-team
+spec:
+  hosts:
+  - recommendations.backend-apis-team.solo-io.mesh
+  services:
+  - labels:
+      app: recommendationservice
+  ports:
+  - number: 80
+    protocol: GRPC
+    targetPort:
+      name: grpc
