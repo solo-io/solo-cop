@@ -795,11 +795,14 @@ Get the keycloak URL and Client ID.
 ```sh
 export KEYCLOAK_URL=$(kubectl get configmap -n gloo-mesh --context $CLUSTER1 keycloak-info -o json | jq -r '.data."keycloak-url"')
 export KEYCLOAK_CLIENTID=$(kubectl get configmap -n gloo-mesh --context $CLUSTER1 keycloak-info -o json | jq -r '.data."client-id"')
+
+echo "Keycloak available at: $KEYCLOAK_URL"
+echo "Keycloak OIDC ClientID: $KEYCLOAK_CLIENTID"
 ```
 
 The `ExtAuthPolicy` defines the provider connectivity including any callback paths that we need to configure on our application.
 
-* View the `ExtAuthPolicy` with environment variables replaced
+* View the `ExtAuthPolicy` with environment variables replaced.
 
 ```sh
 ( echo "cat <<EOF" ; cat tracks/06-api-gateway/ext-auth-policy.yaml ; echo EOF ) | sh
@@ -906,33 +909,7 @@ EOF
 * Because its hard to validate rate limiting with authentication on we will disable external authentication for now.
 
 ```sh
-kubectl --context ${MGMT} apply -f - <<'EOF'
-apiVersion: networking.gloo.solo.io/v2
-kind: RouteTable
-metadata:
-  name: frontend
-  namespace: web-team
-spec:
-  hosts:
-    - '*'
-  virtualGateways:
-    - name: north-south-gw
-      namespace: ops-team
-      cluster: mgmt
-  workloadSelectors: []
-  http:
-    - name: main-page
-      labels:
-        oauth: "false"
-      forwardTo:
-        destinations:
-          - ref:
-              name: frontend
-              namespace: web-ui
-              cluster: cluster1
-            port:
-              number: 80
-EOF
+kubectl --context ${MGMT} delete RateLimitPolicy rate-limit-policy -n web-team
 ```
 
 * Test Rate Limiting
