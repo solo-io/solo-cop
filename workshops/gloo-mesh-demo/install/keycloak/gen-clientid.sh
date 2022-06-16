@@ -5,7 +5,7 @@ set +ex
 echo "Keycloak URL: ${KEYCLOAK_URL}"
 echo "EXT endpoint: ${1}"
 
-INTERNAL_KEYCLOAK_URL=keycloak.keycloak.svc.cluster.local:9000
+INTERNAL_KEYCLOAK_URL=keycloak.keycloak.svc.cluster.local:9000/auth
 
 KEYCLOAK_TOKEN=$(curl -d "client_id=admin-cli" -d "username=admin" -d "password=admin" -d "grant_type=password" "$INTERNAL_KEYCLOAK_URL/realms/master/protocol/openid-connect/token" | jq -r .access_token)
 
