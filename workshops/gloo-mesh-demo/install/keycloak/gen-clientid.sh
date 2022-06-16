@@ -1,7 +1,4 @@
 #!/bin/bash
-
-set +ex
-
 echo "Keycloak URL: ${KEYCLOAK_URL}"
 echo "EXT endpoint: ${1}"
 
