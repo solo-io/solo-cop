@@ -660,6 +660,8 @@ helm upgrade --install gloo-mesh-agent-addons gloo-mesh-agent/gloo-mesh-agent \
   --set rate-limiter.enabled=true \
   --set ext-auth-service.enabled=true \
   --version $GLOO_MESH_VERSION
+
+kubectl apply -f tracks/06-api-gateway/gloo-mesh-addons-servers.yaml --context $MGMT
 ```
 
 #### Web Application Firewall (WAF)
@@ -753,7 +755,6 @@ Log4Shell malicious payload
 
 Your frontend app is no longer susceptible to `log4j` attacks, nice!
 
-
 #### External Authorization (OIDC)
 
 Another valuable feature of API gateways is integration into your IdP (Identity Provider). In this section of the lab, we see how Gloo Mesh Gateway can be configured to redirect unauthenticated users via OIDC.  We will use Keycloak as our IdP, but you could use other OIDC-compliant providers in your production clusters.
@@ -768,7 +769,6 @@ kubectl --context ${CLUSTER1} -n istio-gateways create secret generic tls-secret
 --from-file=tls.key=tls.key \
 --from-file=tls.crt=tls.crt
 ```
-
 
 2. Adding HTTPS to our gateway is simple as updating the virtual gateway to use our ssl certificate
 ```yaml
@@ -828,7 +828,6 @@ export KEYCLOAK_URL=$(kubectl get configmap -n gloo-mesh --context $CLUSTER1 key
 export KEYCLOAK_CLIENTID=$(kubectl get configmap -n gloo-mesh --context $CLUSTER1 keycloak-info -o json | jq -r '.data."client-id"')
 ```
 
-
 The `ExtAuthPolicy` defines the provider connectivity including any callback paths that we need to configure on our application.
 
 * View the `ExtAuthPolicy` with environment variables replaced
@@ -841,28 +840,6 @@ The `ExtAuthPolicy` defines the provider connectivity including any callback pat
 
 ```sh
 ( echo "cat <<EOF" ; cat tracks/06-api-gateway/ext-auth-policy.yaml ; echo EOF ) | sh | kubectl apply -n web-team --context $MGMT -f -
-```
-
-An `ExtAuthServer` is also required to define the external auth server destination we want to use.  We will use the ext-auth-server in the gloo-mesh-addons namespace.
-
-* Apply the `ExtAuthServer`
-
-```yaml
-kubectl --context ${MGMT} apply -f - <<'EOF'
-apiVersion: admin.gloo.solo.io/v2
-kind: ExtAuthServer
-metadata:
-  name: ext-auth-server
-  namespace: web-team
-spec:
-  destinationServer:
-    ref:
-      cluster: cluster1
-      name: ext-auth-service
-      namespace: gloo-mesh-addons
-    port:
-      name: grpc
-EOF
 ```
 
 Associating this `ExtAuthPolicy` with the gateway `RouteTable` will ensure that the policy is enforced.
@@ -910,7 +887,6 @@ password: solo.io
 
 * To logout simply call the `/logout` endpoint in your browser
 
-
 ```sh
 echo "Logout URL: https://$ENDPOINT_HTTPS_GW_CLUSTER1_EXT/logout"
 ```
@@ -931,20 +907,6 @@ The `RateLimitPolicy` pulls together the `RateLimitClientConfig`, `RateLimitServ
 
 ```yaml
 kubectl --context ${MGMT} apply -f - <<'EOF'
-apiVersion: admin.gloo.solo.io/v2
-kind: RateLimitServerSettings
-metadata:
-  name: rate-limit-server-settings
-  namespace: web-team
-spec:
-  destinationServer:
-    port:
-      number: 8083
-    ref:
-      name: rate-limiter
-      namespace: gloo-mesh-addons
-      cluster: cluster1
----
 apiVersion: trafficcontrol.policy.gloo.solo.io/v2
 kind: RateLimitClientConfig
 metadata:
@@ -1037,8 +999,6 @@ spec:
               number: 80
 EOF
 ```
-
-
 
 * Test Rate Limiting
 
