@@ -54,7 +54,7 @@ Set these environment variables which will be used throughout the workshop.
 ```sh
 # Used to enable Gloo Mesh (please ask for a trail license key)
 export GLOO_MESH_LICENSE_KEY=<licence_key>
-export GLOO_MESH_VERSION=v2.0.7
+export GLOO_MESH_VERSION=v2.0.8
 
 # Istio version information
 export ISTIO_IMAGE_REPO=<please ask for repo information>
@@ -158,7 +158,7 @@ Gloo Mesh can also integrate with various vendor technologies, including Vault, 
 6. Verify proper installation by opening the Gloo Mesh Dashboard. Click [here](problems-dashboard.md) if that command did not work. It's best to run this command in a separate terminal.
 
 ```sh
-meshctl dashboard
+meshctl dashboard --kubecontext mgmt
 ```
 
 ## Lab 3 - Deploy Istio on the Workload Clusters<a name="Lab-3"></a>
@@ -473,7 +473,7 @@ kubectl apply --context $MGMT -f tracks/04-multi-cluster-routing/virtual-destina
 4. Wait a few seconds for the new frontend microservice and then try to add items to your cart again. You should see the checkout page served by cluster2:
 ![Gloo Mesh Graph](images/checkout-page.png)
 
-5. Explore the Graph feature in the Gloo Mesh Dashboard by running `meshctl dashboard` again.
+5. Explore the Graph feature in the Gloo Mesh Dashboard by running `meshctl dashboard --kubecontext mgmt` again.
 ![Gloo Mesh Graph](images/checkout-feature-graph-ui.png)
 
 ## Lab 9 - Multicluster Failover <a name="Lab-9"></a>
@@ -628,7 +628,13 @@ kubectl --context $CLUSTER1 -n web-ui patch deploy frontend --patch '{"spec":{"t
 kubectl --context $CLUSTER1 -n web-ui patch deploy frontend --patch '{"spec":{"template":{"spec":{"containers":[{"name":"server","command":[],"readinessProbe":null,"livenessProbe":null}]}}}}'
 ```
 
-10. Wait a few seconds and test that the frontend in cluster1 is working again.
+10. If the pod traffic does not go back to cluster1 you may need to recreate the frontend pod
+
+```sh
+kubectl delete pod -n web-ui -l app=frontend --context $CLUSTER1
+```
+
+11. Wait a few seconds and test that the frontend in cluster1 is working again.
 
 ## Lab 10 - API Gateway <a name="Lab-10"></a>
 
@@ -823,13 +829,11 @@ user: gloo-mesh
 password: solo.io
 ```
 
-* To logout simply call the `/logout` endpoint in your browser
-
-```sh
-echo "Logout URL: https://$ENDPOINT_HTTPS_GW_CLUSTER1_EXT/logout"
-```
-
 And the application is now accessible.
+
+
+* When you are finished, click the 'logout' button in the top right corner of the screen.
+
 
 ### 3. Add Rate Limiting
 

@@ -1,2 +1,4 @@
 tls.crt
 tls.key
+istiooperator.yaml
+iam_policy.json

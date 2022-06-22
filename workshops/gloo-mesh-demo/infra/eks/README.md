@@ -6,9 +6,9 @@
 * Deploy all three clusters using eksctl
 
 ```sh
-eksctl create cluster -f eks/mgmt.yaml &
-eksctl create cluster -f eks/cluster1.yaml &
-eksctl create cluster -f eks/cluster2.yaml &
+eksctl create cluster -f infra/eks/mgmt.yaml &
+eksctl create cluster -f infra/eks/cluster1.yaml &
+eksctl create cluster -f infra/eks/cluster2.yaml &
 
 wait
 ```
