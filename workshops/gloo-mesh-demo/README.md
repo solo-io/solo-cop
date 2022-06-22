@@ -158,7 +158,7 @@ Gloo Mesh can also integrate with various vendor technologies, including Vault, 
 6. Verify proper installation by opening the Gloo Mesh Dashboard. Click [here](problems-dashboard.md) if that command did not work. It's best to run this command in a separate terminal.
 
 ```sh
-meshctl dashboard
+meshctl dashboard --kubecontext mgmt
 ```
 
 ## Lab 3 - Deploy Istio on the Workload Clusters<a name="Lab-3"></a>
@@ -473,7 +473,7 @@ kubectl apply --context $MGMT -f tracks/04-multi-cluster-routing/virtual-destina
 4. Wait a few seconds for the new frontend microservice and then try to add items to your cart again. You should see the checkout page served by cluster2:
 ![Gloo Mesh Graph](images/checkout-page.png)
 
-5. Explore the Graph feature in the Gloo Mesh Dashboard by running `meshctl dashboard` again.
+5. Explore the Graph feature in the Gloo Mesh Dashboard by running `meshctl dashboard --kubecontext mgmt` again.
 ![Gloo Mesh Graph](images/checkout-feature-graph-ui.png)
 
 ## Lab 9 - Multicluster Failover <a name="Lab-9"></a>
