@@ -628,7 +628,13 @@ kubectl --context $CLUSTER1 -n web-ui patch deploy frontend --patch '{"spec":{"t
 kubectl --context $CLUSTER1 -n web-ui patch deploy frontend --patch '{"spec":{"template":{"spec":{"containers":[{"name":"server","command":[],"readinessProbe":null,"livenessProbe":null}]}}}}'
 ```
 
-10. Wait a few seconds and test that the frontend in cluster1 is working again.
+10. If the pod traffic does not go back to cluster1 you may need to recreate the frontend pod
+
+```sh
+kubectl delete pod -n web-ui -l app=frontend --context $CLUSTER1
+```
+
+11. Wait a few seconds and test that the frontend in cluster1 is working again.
 
 ## Lab 10 - API Gateway <a name="Lab-10"></a>
 
