@@ -54,7 +54,7 @@ Set these environment variables which will be used throughout the workshop.
 ```sh
 # Used to enable Gloo Mesh (please ask for a trail license key)
 export GLOO_MESH_LICENSE_KEY=<licence_key>
-export GLOO_MESH_VERSION=v2.0.7
+export GLOO_MESH_VERSION=v2.0.8
 
 # Istio version information
 export ISTIO_IMAGE_REPO=<please ask for repo information>

@@ -18,7 +18,7 @@ spec:
       serviceAccountName: frontend
       containers:
         - name: server
-          image: gcr.io/solo-test-236622/frontend:solo-build
+          image: gcr.io/solo-test-236622/frontend:debugging
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080

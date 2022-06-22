@@ -25,7 +25,7 @@ spec:
               namespace: gloo-mesh
             issuerUrl: "${KEYCLOAK_URL}/realms/master/"
             logoutPath: /logout
-            afterLogoutUrl: "${KEYCLOAK_URL}/realms/master/protocol/openid-connect/logout?redirect_uri=https%3A%2F%2Fsolo.io"
+            afterLogoutUrl: "${KEYCLOAK_URL}/realms/master/protocol/openid-connect/logout?redirect_uri=https%3A%2F%2F${ENDPOINT_HTTPS_GW_CLUSTER1_EXT}"
             scopes:
             - email
             headers:

@@ -30,10 +30,6 @@ create_cluster(){
   kubectl config delete-context $name > /dev/null 2>&1 || true
 
   kubectl config rename-context k3d-$name $name
-
-  ## setup nodel labels
-  kubectl label node k3d-$name-server-0 topology.kubernetes.io/region=$region --context $name
-  kubectl label node k3d-$name-server-0 topology.kubernetes.io/zone=$zone --context $name
 }
 
 create_cluster $MGMT $LOCAL_DIR/mgmt.yaml
