@@ -829,13 +829,11 @@ user: gloo-mesh
 password: solo.io
 ```
 
-* To logout simply call the `/logout` endpoint in your browser
-
-```sh
-echo "Logout URL: https://$ENDPOINT_HTTPS_GW_CLUSTER1_EXT/logout"
-```
-
 And the application is now accessible.
+
+
+* When you are finished, click the 'logout' button in the top right corner of the screen.
+
 
 ### 3. Add Rate Limiting
 
