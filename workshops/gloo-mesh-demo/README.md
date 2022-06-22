@@ -507,7 +507,7 @@ spec:
       app: frontend
   ports:
   - number: 80
-    protocol: GRPC
+    protocol: HTTP
     targetPort:
       name: http
 EOF
