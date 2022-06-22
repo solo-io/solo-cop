@@ -124,7 +124,7 @@ spec:
       terminationGracePeriodSeconds: 5
       containers:
       - name: server
-        image: gcr.io/solo-test-236622/recommendationservice:debugging
+        image: gcr.io/solo-test-236622/recommendationservice:solo-build
         ports:
         - containerPort: 8080
         readinessProbe:
@@ -171,7 +171,7 @@ spec:
       terminationGracePeriodSeconds: 5
       containers:
       - name: server
-        image: gcr.io/solo-test-236622/productcatalogservice:debugging
+        image: gcr.io/solo-test-236622/productcatalogservice:solo-build
         ports:
         - containerPort: 3550
         env:
@@ -213,7 +213,7 @@ spec:
       serviceAccountName: email
       containers:
       - name: server
-        image: gcr.io/solo-test-236622/emailservice:debugging
+        image: gcr.io/solo-test-236622/emailservice:solo-build
         ports:
         - containerPort: 8080
         env:
@@ -256,7 +256,7 @@ spec:
       terminationGracePeriodSeconds: 5
       containers:
       - name: server
-        image: gcr.io/solo-test-236622/currencyservice:debugging
+        image: gcr.io/solo-test-236622/currencyservice:solo-build
         ports:
         - name: grpc
           containerPort: 7000
@@ -300,7 +300,7 @@ spec:
       terminationGracePeriodSeconds: 5
       containers:
       - name: server
-        image: gcr.io/solo-test-236622/cartservice:debugging
+        image: gcr.io/solo-test-236622/cartservice:solo-build
         ports:
         - containerPort: 7070
         env:
@@ -340,7 +340,7 @@ spec:
       terminationGracePeriodSeconds: 5
       containers:
         - name: server
-          image: gcr.io/solo-test-236622/adservice:debugging
+          image: gcr.io/solo-test-236622/adservice:solo-build
           ports:
             - containerPort: 9555
           env:

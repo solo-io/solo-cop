@@ -80,7 +80,7 @@ spec:
       serviceAccountName: shipping
       containers:
       - name: server
-        image: gcr.io/solo-test-236622/shippingservice:debugging
+        image: gcr.io/solo-test-236622/shippingservice:solo-build
         ports:
         - containerPort: 50051
         env:
@@ -130,7 +130,7 @@ spec:
       terminationGracePeriodSeconds: 5
       containers:
       - name: server
-        image: gcr.io/solo-test-236622/paymentservice:debugging
+        image: gcr.io/solo-test-236622/paymentservice:solo-build
         ports:
         - containerPort: 50051
         env:
@@ -176,7 +176,7 @@ spec:
       serviceAccountName: checkout
       containers:
         - name: server
-          image: gcr.io/solo-test-236622/checkoutservice:debugging
+          image: gcr.io/solo-test-236622/checkoutservice:solo-build
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5050
