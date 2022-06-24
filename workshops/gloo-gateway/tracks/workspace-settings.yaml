@@ -1,0 +1,28 @@
+apiVersion: admin.gloo.solo.io/v2
+kind: WorkspaceSettings
+metadata:
+  name: ops-team
+  namespace: ops-team
+spec:
+  importFrom:
+  - workspaces:
+    - name: dev-team
+  exportTo:
+  - workspaces:
+    - name: "*"
+    resources:
+    - kind: SERVICE
+      namespace: gloo-gateway-addons
+---
+apiVersion: admin.gloo.solo.io/v2
+kind: WorkspaceSettings
+metadata:
+  name: dev-team
+  namespace: dev-team
+spec:
+  importFrom:
+  - workspaces:
+    - name: ops-team
+  exportTo:
+  - workspaces:
+    - name: ops-team
