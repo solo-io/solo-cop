@@ -206,6 +206,8 @@ spec:
       - uri:
           prefix: /
       name: frontend
+      labels:
+        route: frontend
       forwardTo:
         destinations:
           - ref:
@@ -236,6 +238,8 @@ spec:
       - uri:
           prefix: /hipstershop.CurrencyService/Convert
       name: frontend
+      labels:
+        route: currency
       forwardTo:
         destinations:
           - ref:
@@ -328,6 +332,8 @@ spec:
       - uri:
           prefix: /httpbin
       name: frontend
+      labels:
+        route: httpbin
       forwardTo:
         pathRewrite: /
         destinations:
@@ -347,7 +353,114 @@ TODO Grpc to json
 ## Lab 8 - Security <a name="Lab-8"></a>
 
 * API Key
+```yaml
+kubectl apply -f - <<EOF
+apiVersion: v1
+kind: Secret
+metadata:
+  name: httbin-team-1
+  namespace: dev-team
+  labels:
+    api-keyset: httpbin-users
+type: extauth.solo.io/apikey
+data:
+  api-key: TjJZd01ESXhaVEV0TkdVek5TMWpOemd6TFRSa1lqQXRZakUyWXpSa1pHVm1OamN5Cg==
+EOF
+```
+
+```yaml
+kubectl apply -f - <<EOF
+apiVersion: security.policy.gloo.solo.io/v2
+kind: ExtAuthPolicy
+metadata:
+  name: httpbin-apikey
+  namespace: dev-team
+spec:
+  applyToRoutes:
+  - route:
+      labels:
+        route: httpbin
+  config:
+    server:
+      name: ext-auth-server
+      namespace: gloo-addons
+      cluster: mgmt-cluster
+    glooAuth:
+      configs:
+      - apiKeyAuth:
+          headerName: api-key
+          labelSelector:
+            api-keyset: httpbin-users
+EOF
+```
+
 
 * JWT Token
+
+```yaml
+kubectl apply -f - <<EOF
+apiVersion: networking.gloo.solo.io/v2
+kind: ExternalEndpoint
+metadata:
+  name: auth0
+  namespace: dev-team
+  labels:
+    external-service: auth0
+spec:
+  address: dev-64ktibmv.us.auth0.com
+  ports:
+    - name: https
+      number: 443
+---
+apiVersion: networking.gloo.solo.io/v2
+kind: ExternalService
+metadata:
+  name: auth0
+  namespace: dev-team
+spec:
+  selector:
+    external-service: auth0
+  hosts:
+  - dev-64ktibmv.us.auth0.com
+  ports:
+  - name: https
+    number: 443
+    protocol: HTTPS
+---
+apiVersion: security.policy.gloo.solo.io/v2
+kind: JWTPolicy
+metadata:
+  name: curreny
+  namespace: dev-team
+spec:
+  applyToRoutes:
+  - route:
+      labels:
+        route: currency
+  config:
+    providers:
+      auth0:
+        issuer: "https://dev-64ktibmv.us.auth0.com/"
+        audiences:
+        - "https://httpbin/api"
+        remote:
+          url: "https://dev-64ktibmv.us.auth0.com/.well-known/jwks.json"
+          destinationRef:
+            ref:
+              name: auth0
+              namespace: dev-team
+              cluster: mgmt-cluster
+            kind: EXTERNAL_SERVICE
+            port:
+              number: 443
+          enableAsyncFetch: true
+EOF
+```
+
+```
+AUTH_TOKEN=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6Il82WUZwYko3YTVuWGI1RlZrUEJIYiJ9.eyJpc3MiOiJodHRwczovL2Rldi02NGt0aWJtdi51cy5hdXRoMC5jb20vIiwic3ViIjoiMVFFVmhaMkVScVpPcFRRbkhDaEsxVFVTS1JCZHVPNzJAY2xpZW50cyIsImF1ZCI6Imh0dHBzOi8vaHR0cGJpbi9hcGkiLCJpYXQiOjE2NTYxMDE4MzIsImV4cCI6MTY1NjE4ODIzMiwiYXpwIjoiMVFFVmhaMkVScVpPcFRRbkhDaEsxVFVTS1JCZHVPNzIiLCJzY29wZSI6InJlYWQ6bWVzc2FnZXMiLCJndHkiOiJjbGllbnQtY3JlZGVudGlhbHMifQ.su4tOBOOaKFevyImcqWVZA4P42cAbqFTxKILe1ilWpeEfRavcFJgHS0eoJ9ET3Y5Uudl9DVNSDT_-hrnHAJnQizAMYTXCyHSf9P8ltYeToToOEvJmbN7XGdluGgma0g25JW4V0A_E2fS33ZqrbmT0j0-H1jdByK4ShwuyecbrFdi_M5q3WbGt5Uzcr-UaHSQM5a2Y0rhedzRcDg2D3fCN8BnSVUGfqomeWBzY1Hg2-FG2sFbSUQFwVL9l6CFR7eCnXL6S1Aid9DndKvHhye7P6Mt8lkbQAtmLjVkNAytSg1CQPYmDpv0m79bHQVY5M3MRsrNxCDFd-nxwZ8XEZEo8w
+grpcurl -H "Authorization: Bearer ${AUTH_TOKEN}"--plaintext --proto ./install/online-boutique/online-boutique.proto -d '{ "from": { "currency_code": "USD", "nanos": 44637071, "units": "31" }, "to_code": "JPY" }' localhost:8080 hipstershop.CurrencyService/Convert
+
+```
 
 * OIDC - Auth0/Keycloak?
