@@ -223,8 +223,10 @@ EOF
 ```
 
 * Open browser
-```
+
+```sh
 export GLOO_GATEWAY=$(kubectl -n gloo-gateway get svc gloo-gateway -o jsonpath='{.status.loadBalancer.ingress[0].*}')
+# TODO delete me
 export GLOO_GATEWAY=$GLOO_GATEWAY
 printf "\n\nGloo Gateway available at http://$GLOO_GATEWAY\n"
 ```
@@ -761,6 +763,8 @@ Get the keycloak URL and Client ID.
 
 ```sh
 export KEYCLOAK_CLIENTID=$(kubectl get configmap -n gloo-mesh keycloak-info -o json | jq -r '.data."client-id"')
+#TODO delete me
+export KEYCLOAK_URL=http://localhost:9000/auth
 export KEYCLOAK_URL=http://$(kubectl -n keycloak get service keycloak -o jsonpath='{.status.loadBalancer.ingress[0].*}'):9000/auth
 
 printf "\n\nKeycloak OIDC ClientID: $KEYCLOAK_CLIENTID\n\nKeycloak URL: $KEYCLOAK_URL\n"
