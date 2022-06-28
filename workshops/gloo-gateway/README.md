@@ -20,7 +20,7 @@
 
 ## Introduction <a name="introduction"></a>
 
-![Gloo Products](images/gloo-gateway-filters.png)
+![Gloo Products](images/gloo-products.png)
 
 ![Gloo Gateway Filters](images/gloo-gateway-filters.png)
 
