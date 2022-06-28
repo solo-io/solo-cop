@@ -1,15 +1,15 @@
-![Gloo Mesh Enterprise](images/gloo-mesh-2.0-banner.png)
+![Gloo API Gateway](images/gloo-gateway-logo.png)
 
-# <center>Gloo Gateway Workshop</center>
+# <center>Gloo API Gateway Workshop</center>
 
 ## Table of Contents
 
 * [Introduction](#introduction)
-* [Lab 1 - Deploy Kubernetes clusters](#Lab-1)
-* [Lab 2 - Deploy Gloo Mesh](#Lab-2)
-* [Lab 3 - Deploy Gateway](#Lab-3)
+* [Lab 1 - Deploy Kubernetes cluster](#Lab-1)
+* [Lab 2 - Deploy Gloo Platform](#Lab-2)
+* [Lab 3 - Deploy Gloo API Gateway](#Lab-3)
 * [Lab 4 - Deploy Online Boutique Sample Application](#Lab-4)
-* [Lab 5 - Configure Gloo Mesh](#Lab-5)
+* [Lab 5 - Configure Gloo Platform](#Lab-5)
 * [Lab 6 - Routing](#Lab-6)
 * [Lab 7 - GRPC to JSON Transcoding](#Lab-7)
 * [Lab 8 - Web Application Firewall](#Lab-8)
@@ -19,6 +19,13 @@
 * [Lab 12 - Authentication / OIDC ](#Lab-12)
 
 ## Introduction <a name="introduction"></a>
+
+![Gloo Products](images/gloo-gateway-filters.png)
+
+![Gloo Gateway Filters](images/gloo-gateway-filters.png)
+
+
+### Want to learn more about Gloo API Gateway?
 
 
 ## Begin
@@ -40,12 +47,27 @@ export GLOO_PLATFORM_VERSION=v2.1.0-beta7
 
 ## Lab 1 - Configure/Deploy the Kubernete cluster <a name="Lab-1"></a>
 
+You will need a single kubernetes cluster for this workshop.
+
+This workshop can run on many different Kubernetes distributions such as EKS, GKE, OpenShift, RKE, etc or you can 
+* [create local k3d cluster](infra/k3d/README.md)
+* [create eks cluster using eksctl](infra/eks/README.md).
+* [create gke cluster using gcloud](infra/gke/README.md).
+
+
+* Set the kubernetes cluster as your current context.
+
 ```sh
 kubectl config use-context <context> 
 ``` 
 
 ## Lab 2 - Deploy Gloo Platform <a name="Lab-2"></a>
 
+![Gloo Architecture](images/gloo-architecture.png)
+
+Gloo Platform provides a management plane to interact with the clusters and gateways in your environment. The management plane is responsible for taking your supplied configuration and updating the API gateways you have deployed. Included is a UI for policy and traffic management.
+
+The `meshctl` command line utility provides convenient functions to quickly set up Gloo Platform, register workload clusters, run sanity checks, and debug issues. Let's start by installing this utility.
 
 1. Download `meshctl` command line tool and add it to your path
 
@@ -59,13 +81,14 @@ export PATH=$HOME/.gloo-mesh/bin:$PATH
 meshctl install --license $GLOO_GATEWAY_LICENSE_KEY --register --version $GLOO_PLATFORM_VERSION
 ```
 
-## Lab 3 - Deploy Gloo Gateway Using Gloo Platform<a name="Lab-3"></a>
+## Lab 3 - Deploy Gloo API Gateway Using Gloo Platform<a name="Lab-3"></a>
 
+The Gloo Platform can easily deploy and manage your API Gateways for you. You can even deploy them to many clusters with a single configuration. For this workshop we will be deploying an API gateway to the same cluster as the management platform.
 
 ```sh
 kubectl create namespace gloo-gateway
 kubectl label namespace gloo-gateway istio-injection=enabled
-istioctl install --set hub=$ISTIO_IMAGE_REPO --set tag=$ISTIO_IMAGE_TAG  -y  -f install/istio/istiooperator-cluster1.yaml
+istioctl install -y  -f install/istio/istiooperator-cluster1.yaml
 # kubectl apply -f install/gloo-gateway/install.yaml
 ```
 
@@ -106,7 +129,7 @@ kubectl apply -f install/online-boutique/backend-apis.yaml
 kubectl apply -f install/online-boutique/web-ui.yaml
 ```
 
-## Lab 5 - Configure Gloo Mesh Workspaces <a name="Lab-5"></a>
+## Lab 5 - Configure Gloo Platform Workspaces <a name="Lab-5"></a>
 
 
 ```yaml
@@ -265,7 +288,7 @@ EOF
 ```
 
 ```sh
-grpcurl --plaintext --proto ./install/online-boutique/online-boutique.proto -d '{ "from": { "currency_code": "USD", "nanos": 44637071, "units": "31" }, "to_code": "JPY" }' $GLOO_GATEWAY hipstershop.CurrencyService/Convert
+grpcurl --plaintext --proto ./install/online-boutique/online-boutique.proto -d '{ "from": { "currency_code": "USD", "nanos": 44637071, "units": "31" }, "to_code": "JPY" }' $GLOO_GATEWAY:80 hipstershop.CurrencyService/Convert
 ```
 
 * Request

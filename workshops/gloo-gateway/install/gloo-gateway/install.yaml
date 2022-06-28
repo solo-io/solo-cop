@@ -1,7 +1,7 @@
 apiVersion: admin.gloo.solo.io/v2
 kind: IstioLifecycleManager
 metadata:
-  name: gloo-gateway
+  name: gloo-control-plane
   namespace: gloo-mesh
 spec:
   clusters:
@@ -10,12 +10,8 @@ spec:
     - name: control-plane
       istioOperatorSpec:
         profile: minimal
-        tag: 1.13.4
-        hub: us-docker.pkg.dev/gloo-mesh/istio-a9797008feb0
-        components:
-          ingressGateways:
-          - name: istio-ingressgateway
-            enabled: false
+        tag: 1.13.4-solo
+        hub: us-docker.pkg.dev/gloo-mesh/istio-workshops
         meshConfig:
           defaultConfig:
             envoyAccessLogService:
@@ -27,11 +23,25 @@ spec:
             proxyStatsMatcher:
               inclusionPrefixes:
               - "http"
+        components:
+          ingressGateways:
+          - name: istio-ingressgateway
+            enabled: false
+---
+apiVersion: admin.gloo.solo.io/v2
+kind: IstioLifecycleManager
+metadata:
+  name: gloo-gateway
+  namespace: gloo-mesh
+spec:
+  clusters:
+    - name: mgmt-cluster
+  installations:
     - name: gloo-gateway
       istioOperatorSpec:
         profile: empty
-        tag: 1.13.4
-        hub: us-docker.pkg.dev/gloo-mesh/istio-a9797008feb0
+        tag: 1.13.4-solo
+        hub: us-docker.pkg.dev/gloo-mesh/istio-workshops
         components:
           ingressGateways:
           - name: gloo-gateway
