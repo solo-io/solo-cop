@@ -116,7 +116,7 @@ spec:
     namespaces:
     - name: ops-team
     - name: gloo-gateway
-    - name: gloo-mesh-addons
+    - name: gloo-gateway-addons
 ---
 apiVersion: admin.gloo.solo.io/v2
 kind: Workspace
@@ -357,19 +357,49 @@ TODO Grpc to json
 
 ## Lab 8 - Security <a name="Lab-8"></a>
 
+
+```
+echo -n "admin" | base64
+YWRtaW4=
+echo -n "Solo Admin" | base64
+U29sbyBBZG1pbg==
+
+
+echo -n "developer" | base64
+ZGV2ZWxvcGVy
+echo -n "Solo Developer" | base64
+U29sbyBEZXZlbG9wZXI=
+```
+
+
 * API Key
 ```yaml
 kubectl apply -f - <<EOF
 apiVersion: v1
 kind: Secret
 metadata:
-  name: httbin-team-1
+  name: solo-admin
   namespace: dev-team
   labels:
     api-keyset: httpbin-users
 type: extauth.solo.io/apikey
 data:
-  api-key: TjJZd01ESXhaVEV0TkdVek5TMWpOemd6TFRSa1lqQXRZakUyWXpSa1pHVm1OamN5Cg==
+  # x-api-key=admin
+  api-key: YWRtaW4=
+  api-key-user: U29sbyBBZG1pbg==
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: solo-developer
+  namespace: dev-team
+  labels:
+    api-keyset: httpbin-users
+type: extauth.solo.io/apikey
+data:
+  # x-api-key=developer
+  api-key: ZGV2ZWxvcGVy
+  api-key-user: U29sbyBEZXZlbG9wZXI=
 EOF
 ```
 
@@ -388,16 +418,25 @@ spec:
   config:
     server:
       name: ext-auth-server
-      namespace: gloo-addons
+      namespace: dev-team
       cluster: mgmt-cluster
     glooAuth:
       configs:
       - apiKeyAuth:
-          headerName: api-key
+          headerName: x-api-key
           labelSelector:
             api-keyset: httpbin-users
 EOF
 ```
+
+```
+curl -v http://localhost:8080/httpbin/get
+
+curl -H "x-api-key: developer" -v http://localhost:8080/httpbin/get
+
+curl -H "x-api-key: admin" -v http://localhost:8080/httpbin/get
+```
+
 
 
 * JWT Token
