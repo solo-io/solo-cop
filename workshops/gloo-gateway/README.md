@@ -318,6 +318,7 @@ spec:
   - name: https
     number: 443
     protocol: HTTPS
+    clientsideTls: {}
 ---
 apiVersion: networking.gloo.solo.io/v2
 kind: RouteTable
@@ -340,10 +341,14 @@ spec:
         - ref:
             name: httpbin
           port: 
-            number: 80
+            number: 443
           kind: EXTERNAL_SERVICE
 EOF
+```
 
+
+```
+curl -v localhost:8080/httpbin/get
 ```
 
 
@@ -426,6 +431,7 @@ spec:
   - name: https
     number: 443
     protocol: HTTPS
+    clientsideTls: {}
 ---
 apiVersion: security.policy.gloo.solo.io/v2
 kind: JWTPolicy
@@ -458,8 +464,8 @@ EOF
 ```
 
 ```
-AUTH_TOKEN=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6Il82WUZwYko3YTVuWGI1RlZrUEJIYiJ9.eyJpc3MiOiJodHRwczovL2Rldi02NGt0aWJtdi51cy5hdXRoMC5jb20vIiwic3ViIjoiMVFFVmhaMkVScVpPcFRRbkhDaEsxVFVTS1JCZHVPNzJAY2xpZW50cyIsImF1ZCI6Imh0dHBzOi8vaHR0cGJpbi9hcGkiLCJpYXQiOjE2NTYxMDE4MzIsImV4cCI6MTY1NjE4ODIzMiwiYXpwIjoiMVFFVmhaMkVScVpPcFRRbkhDaEsxVFVTS1JCZHVPNzIiLCJzY29wZSI6InJlYWQ6bWVzc2FnZXMiLCJndHkiOiJjbGllbnQtY3JlZGVudGlhbHMifQ.su4tOBOOaKFevyImcqWVZA4P42cAbqFTxKILe1ilWpeEfRavcFJgHS0eoJ9ET3Y5Uudl9DVNSDT_-hrnHAJnQizAMYTXCyHSf9P8ltYeToToOEvJmbN7XGdluGgma0g25JW4V0A_E2fS33ZqrbmT0j0-H1jdByK4ShwuyecbrFdi_M5q3WbGt5Uzcr-UaHSQM5a2Y0rhedzRcDg2D3fCN8BnSVUGfqomeWBzY1Hg2-FG2sFbSUQFwVL9l6CFR7eCnXL6S1Aid9DndKvHhye7P6Mt8lkbQAtmLjVkNAytSg1CQPYmDpv0m79bHQVY5M3MRsrNxCDFd-nxwZ8XEZEo8w
-grpcurl -H "Authorization: Bearer ${AUTH_TOKEN}"--plaintext --proto ./install/online-boutique/online-boutique.proto -d '{ "from": { "currency_code": "USD", "nanos": 44637071, "units": "31" }, "to_code": "JPY" }' localhost:8080 hipstershop.CurrencyService/Convert
+AUTH_TOKEN=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6Il82WUZwYko3YTVuWGI1RlZrUEJIYiJ9.eyJpc3MiOiJodHRwczovL2Rldi02NGt0aWJtdi51cy5hdXRoMC5jb20vIiwic3ViIjoiMVFFVmhaMkVScVpPcFRRbkhDaEsxVFVTS1JCZHVPNzJAY2xpZW50cyIsImF1ZCI6Imh0dHBzOi8vaHR0cGJpbi9hcGkiLCJpYXQiOjE2NTY0MjA0MzUsImV4cCI6MTY1NjUwNjgzNSwiYXpwIjoiMVFFVmhaMkVScVpPcFRRbkhDaEsxVFVTS1JCZHVPNzIiLCJzY29wZSI6InJlYWQ6bWVzc2FnZXMiLCJndHkiOiJjbGllbnQtY3JlZGVudGlhbHMifQ.mqvn8oHYkjYgzJ7SDmFRXWdA9UpLUS5At7ZH0ZACJZwEz97_LMUlhzFFTAV_3fo19M1k0sSOghhc_hwd8ZEEfCCFQs6pxKwwMyU0krhUEM4Bpvdf9Ee5FFWIPdXL3G1ZCer2JzAIJNX6l5jYbFUdJLsL27B3fsUjc1GGtL64NImUYoY_doZijlIC2sMY8KxOlJR5xzXyLJrGuLW-ruv7rqMsWtHlVZRSyGQStQ2qHvQBCRheAcpyCVsKtnMY5jIn7XLlxQAgAYIJGnmpQSpkZYB-xysUOfk-cWZEsWHqcrWj38Q0maFN2ny3L8Ny96S0eRFHar6pfUbnpc1Bz_BKgg
+grpcurl -H "Authorization: Bearer ${AUTH_TOKEN}" --plaintext --proto ./install/online-boutique/online-boutique.proto -d '{ "from": { "currency_code": "USD", "nanos": 44637071, "units": "31" }, "to_code": "JPY" }' localhost:8080 hipstershop.CurrencyService/Convert
 
 ```
 
