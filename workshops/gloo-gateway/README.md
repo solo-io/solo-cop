@@ -250,7 +250,7 @@ EOF
 ```sh
 export GLOO_GATEWAY=$(kubectl -n gloo-gateway get svc gloo-gateway -o jsonpath='{.status.loadBalancer.ingress[0].*}')
 # TODO delete me
-export GLOO_GATEWAY=$GLOO_GATEWAY
+export GLOO_GATEWAY=localhost:8080
 printf "\n\nGloo Gateway available at http://$GLOO_GATEWAY\n"
 ```
 
@@ -420,12 +420,12 @@ apiVersion: security.policy.gloo.solo.io/v2
 kind: WAFPolicy
 metadata:
   name: log4jshell
-  namespace: dev-team
+  namespace: ops-team
 spec:
   applyToRoutes:
   - route:
       labels:
-        route: httpbin ##### NOTE
+        ingress: "true" ##### NOTE
   config:
     disableCoreRuleSet: true
     customInterventionMessage: 'Log4Shell malicious payload'
@@ -603,12 +603,12 @@ apiVersion: security.policy.gloo.solo.io/v2
 kind: ExtAuthPolicy
 metadata:
   name: httpbin-apikey
-  namespace: dev-team
+  namespace: ops-team
 spec:
   applyToRoutes:
   - route:
       labels:
-        route: httpbin
+        ingress: "true"
   config:
     server:
       name: ext-auth-server
