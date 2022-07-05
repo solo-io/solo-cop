@@ -247,8 +247,6 @@ EOF
 
 ```sh
 export GLOO_GATEWAY=$(kubectl -n gloo-gateway get svc gloo-gateway -o jsonpath='{.status.loadBalancer.ingress[0].*}')
-# TODO delete me
-export GLOO_GATEWAY=$GLOO_GATEWAY
 printf "\n\nGloo Gateway available at http://$GLOO_GATEWAY\n"
 ```
 
