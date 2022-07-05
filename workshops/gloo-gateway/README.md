@@ -109,6 +109,8 @@ helm upgrade --install gloo-gateway-addons gloo-mesh-agent/gloo-mesh-agent \
   --version $GLOO_PLATFORM_VERSION
 
 kubectl apply -f install/gloo-gateway/addons-servers.yaml
+
+./install/keycloak/setup.sh
 ```
 
 ## Lab 4 - Deploy Online Boutique Sample Application<a name="Lab-4"></a>
@@ -766,24 +768,14 @@ EOF
 echo "Secure Online Boutique URL: https://$GLOO_GATEWAY"
 ```
 
-4. Finally, we need to deploy our OIDC server keycloak. We provided you with a script to deploy and configure keycloak for our workshop. 
-
-* Deploy and configure Keycloak
-
-* Deploy Keycloak
-
-```sh
-./install/keycloak/setup.sh
-```
-
 Get the keycloak URL and Client ID.
 
 ```sh
-export KEYCLOAK_CLIENTID=$(kubectl get configmap -n gloo-mesh keycloak-info -o json | jq -r '.data."client-id"')
 #TODO delete me
 export KEYCLOAK_URL=http://localhost:9000/auth
 export GLOO_GATEWAY=http://localhost:8443
 
+export KEYCLOAK_CLIENTID=$(kubectl get configmap -n gloo-mesh keycloak-info -o json | jq -r '.data."client-id"')
 export KEYCLOAK_URL=http://$(kubectl -n keycloak get service keycloak -o jsonpath='{.status.loadBalancer.ingress[0].*}'):9000/auth
 
 printf "\n\nKeycloak OIDC ClientID: $KEYCLOAK_CLIENTID\n\nKeycloak URL: $KEYCLOAK_URL\n"
