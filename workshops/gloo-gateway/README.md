@@ -42,7 +42,7 @@ Set these environment variables which will be used throughout the workshop.
 ```sh
 # Used to enable Gloo Mesh (please ask for a trail license key)
 export GLOO_GATEWAY_LICENSE_KEY=<licence_key>
-export GLOO_PLATFORM_VERSION=v2.1.0-beta7
+export GLOO_PLATFORM_VERSION=v2.1.0-beta8
 ```
 
 ## Lab 1 - Configure/Deploy the Kubernete cluster <a name="Lab-1"></a>
@@ -59,7 +59,7 @@ This workshop can run on many different Kubernetes distributions such as EKS, GK
 
 ```sh
 kubectl config use-context <context> 
-``` 
+```
 
 ## Lab 2 - Deploy Gloo Platform <a name="Lab-2"></a>
 
@@ -92,7 +92,6 @@ istioctl install -y  -f install/istio/istiooperator-cluster1.yaml
 # kubectl apply -f install/gloo-gateway/install.yaml
 ```
 
-
 ```sh
 kubectl create namespace dev-team
 kubectl create namespace ops-team
@@ -112,7 +111,6 @@ helm upgrade --install gloo-gateway-addons gloo-mesh-agent/gloo-mesh-agent \
 kubectl apply -f install/gloo-gateway/addons-servers.yaml
 ```
 
-
 ## Lab 4 - Deploy Online Boutique Sample Application<a name="Lab-4"></a>
 
 ![online-boutique](images/online-boutique.png)
@@ -130,7 +128,6 @@ kubectl apply -f install/online-boutique/web-ui.yaml
 ```
 
 ## Lab 5 - Configure Gloo Platform Workspaces <a name="Lab-5"></a>
-
 
 ```yaml
 kubectl apply -f - <<'EOF'
@@ -218,7 +215,6 @@ spec:
 EOF
 ```
 
-
 ```yaml
 kubectl apply -f - <<'EOF'
 apiVersion: networking.gloo.solo.io/v2
@@ -304,7 +300,7 @@ grpcurl --plaintext --proto ./install/online-boutique/online-boutique.proto -d '
 }
 ```
 
-* Response 
+* Response
 
 ```json
 {
@@ -314,10 +310,7 @@ grpcurl --plaintext --proto ./install/online-boutique/online-boutique.proto -d '
 }
 ```
 
-
-
 * External endpoint
-
 
 ```yaml
 kubectl apply -f - <<'EOF'
@@ -567,6 +560,7 @@ U29sbyBEZXZlbG9wZXI=
 
 
 * API Key
+
 ```yaml
 kubectl apply -f - <<EOF
 apiVersion: v1
@@ -788,6 +782,8 @@ Get the keycloak URL and Client ID.
 export KEYCLOAK_CLIENTID=$(kubectl get configmap -n gloo-mesh keycloak-info -o json | jq -r '.data."client-id"')
 #TODO delete me
 export KEYCLOAK_URL=http://localhost:9000/auth
+export GLOO_GATEWAY=http://localhost:8443
+
 export KEYCLOAK_URL=http://$(kubectl -n keycloak get service keycloak -o jsonpath='{.status.loadBalancer.ingress[0].*}'):9000/auth
 
 printf "\n\nKeycloak OIDC ClientID: $KEYCLOAK_CLIENTID\n\nKeycloak URL: $KEYCLOAK_URL\n"
@@ -798,13 +794,13 @@ The `ExtAuthPolicy` defines the provider connectivity including any callback pat
 * View the `ExtAuthPolicy` with environment variables replaced.
 
 ```sh
-( echo "cat <<EOF" ; cat tracks/06-api-gateway/ext-auth-policy.yaml ; echo EOF ) | sh
+( echo "cat <<EOF" ; cat tracks/ext-auth-policy.yaml ; echo EOF ) | sh
 ```
 
 * Apply the `ExtAuthPolicy`
 
 ```sh
-( echo "cat <<EOF" ; cat tracks/06-api-gateway/ext-auth-policy.yaml ; echo EOF ) | sh | kubectl apply -n dev-team -f -
+( echo "cat <<EOF" ; cat tracks/ext-auth-policy.yaml ; echo EOF ) | sh | kubectl apply -n dev-team -f -
 ```
 
 Now if you refresh the application, you should be redirected to Keycloak to login.

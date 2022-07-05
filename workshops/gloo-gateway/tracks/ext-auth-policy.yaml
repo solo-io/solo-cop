@@ -2,17 +2,17 @@ apiVersion: security.policy.gloo.solo.io/v2
 kind: ExtAuthPolicy
 metadata:
   name: frontend
-  namespace: web-team
+  namespace: dev-team
 spec:
   applyToRoutes:
   - route:
       labels:
-        virtual-destination: frontend
+        route: frontend
   config:
     server:
       name: ext-auth-server
-      namespace: web-team
-      cluster: mgmt
+      namespace: dev-team
+      cluster: mgmt-cluster
     glooAuth:
       configs:
       - oauth2:
