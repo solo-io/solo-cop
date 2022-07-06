@@ -1,17 +1,3 @@
-apiVersion: admin.gloo.solo.io/v2
-kind: RateLimitServerSettings
-metadata:
-  name: rate-limit-server-settings
-  namespace: web-team
-spec:
-  destinationServer:
-    port:
-      number: 8083
-    ref:
-      name: rate-limiter
-      namespace: gloo-mesh-addons
-      cluster: cluster1
----
 apiVersion: trafficcontrol.policy.gloo.solo.io/v2
 kind: RateLimitClientConfig
 metadata:

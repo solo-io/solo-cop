@@ -7,6 +7,9 @@ spec:
   exportTo:
   - workspaces:
     - name: web-team
+  importFrom:
+  - workspaces:
+    - name: ops-team
   options:
     eastWestGateways:
     - selector:

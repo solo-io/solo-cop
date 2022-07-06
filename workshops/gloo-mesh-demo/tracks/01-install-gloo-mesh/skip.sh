@@ -13,17 +13,20 @@ export PATH=$HOME/.gloo-mesh/bin:$PATH
 meshctl install \
   --kubecontext $MGMT \
   --set mgmtClusterName=$MGMT \
+  --version $GLOO_MESH_VERSION \
   --license $GLOO_MESH_LICENSE_KEY
 
 # Step 3 - Install Control plane cluster1
 meshctl cluster register \
   --kubecontext=$MGMT \
+  --version $GLOO_MESH_VERSION \
   --remote-context=$CLUSTER1 \
   $CLUSTER1
 
 # Step 4 - Install Control plane cluster2
 meshctl cluster register \
   --kubecontext=$MGMT \
+  --version $GLOO_MESH_VERSION \
   --remote-context=$CLUSTER2 \
   $CLUSTER2
 
