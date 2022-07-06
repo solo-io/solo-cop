@@ -22,11 +22,17 @@
 
 ![Gloo Products](images/gloo-products.png)
 
+Gloo API Gateway is a feature-rich, Kubernetes-native ingress controller, and next-generation API gateway. Gloo API Gateway is exceptional in its function-level routing; its support for legacy apps, microservices and serverless; its discovery capabilities; its numerous features; and its tight integration with leading open-source projects. Gloo API Gateway is uniquely designed to support hybrid applications, in which multiple technologies, architectures, protocols, and clouds can coexist.
+
 ![Gloo Gateway Filters](images/gloo-gateway-filters.png)
 
+Built on top of the Istio ingress gateway, Gloo API Gateway extends Isito and Envoy by adding in custom filters to expand its existing feature set. 
 
 ### Want to learn more about Gloo API Gateway?
 
+You can find more information about Gloo API Gateway in the official documentation:
+
+[https://docs.solo.io/gloo-mesh-enterprise/latest/concepts/gateway/](https://docs.solo.io/gloo-mesh-enterprise/latest/concepts/gateway/)
 
 ## Begin
 
@@ -43,6 +49,11 @@ Set these environment variables which will be used throughout the workshop.
 # Used to enable Gloo Mesh (please ask for a trail license key)
 export GLOO_GATEWAY_LICENSE_KEY=<licence_key>
 export GLOO_PLATFORM_VERSION=v2.1.0-beta8
+
+# Istio version information
+export ISTIO_IMAGE_REPO=us-docker.pkg.dev/gloo-mesh/istio-workshops
+export ISTIO_IMAGE_TAG=1.13.4-solo
+export ISTIO_VERSION=1.13.4
 ```
 
 ## Lab 1 - Configure/Deploy the Kubernete cluster <a name="Lab-1"></a>
@@ -85,12 +96,25 @@ meshctl install --license $GLOO_GATEWAY_LICENSE_KEY --register --version $GLOO_P
 
 The Gloo Platform can easily deploy and manage your API Gateways for you. You can even deploy them to many clusters with a single configuration. For this workshop we will be deploying an API gateway to the same cluster as the management platform.
 
+* Download [istioctl](https://istio.io/latest/docs/setup/getting-started/)
+
+```sh
+curl -L https://istio.io/downloadIstio | ISTIO_VERSION=${ISTIO_VERSION} sh -
+export PATH=$PWD/istio-${ISTIO_VERSION}/bin:$PATH
+
+istioctl version
+```
+
+* Install Gloo API gateway into the `gloo-gateway` namespace
+
 ```sh
 kubectl create namespace gloo-gateway
 kubectl label namespace gloo-gateway istio-injection=enabled
 istioctl install -y  -f install/istio/istiooperator-cluster1.yaml
 # kubectl apply -f install/gloo-gateway/install.yaml
 ```
+
+Secondly you need to setup our cluster environment to enable all the API gateway features. The below script deploys the optional `gloo-mesh-addons` features that enable features such as external authorization and rate limiting. Finally you will also deploy your own OIDC provider `keycloak` which will allow you to secure your website with a user/pass login. 
 
 ```sh
 kubectl create namespace dev-team
@@ -120,7 +144,7 @@ printf "\n\nKeycloak OIDC ClientID: $KEYCLOAK_CLIENTID\n\nKeycloak URL: $KEYCLOA
 
 ## Lab 4 - Deploy Online Boutique Sample Application<a name="Lab-4"></a>
 
-![online-boutique](images/online-boutique.png)
+![Gloo Gateway Architecture](images/gloo-gateway-apps-arch.png)
 
 1. Deploy the Online Boutique backend microservices to the `backend-apis` namespace.
 
@@ -135,6 +159,14 @@ kubectl apply -f install/online-boutique/web-ui.yaml
 ```
 
 ## Lab 5 - Configure Gloo Platform Workspaces <a name="Lab-5"></a>
+
+In this lab, you'll learn about the Gloo **Workspaces** feature. Workspaces bring multi-tenancy isolation to your teams. With workspaces, you can explore how multiple personas can work independently without conflicting with each others configuration.
+
+Imagine that you have the following teams. Each team represents a "tenant" in Gloo.
+- The Ops team, who is responsible for the platform and ingress traffic.
+- The Dev team, who is responsible for the frontend web application and backend apis that power the frontend.
+
+Also note that a dedicated namespace is created for each workspace to place their configuration (`ops-team`, `dev-team` namespaces). It is recommended that the configuration is separate from your deployments.
 
 ```yaml
 kubectl apply -f - <<'EOF'
