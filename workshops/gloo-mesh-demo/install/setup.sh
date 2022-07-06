@@ -12,7 +12,7 @@ $LOCAL_DIR/istio/setup.sh cluster2
 kubectl apply -f $LOCAL_DIR/istio/strict-mtls.yaml --context $CLUSTER2
 
 # wait until istiod creates the virtualservices
-kubectl deployment --for=condition=ready pod -l app=istiod -n istio-system --context $MGMT
+kubectl wait deployment --for condition=Available=True -n istio-system --timeout 60s --context $MGMT -l app=istiod
 
 # Deploy Online Boutique
 $LOCAL_DIR/online-boutique/setup.sh
