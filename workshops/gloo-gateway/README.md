@@ -111,6 +111,11 @@ helm upgrade --install gloo-gateway-addons gloo-mesh-agent/gloo-mesh-agent \
 kubectl apply -f install/gloo-gateway/addons-servers.yaml
 
 ./install/keycloak/setup.sh
+
+export KEYCLOAK_CLIENTID=$(kubectl get configmap -n gloo-mesh keycloak-info -o json | jq -r '.data."client-id"')
+export KEYCLOAK_URL=http://$(kubectl -n keycloak get service keycloak -o jsonpath='{.status.loadBalancer.ingress[0].*}'):9000/auth
+
+printf "\n\nKeycloak OIDC ClientID: $KEYCLOAK_CLIENTID\n\nKeycloak URL: $KEYCLOAK_URL\n"
 ```
 
 ## Lab 4 - Deploy Online Boutique Sample Application<a name="Lab-4"></a>
@@ -251,8 +256,6 @@ printf "\n\nGloo Gateway available at http://$GLOO_GATEWAY\n"
 ```
 
 ## Lab 7 - Routing <a name="Lab-7"></a>
-
-
 
 * Exposing a single service 
 
@@ -540,10 +543,7 @@ server: istio-envoy
 x-envoy-upstream-service-time: 7
 ```
 
-
-
 ### Authentication
-
 
 ```
 echo -n "admin" | base64
@@ -551,13 +551,11 @@ YWRtaW4=
 echo -n "Solo Admin" | base64
 U29sbyBBZG1pbg==
 
-
 echo -n "developer" | base64
 ZGV2ZWxvcGVy
 echo -n "Solo Developer" | base64
 U29sbyBEZXZlbG9wZXI=
 ```
-
 
 * API Key
 
@@ -624,8 +622,6 @@ curl -H "x-api-key: developer" -v http://$GLOO_GATEWAY/httpbin/get
 
 curl -H "x-api-key: admin" -v http://$GLOO_GATEWAY/httpbin/get
 ```
-
-
 
 * JWT Token
 
@@ -709,7 +705,6 @@ grpcurl --plaintext --proto ./install/online-boutique/online-boutique.proto -d '
 grpcurl -H "Authorization: Bearer ${ACCESS_TOKEN}" --plaintext --proto ./install/online-boutique/online-boutique.proto -d '{ "from": { "currency_code": "USD", "nanos": 44637071, "units": "31" }, "to_code": "JPY" }' $GLOO_GATEWAY:80 hipstershop.CurrencyService/Convert
 ```
 
-
 #### External Authorization (OIDC)
 
 Another valuable feature of API gateways is integration into your IdP (Identity Provider). In this section of the lab, we see how Gloo Mesh Gateway can be configured to redirect unauthenticated users via OIDC.  We will use Keycloak as our IdP, but you could use other OIDC-compliant providers in your production clusters.
@@ -764,19 +759,6 @@ EOF
 
 ```sh
 echo "Secure Online Boutique URL: https://$GLOO_GATEWAY"
-```
-
-Get the keycloak URL and Client ID.
-
-```sh
-#TODO delete me
-export KEYCLOAK_URL=http://localhost:9000/auth
-export GLOO_GATEWAY=http://localhost:8443
-
-export KEYCLOAK_CLIENTID=$(kubectl get configmap -n gloo-mesh keycloak-info -o json | jq -r '.data."client-id"')
-export KEYCLOAK_URL=http://$(kubectl -n keycloak get service keycloak -o jsonpath='{.status.loadBalancer.ingress[0].*}'):9000/auth
-
-printf "\n\nKeycloak OIDC ClientID: $KEYCLOAK_CLIENTID\n\nKeycloak URL: $KEYCLOAK_URL\n"
 ```
 
 The `ExtAuthPolicy` defines the provider connectivity including any callback paths that we need to configure on our application.
