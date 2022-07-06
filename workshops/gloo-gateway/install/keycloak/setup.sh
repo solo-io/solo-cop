@@ -14,6 +14,9 @@ kubectl wait --for=condition=ready pod -l app=keycloak-setup -n keycloak --timeo
 
 kubectl -n keycloak cp $LOCAL_DIR/gen-clientid.sh keycloak-setup:/tmp/gen-clientid.sh
 
+# wait for service load balancer
+until kubectl get service/keycloak -n keycloak --output=jsonpath='{.status.loadBalancer}' | grep "ingress"; do : ; done
+
 echo "Keycloak authorized endpoint: $GLOO_GATEWAY"
 kubectl exec -n keycloak -it keycloak-setup -- env KEYCLOAK_URL=$KEYCLOAK_URL /tmp/gen-clientid.sh $GLOO_GATEWAY
 
