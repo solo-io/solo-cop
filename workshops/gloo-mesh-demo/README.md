@@ -784,8 +784,8 @@ EOF
 3. Test out the new HTTPS endpoint (you may need to allow insecure traffic in your browser. Chrome: Advanced -> Proceed)
 
 ```sh
-export ENDPOINT_HTTPS_GW_CLUSTER1_EXT=$(kubectl --context ${CLUSTER1} -n istio-gateways get svc istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].*}'):443
-echo "Secure Online Boutique URL: https://$ENDPOINT_HTTPS_GW_CLUSTER1_EXT"
+export GLOO_GATEWAY=$(kubectl --context ${CLUSTER1} -n istio-gateways get svc istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].*}'):443
+echo "Secure Online Boutique URL: https://$GLOO_GATEWAY"
 ```
 
 4. Finally, we need to deploy our OIDC server keycloak. We provided you with a script to deploy and configure keycloak for our workshop. 
