@@ -18,7 +18,7 @@ kubectl wait --for=condition=ready pod -l app=keycloak-setup -n keycloak --timeo
 kubectl -n keycloak cp $LOCAL_DIR/gen-clientid.sh keycloak-setup:/tmp/gen-clientid.sh
 
 echo "Keycloak authorized endpoint: $GLOO_GATEWAY"
-kubectl exec -n keycloak -it keycloak-setup -- env KEYCLOAK_URL=$KEYCLOAK_URL /tmp/gen-clientid.sh $GLOO_GATEWAY
+kubectl exec -n keycloak -it keycloak-setup -- /tmp/gen-clientid.sh $GLOO_GATEWAY
 
 export KEYCLOAK_CLIENTID=$(kubectl get configmap -n gloo-mesh keycloak-info -o json | jq -r '.data."client-id"')
 echo "ClientId: $KEYCLOAK_CLIENTID"
