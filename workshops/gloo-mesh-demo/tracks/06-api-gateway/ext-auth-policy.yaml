@@ -7,7 +7,7 @@ spec:
   applyToRoutes:
   - route:
       labels:
-        virtual-destination: frontend
+        oauth: "true"
   config:
     server:
       name: ext-auth-server
