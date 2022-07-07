@@ -37,10 +37,10 @@ metadata:
   name: rate-limit-policy
   namespace: web-team
 spec:
-  applyToDestinations:
-  - selector:
+  applyToRoutes:
+  - route:
       labels:
-        app: frontend
+        virtual-destination: "frontend"
   config:
     serverSettings:
       name: rate-limit-server-settings
