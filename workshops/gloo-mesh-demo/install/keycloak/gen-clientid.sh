@@ -43,5 +43,4 @@ metadata:
   namespace: gloo-mesh
 data:
   client-id: ${client}
-  token: $KEYCLOAK_TOKEN
-EOF 
+EOF

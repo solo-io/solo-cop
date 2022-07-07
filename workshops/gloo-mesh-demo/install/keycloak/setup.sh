@@ -20,5 +20,5 @@ kubectl --context $CLUSTER1 -n keycloak cp $LOCAL_DIR/gen-clientid.sh keycloak-s
 echo "Keycloak authorized endpoint: $GLOO_GATEWAY"
 kubectl exec --context $CLUSTER1 -n keycloak -it keycloak-setup -- /tmp/gen-clientid.sh $GLOO_GATEWAY
 
-export KEYCLOAK_CLIENTID=$(kubectl get configmap -n gloo-mesh keycloak-info -o json | jq -r '.data."client-id"')
+export KEYCLOAK_CLIENTID=$(kubectl get configmap -n gloo-mesh keycloak-info --context $CLUSTER1 -o json | jq -r '.data."client-id"')
 echo "ClientId: $KEYCLOAK_CLIENTID" 
