@@ -19,7 +19,7 @@ spec:
         destinations:
           - ref:
               name: frontend
-              namespace: web-ui
-              cluster: cluster1
+              namespace: web-team
+            kind: VIRTUAL_DESTINATION
             port:
               number: 80

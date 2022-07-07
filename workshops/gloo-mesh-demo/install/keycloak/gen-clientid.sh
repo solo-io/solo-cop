@@ -1,5 +1,4 @@
 #!/bin/bash
-echo "Keycloak URL: ${KEYCLOAK_URL}"
 echo "EXT endpoint: ${1}"
 
 INTERNAL_KEYCLOAK_URL=keycloak.keycloak.svc.cluster.local:9000/auth
@@ -44,6 +43,4 @@ metadata:
   namespace: gloo-mesh
 data:
   client-id: ${client}
-  keycloak-url: $KEYCLOAK_URL
-  token: $KEYCLOAK_TOKEN
 EOF

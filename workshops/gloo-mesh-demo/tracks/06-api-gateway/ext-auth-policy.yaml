@@ -7,7 +7,7 @@ spec:
   applyToRoutes:
   - route:
       labels:
-        virtual-destination: frontend
+        oauth: "true"
   config:
     server:
       name: ext-auth-server
@@ -17,7 +17,7 @@ spec:
       configs:
       - oauth2:
           oidcAuthorizationCode:
-            appUrl: https://${ENDPOINT_HTTPS_GW_CLUSTER1_EXT}
+            appUrl: https://${GLOO_GATEWAY}
             callbackPath: /callback
             clientId: ${KEYCLOAK_CLIENTID}
             clientSecretRef:
@@ -25,7 +25,7 @@ spec:
               namespace: gloo-mesh
             issuerUrl: "${KEYCLOAK_URL}/realms/master/"
             logoutPath: /logout
-            afterLogoutUrl: "${KEYCLOAK_URL}/realms/master/protocol/openid-connect/logout?redirect_uri=https://${ENDPOINT_HTTPS_GW_CLUSTER1_EXT}"
+            afterLogoutUrl: "${KEYCLOAK_URL}/realms/master/protocol/openid-connect/logout?redirect_uri=https://${GLOO_GATEWAY}"
             scopes:
             - email
             headers:
