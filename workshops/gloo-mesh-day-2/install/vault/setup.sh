@@ -108,8 +108,6 @@ vault-setup-istio-pki() {
   kubectl exec --context $MGMT -n vault -it vault-setup -- /tmp/vault-configure.sh $VAULT_ADDR
 }
 
-
 vault-install-helm
 vault-enable-basic-auth
 vault-setup-istio-pki
-

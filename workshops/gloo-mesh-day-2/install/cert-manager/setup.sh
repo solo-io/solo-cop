@@ -14,6 +14,7 @@ kubectl wait deployment --for condition=Available=True -n cert-manager --context
 kubectl wait deployment --for condition=Available=True -n cert-manager --context $CLUSTER1 --all
 kubectl wait deployment --for condition=Available=True -n cert-manager --context $CLUSTER2 --all
 
+export VAULT_ADDR=http://$(kubectl --context ${MGMT} -n vault get svc vault -o jsonpath='{.status.loadBalancer.ingress[0].*}'):8200
 
 TOKEN=$(kubectl get configmap -n vault --context $MGMT cert-manager-token -o json | jq -r '.data.token')
 
@@ -43,8 +44,8 @@ metadata:
   namespace: istio-system
 spec:
   secretName: cacerts
-  duration: 720h # 30d
-  renewBefore: 360h # 15d
+  duration: 1h
+  renewBefore: 30m
   commonName: mgmt.solo.io
   isCA: true
   usages:
@@ -81,8 +82,8 @@ metadata:
   namespace: istio-system
 spec:
   secretName: cacerts
-  duration: 1h # 30d
-  renewBefore: 10m # 15d
+  duration: 1h
+  renewBefore: 30m
   commonName: cluster1.solo.io
   isCA: true
   usages:
@@ -118,8 +119,8 @@ metadata:
   namespace: istio-system
 spec:
   secretName: cacerts
-  duration: 720h # 30d
-  renewBefore: 360h # 15d
+  duration: 1h
+  renewBefore: 30m
   commonName: cluster2.solo.io
   isCA: true
   usages:
