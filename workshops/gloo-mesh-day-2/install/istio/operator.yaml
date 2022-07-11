@@ -1,0 +1,9 @@
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+metadata:
+  name: istio-cert-manager
+  namespace: istio-system
+spec:
+  profile: minimal
+  hub: k3d-registry.localhost:12345
+  tag: tls-secret-cacerts

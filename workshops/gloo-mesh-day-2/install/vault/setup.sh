@@ -2,7 +2,6 @@
 
 LOCAL_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
-
 vault-install-helm(){
   # Install Vault on Kubernetes using Helm
   helm repo add hashicorp https://helm.releases.hashicorp.com
@@ -20,6 +19,9 @@ vault-install-helm(){
   # Wait for Vault to come up.
   # Don't use 'kubectl rollout' because Vault is a statefulset without a rolling deployment.
   kubectl --context="${MGMT}" wait --for=condition=Ready -n vault pod/vault-0
+
+  until kubectl get service/vault --context $MGMT -n vault --output=jsonpath='{.status.loadBalancer}' | grep "ingress"; do : ; done
+
 }
 
 vault-enable-basic-auth(){
@@ -39,7 +41,6 @@ path "sys/policies/acl"
 {
   capabilities = ["list"]
 }
-
 # Create and manage ACL policies
 path "sys/policies/acl/*"
 {
@@ -53,38 +54,37 @@ path "auth/*"
 {
   capabilities = ["create", "read", "update", "delete", "list", "sudo"]
 }
-
 # Create, update, and delete auth methods
 path "sys/auth/*"
 {
   capabilities = ["create", "update", "delete", "sudo"]
 }
-
 # List auth methods
 path "sys/auth"
 {
   capabilities = ["read"]
 }
-
 # Manage secrets engines
 path "sys/mounts/*"
 {
   capabilities = ["create", "read", "update", "delete", "list", "sudo"]
 }
-
 # List existing secrets engines.
 path "sys/mounts"
 {
-  capabilities = ["read"]
+  capabilities = ["read","list"]
 }
-
 path "pki_int/*" {
-capabilities = ["create", "read", "update", "delete", "list"]
+  capabilities = [ "create", "read", "update", "delete", "list", "sudo" ]
 }
 # List, create, update, and delete key/value secrets
 path "secret/*"
 {
   capabilities = ["create", "read", "update", "delete", "list", "sudo"]
+}
+# Work with pki secrets engine
+path "pki*" {
+  capabilities = [ "create", "read", "update", "delete", "list", "sudo" ]
 }
 EOF'
 
@@ -93,80 +93,23 @@ EOF'
 
   # Set the Kubernetes Auth config for Vault to the mounted token.
   kubectl --context="${MGMT}" exec -n vault vault-0 -- /bin/sh -c 'vault write auth/userpass/users/admin \
-      password=admin \
-      policies=admin'
+password=admin \
+policies=admin'
 }
 
-vault-enable-kube-auth(){
+vault-setup-istio-pki() {
+  kubectl apply --context $MGMT -f $LOCAL_DIR/vault-setup-pod.yaml
+  kubectl wait --for=condition=ready pod -l app=vault-setup -n vault --context $MGMT --timeout 60s
 
-  # Enable Vault auth for Kubernetes.
-  kubectl --context="${MGMT}" exec -n vault vault-0 -- /bin/sh -c 'vault auth enable kubernetes'
+  kubectl --context $MGMT -n vault cp $LOCAL_DIR/vault-configure.sh vault-setup:/tmp/vault-configure.sh
 
-  # Set the Kubernetes Auth config for Vault to the mounted token.
-  kubectl --context="${MGMT}" exec -n vault vault-0 -- /bin/sh -c 'vault write auth/kubernetes/config \
-  token_reviewer_jwt="$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" \
-  kubernetes_host="https://$KUBERNETES_PORT_443_TCP_ADDR:443" \
-  kubernetes_ca_cert=@/var/run/secrets/kubernetes.io/serviceaccount/ca.crt'
+  export VAULT_ADDR=http://$(kubectl --context ${MGMT} -n vault get svc vault -o jsonpath='{.status.loadBalancer.ingress[0].*}'):8200
 
-  # Bind the istiod service account to the PKI policy.
-  kubectl --context="${MGMT}" exec -n vault vault-0 -- /bin/sh -c 'vault write \
-  auth/kubernetes/role/gen-int-ca-istio \
-  bound_service_account_names=istiod-service-account \
-  bound_service_account_namespaces=istio-system \
-  policies=gen-int-ca-istio \
-  ttl=2400h'
-
-  # Initialize the Vault PKI.
-  kubectl --context="${MGMT}" exec -n vault vault-0 -- /bin/sh -c 'vault secrets enable pki'
+  kubectl exec --context $MGMT -n vault -it vault-setup -- /tmp/vault-configure.sh $VAULT_ADDR
 }
 
-vault-setup-ca(){
 
-  # TODO this only works if openssl is not using LibreSSL
-  openssl req -new -newkey rsa:4096 -x509 -sha256 \
-      -days 3650 -nodes -out $LOCAL_DIR/root-cert.pem -keyout $LOCAL_DIR/root-key.pem \
-      -subj "/O=solo.io"
-
-  # Set the Vault CA to the pem_bundle.
-  kubectl --context="${MGMT}" exec -n vault vault-0 -- /bin/sh -c "vault write -format=json pki/config/ca pem_bundle=\"$(cat $LOCAL_DIR/root-key.pem $LOCAL_DIR/root-cert.pem)\""
-
-  # Initialize the Vault intermediate cert path.
-  kubectl --context="${MGMT}" exec -n vault vault-0 -- /bin/sh -c 'vault secrets enable -path pki_int pki'
-
-  # Set the policy for the intermediate cert path.
-  kubectl --context="${MGMT}" exec -n vault vault-0 -- /bin/sh -c 'vault policy write gen-int-ca-istio - <<EOF
-  path "pki_int/*" {
-  capabilities = ["create", "read", "update", "delete", "list"]
-  }
-  path "pki/cert/ca" {
-  capabilities = ["read"]
-  }
-  path "pki/root/sign-intermediate" {
-  capabilities = ["create", "read", "update", "list"]
-  }
-  EOF'
-
-  # Cert manager signing
-  kubectl --context="${MGMT}" exec -n vault vault-0 -- /bin/sh -c 'vault policy write cert-manager-pki - <<EOF
-  path "pki_int/*" {
-  capabilities = ["read","list"]
-  }
-  path "pki/sign/*" {
-  capabilities = ["create","update"]
-  }
-  path "pki/issue/*" {
-  capabilities = ["create"]
-  }
-  EOF'
-
-  rm $LOCAL_DIR/root-cert.pem $LOCAL_DIR/root-key.pem
-}
-
-# Install Everything
-vault-install(){
-  vault-enable-kube-auth
-  vault-setup-ca
-  vault-enable-basic-auth
-}
-
+vault-install-helm
+vault-enable-basic-auth
+vault-setup-istio-pki
 
