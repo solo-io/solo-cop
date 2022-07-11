@@ -14,7 +14,7 @@ apiVersion: admin.gloo.solo.io/v2
 kind: RateLimitServerConfig
 metadata:
   name: rate-limit-server-config
-  namespace: web-team
+  namespace: ops-team
 spec:
   destinationServers:
   - ref:
@@ -52,7 +52,7 @@ spec:
       cluster: mgmt
     ratelimitServerConfig:
       name: rate-limit-server-config
-      namespace: web-team
+      namespace: ops-team
       cluster: mgmt
     phase:
       preAuthz: { }
