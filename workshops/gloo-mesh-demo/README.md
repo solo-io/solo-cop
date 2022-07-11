@@ -46,7 +46,7 @@ To get started with this workshop, clone this repo.
 
 ```sh
 git clone https://github.com/solo-io/solo-cop.git
-cd solo-cop/workshops/gloo-mesh-demo && git checkout v1.0.3
+cd solo-cop/workshops/gloo-mesh-demo && git checkout v1.0.4
 ```
 
 Set these environment variables which will be used throughout the workshop.
@@ -54,12 +54,12 @@ Set these environment variables which will be used throughout the workshop.
 ```sh
 # Used to enable Gloo Mesh (please ask for a trail license key)
 export GLOO_MESH_LICENSE_KEY=<licence_key>
-export GLOO_MESH_VERSION=v2.0.8
+export GLOO_MESH_VERSION=v2.0.11
 
 # Istio version information
 export ISTIO_IMAGE_REPO=<please ask for repo information>
-export ISTIO_IMAGE_TAG=1.13.4-solo
-export ISTIO_VERSION=1.13.4
+export ISTIO_IMAGE_TAG=1.13.5-solo
+export ISTIO_VERSION=1.13.5
 ```
 
 ## Lab 1 - Configure/Deploy the Kubernetes clusters <a name="Lab-1"></a>
@@ -866,7 +866,7 @@ apiVersion: admin.gloo.solo.io/v2
 kind: RateLimitServerConfig
 metadata:
   name: rate-limit-server-config
-  namespace: web-team
+  namespace: ops-team
 spec:
   destinationServers:
   - ref:
@@ -904,7 +904,7 @@ spec:
       cluster: mgmt
     ratelimitServerConfig:
       name: rate-limit-server-config
-      namespace: web-team
+      namespace: ops-team
       cluster: mgmt
     phase:
       preAuthz: { }
