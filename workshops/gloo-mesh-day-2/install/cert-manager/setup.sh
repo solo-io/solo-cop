@@ -29,7 +29,7 @@ metadata:
   namespace: istio-system
 spec:
   vault:
-    path: v1/root/istio-ca-issuer
+    path: pki_int/root/sign-intermediate
     server: $VAULT_ADDR
     auth:
       tokenSecretRef:
@@ -67,7 +67,7 @@ metadata:
   namespace: istio-system
 spec:
   vault:
-    path: pki_int/sign/istio-ca-issuer
+    path: pki_int/root/sign-intermediate
     server: $VAULT_ADDR
     auth:
       tokenSecretRef:
@@ -81,8 +81,8 @@ metadata:
   namespace: istio-system
 spec:
   secretName: cacerts
-  duration: 720h # 30d
-  renewBefore: 360h # 15d
+  duration: 1h # 30d
+  renewBefore: 10m # 15d
   commonName: cluster1.solo.io
   isCA: true
   usages:
@@ -104,7 +104,7 @@ metadata:
   namespace: istio-system
 spec:
   vault:
-    path: pki_int/sign/istio-ca-issuer
+    path: pki_int/root/sign-intermediate
     server: $VAULT_ADDR
     auth:
       tokenSecretRef:
