@@ -18,19 +18,19 @@ export VAULT_ADDR=http://$(kubectl --context ${MGMT} -n vault get svc vault -o j
 
 TOKEN=$(kubectl get configmap -n vault --context $MGMT cert-manager-token -o json | jq -r '.data.token')
 
-kubectl create secret generic vault-token -n istio-system --context $MGMT --from-literal=token=$TOKEN
-kubectl create secret generic vault-token -n istio-system --context $CLUSTER1 --from-literal=token=$TOKEN
-kubectl create secret generic vault-token -n istio-system --context $CLUSTER2 --from-literal=token=$TOKEN
+kubectl create secret generic vault-token -n cert-manager --context $MGMT --from-literal=token=$TOKEN
+kubectl create secret generic vault-token -n cert-manager --context $CLUSTER1 --from-literal=token=$TOKEN
+kubectl create secret generic vault-token -n cert-manager --context $CLUSTER2 --from-literal=token=$TOKEN
 
 kubectl apply --context $MGMT -f- <<EOF
 apiVersion: cert-manager.io/v1
-kind: Issuer
+kind: ClusterIssuer
 metadata:
-  name: vault-issuer
-  namespace: istio-system
+  name: vault-issuer-istio
+  namespace: cert-manager
 spec:
   vault:
-    path: pki_int/root/sign-intermediate
+    path: pki_int_istio/root/sign-intermediate
     server: $VAULT_ADDR
     auth:
       tokenSecretRef:
@@ -55,20 +55,20 @@ spec:
   dnsNames:
     - mgmt.solo.io
   issuerRef:
-    kind: Issuer
+    kind: ClusterIssuer
     name: vault-issuer
 EOF
 
 
 kubectl apply --context $CLUSTER1 -f- <<EOF
 apiVersion: cert-manager.io/v1
-kind: Issuer
+kind: ClusterIssuer
 metadata:
-  name: vault-issuer
+  name: vault-issuer-istio
   namespace: istio-system
 spec:
   vault:
-    path: pki_int/root/sign-intermediate
+    path: pki_int_istio/root/sign-intermediate
     server: $VAULT_ADDR
     auth:
       tokenSecretRef:
@@ -93,19 +93,19 @@ spec:
   dnsNames:
     - cluster1.solo.io
   issuerRef:
-    kind: Issuer
+    kind: ClusterIssuer
     name: vault-issuer
 EOF
 
 kubectl apply --context $CLUSTER2 -f- <<EOF
 apiVersion: cert-manager.io/v1
-kind: Issuer
+kind: ClusterIssuer
 metadata:
-  name: vault-issuer
+  name: vault-issuer-istio
   namespace: istio-system
 spec:
   vault:
-    path: pki_int/root/sign-intermediate
+    path: pki_int_istio/root/sign-intermediate
     server: $VAULT_ADDR
     auth:
       tokenSecretRef:
@@ -130,6 +130,6 @@ spec:
   dnsNames:
     - cluster2.solo.io
   issuerRef:
-    kind: Issuer
+    kind: ClusterIssuer
     name: vault-issuer
 EOF

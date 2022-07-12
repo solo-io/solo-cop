@@ -29,30 +29,49 @@ vault write pki/config/urls \
      issuing_certificates="$VAULT_ADDR/v1/pki/ca" \
      crl_distribution_points="$VAULT_ADDR/v1/pki/crl"
 
-vault secrets enable -path=pki_int pki
+vault secrets enable -path=pki_int_istio pki
 
-vault secrets tune -max-lease-ttl=43800h pki_int
+vault secrets tune -max-lease-ttl=43800h pki_int_istio
 
-vault write -format=json pki_int/intermediate/generate/internal \
-     common_name="SOLO Istio CA Issuer" \
+vault write -format=json  pki_int_istio/intermediate/generate/internal \
+     common_name="Solo.io Istio CA Issuer" \
      issuer_name="solo.io-istio-issuer" \
-     | jq -r '.data.csr' > /pki_intermediate.csr
+     | jq -r '.data.csr' > /pki_intermediate_istio.csr
 
 vault write -format=json pki/root/sign-intermediate \
      issuer_ref="root-2022" \
-     csr=@/pki_intermediate.csr \
+     csr=@/pki_intermediate_istio.csr \
      format=pem_bundle ttl="43800h" \
-     | jq -r '.data.certificate' > /intermediate.cert.pem
+     | jq -r '.data.certificate' > /intermediate_istio.cert.pem
 
-vault write pki_int/intermediate/set-signed certificate=@/intermediate.cert.pem
+vault write  pki_int_istio/intermediate/set-signed certificate=@/intermediate_istio.cert.pem
 
+# vault write  pki_int_istio/roles/istio-ca-issuer \
+#      allowed_domains="solo.io" \
+#      allow_subdomains=true \
+#      max_ttl="720h"
 
-vault write pki_int/roles/istio-ca-issuer \
-     allowed_domains="solo.io" \
-     allow_subdomains=true \
+## GLoo Mesh Intermediate
+vault secrets enable -path=pki_int_gloo_mesh pki
+
+vault secrets tune -max-lease-ttl=43800h pki_int_gloo_mesh
+
+vault write -format=json  pki_int_gloo_mesh/intermediate/generate/internal \
+     common_name="Solo.io Gloo Mesh CA Issuer" \
+     issuer_name="solo.io-gloo-mesh-issuer" \
+     | jq -r '.data.csr' > /pki_intermediate_gloo_mesh.csr
+
+vault write -format=json pki/root/sign-intermediate \
+     issuer_ref="root-2022" \
+     csr=@/pki_intermediate_gloo_mesh.csr \
+     format=pem_bundle ttl="43800h" \
+     | jq -r '.data.certificate' > /intermediate_gloo_mesh.cert.pem
+
+vault write pki_int_gloo_mesh/intermediate/set-signed certificate=@/intermediate_gloo_mesh.cert.pem
+
+vault write pki_int_gloo_mesh/roles/gloo-mesh-issuer \
+     allow_any_name=true \
      max_ttl="720h"
-
-# vault write pki_int/issue/istio-ca-issuer common_name="cluster1.solo.io" ttl="24h"
 
 # create token for cert manager to use
 TOKEN_RESPONSE=$(vault token create -policy=admin -format json)
