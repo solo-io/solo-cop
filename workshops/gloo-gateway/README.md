@@ -117,7 +117,7 @@ istioctl version
 ```sh
 kubectl create namespace gloo-gateway
 kubectl label namespace gloo-gateway istio-injection=enabled
-istioctl install -y  -f install/istio/istiooperator-cluster1.yaml
+istioctl install -y  -f install/gloo-gateway/install.yaml
 ```
 
 Secondly you need to setup our cluster environment to enable all the API gateway features. The below script deploys the optional `gloo-mesh-addons` features that enable features such as external authorization and rate limiting. Finally you will also deploy your own OIDC provider `keycloak` which will allow you to secure your website with a user/pass login. 

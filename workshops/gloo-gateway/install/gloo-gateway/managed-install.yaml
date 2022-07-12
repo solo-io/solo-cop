@@ -1,0 +1,65 @@
+apiVersion: admin.gloo.solo.io/v2
+kind: IstioLifecycleManager
+metadata:
+  name: gloo-control-plane
+  namespace: gloo-mesh
+spec:
+  clusters:
+    - name: mgmt-cluster
+  installations:
+    - name: control-plane
+      istioOperatorSpec:
+        profile: minimal
+        tag: 1.13.4-solo
+        hub: us-docker.pkg.dev/gloo-mesh/istio-workshops
+        meshConfig:
+          defaultConfig:
+            envoyAccessLogService:
+              address: enterprise-agent.gloo-mesh:9977
+            envoyMetricsService:
+              address: enterprise-agent.gloo-mesh:9977
+            proxyMetadata:
+              ISTIO_META_DNS_CAPTURE: "true"
+            proxyStatsMatcher:
+              inclusionPrefixes:
+              - "http"
+        components:
+          ingressGateways:
+          - name: istio-ingressgateway
+            enabled: false
+---
+apiVersion: admin.gloo.solo.io/v2
+kind: IstioLifecycleManager
+metadata:
+  name: gloo-gateway
+  namespace: gloo-mesh
+spec:
+  clusters:
+    - name: mgmt-cluster
+  installations:
+    - name: gloo-gateway
+      istioOperatorSpec:
+        profile: empty
+        tag: 1.13.4-solo
+        hub: us-docker.pkg.dev/gloo-mesh/istio-workshops
+        components:
+          ingressGateways:
+          - name: gloo-gateway
+            namespace: gloo-gateway
+            enabled: true
+            k8s:
+              service:
+                type: LoadBalancer
+                ports:
+                  # health check port (required to be first for aws elbs)
+                  - name: status-port
+                    port: 15021
+                    targetPort: 15021
+                  # main http ingress port
+                  - port: 80
+                    targetPort: 8080
+                    name: http2
+                  # main https ingress port
+                  - port: 443
+                    targetPort: 8443
+                    name: https
