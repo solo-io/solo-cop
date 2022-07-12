@@ -1,0 +1,36 @@
+apiVersion: k3d.io/v1alpha3
+kind: Simple
+name: cluster1
+image: rancher/k3s:v1.21.3-k3s1
+ports:
+  - port: 8080:80
+    nodeFilters:
+      - loadbalancer
+  - port: 8443:443
+    nodeFilters:
+      - loadbalancer
+  - port: 9000:9000
+    nodeFilters:
+      - loadbalancer
+options:
+  k3d:
+    wait: true
+    timeout: "60s"
+    disableLoadbalancer: false
+  k3s:
+    extraArgs:
+      - arg: --disable=traefik
+        nodeFilters:
+          - server:*
+    nodeLabels:
+      - label: topology.kubernetes.io/region=us-east-1
+        nodeFilters:
+          - agent:*
+          - server:*
+      - label: topology.kubernetes.io/zone=us-east-1a
+        nodeFilters:
+          - agent:*
+          - server:*
+  kubeconfig:
+    updateDefaultKubeconfig: true
+    switchCurrentContext: false
