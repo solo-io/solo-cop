@@ -560,11 +560,19 @@ spec:
 EOF
 ```
 
-```
+* Call httpbin without an api key
+
+```sh
 curl -v http://$GLOO_GATEWAY/httpbin/get
+```
 
+* Call httpbin with the developer api key
+```sh
 curl -H "x-api-key: developer" -v http://$GLOO_GATEWAY/httpbin/get
+```
 
+* Call httpbin with the admin api key
+```sh
 curl -H "x-api-key: admin" -v http://$GLOO_GATEWAY/httpbin/get
 ```
 
@@ -631,6 +639,8 @@ spec:
 EOF
 ```
 
+* Call Auth0 to generate a temporary jwt token
+
 ```sh
 ACCESS_TOKEN=$(curl -sS --request POST \
   --url https://dev-64ktibmv.us.auth0.com/oauth/token \
@@ -640,11 +650,13 @@ ACCESS_TOKEN=$(curl -sS --request POST \
 printf "\n\n Access Token: $ACCESS_TOKEN\n"
 ```
 
-* No Access Token
+* Try calling currency service with no access token
 
 ```sh
 grpcurl --plaintext --proto ./install/online-boutique/online-boutique.proto -d '{ "from": { "currency_code": "USD", "nanos": 44637071, "units": "31" }, "to_code": "JPY" }' $GLOO_GATEWAY:80 hipstershop.CurrencyService/Convert
 ```
+
+* Call currency service with an access token
 
 ```sh
 grpcurl -H "Authorization: Bearer ${ACCESS_TOKEN}" --plaintext --proto ./install/online-boutique/online-boutique.proto -d '{ "from": { "currency_code": "USD", "nanos": 44637071, "units": "31" }, "to_code": "JPY" }' $GLOO_GATEWAY:80 hipstershop.CurrencyService/Convert
@@ -809,7 +821,7 @@ EOF
 * Test Rate Limiting
 
 ```sh
-for i in {1..6}; do curl -iksS -H "x-api-key: developer" -X GET http://$GLOO_GATEWAY/httpbin/get | tail -n 10; done
+for i in {1..6}; do curl -iksS -H "x-api-key: developer" -X GET https://$GLOO_GATEWAY/httpbin/get | tail -n 10; done
 ```
 
 * Expected Response
