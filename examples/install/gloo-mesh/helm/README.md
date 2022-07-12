@@ -26,7 +26,7 @@ helm repo update
 
 * Default Management plane values
 ```
-helm show values gloo-mesh-enterprise/gloo-mesh-enterprise --version --version $GLOO_MESH_VERSION
+helm show values gloo-mesh-enterprise/gloo-mesh-enterprise --version $GLOO_MESH_VERSION
 ```
 
 * Default control plane values
