@@ -10,13 +10,13 @@
 * [Lab 3 - Deploy Gloo API Gateway](#Lab-3)
 * [Lab 4 - Deploy Online Boutique Sample Application](#Lab-4)
 * [Lab 5 - Configure Gloo Platform](#Lab-5)
-* [Lab 6 - Routing](#Lab-6)
-* [Lab 7 - GRPC to JSON Transcoding](#Lab-7)
+* [Lab 6 - Expose Online Boutique](#Lab-6)
+* [Lab 7 - Routing](#Lab-7)
 * [Lab 8 - Web Application Firewall](#Lab-8)
-* [Lab 9 - Rate Limiting](#Lab-9)
-* [Lab 10 - Authentication / API Key](#Lab-10)
-* [Lab 11 - Authentication / JWT + JWKS](#Lab-11)
-* [Lab 12 - Authentication / OIDC ](#Lab-12)
+* [Lab 9 - Authentication / API Key](#Lab-9)
+* [Lab 10 - Authentication / JWT + JWKS](#Lab-10)
+* [Lab 11 - Authentication / OIDC](#Lab-11)
+* [Lab 12 - Rate Limiting](#Lab-12)
 
 ## Introduction <a name="introduction"></a>
 
@@ -48,7 +48,7 @@ Set these environment variables which will be used throughout the workshop.
 ```sh
 # Used to enable Gloo Mesh (please ask for a trail license key)
 export GLOO_GATEWAY_LICENSE_KEY=<licence_key>
-export GLOO_PLATFORM_VERSION=v2.1.0-beta8
+export GLOO_PLATFORM_VERSION=v2.1.0-beta10
 
 # Istio version information
 export ISTIO_IMAGE_REPO=us-docker.pkg.dev/gloo-mesh/istio-workshops
@@ -88,6 +88,13 @@ curl -sL https://run.solo.io/meshctl/install | GLOO_MESH_VERSION=${GLOO_PLATFORM
 export PATH=$HOME/.gloo-mesh/bin:$PATH
 ```
 
+2. Test that `meshctl` is correctly installed
+```sh
+meshctl version
+```
+
+3. Install Gloo Platform using `meshctl`
+
 ```sh
 meshctl install --license $GLOO_GATEWAY_LICENSE_KEY --register --version $GLOO_PLATFORM_VERSION
 ```
@@ -111,7 +118,6 @@ istioctl version
 kubectl create namespace gloo-gateway
 kubectl label namespace gloo-gateway istio-injection=enabled
 istioctl install -y  -f install/istio/istiooperator-cluster1.yaml
-# kubectl apply -f install/gloo-gateway/install.yaml
 ```
 
 Secondly you need to setup our cluster environment to enable all the API gateway features. The below script deploys the optional `gloo-mesh-addons` features that enable features such as external authorization and rate limiting. Finally you will also deploy your own OIDC provider `keycloak` which will allow you to secure your website with a user/pass login. 
@@ -210,6 +216,7 @@ Each workspace can have only one WorkspaceSettings resource.
 
 ## Lab 6 - Expose the Online Boutique <a name="Lab-6"></a>
 
+1. Create ingress routes from the gateway and delegate the traffic to the `dev-team`.
 ```yaml
 kubectl apply -f - <<'EOF'
 apiVersion: networking.gloo.solo.io/v2
@@ -253,6 +260,8 @@ spec:
         - workspace: dev-team
 EOF
 ```
+
+2. Create a route table to send traffic to the frontend application.
 
 ```yaml
 kubectl apply -f - <<'EOF'
@@ -395,7 +404,7 @@ spec:
     - matchers:
       - uri:
           prefix: /httpbin
-      name: frontend
+      name: httpbin-all
       labels:
         route: httpbin
       forwardTo:
@@ -414,15 +423,7 @@ EOF
 curl -v $GLOO_GATEWAY/httpbin/get
 ```
 
-
-TODO Grpc to json
-
-
-## Lab 8 - Security <a name="Lab-8"></a>
-
-
-
-#### Web Application Firewall (WAF)
+## Lab 8 - Web Application Firewall (WAF)<a name="Lab-8"></a>
 
 Gloo Mesh Gateway utilizes OWASP ModSecurity to add WAF features into the ingress gateway. Not only can you enable the [OWASP Core Rule Set](https://owasp.org/www-project-modsecurity-core-rule-set/) easily, but also you can enable many other advanced features to protect your applications.
 
@@ -487,95 +488,7 @@ Log4Shell malicious payload
 
 Your frontend app is no longer susceptible to `log4j` attacks, nice!
 
-
-### 3. Add Rate Limiting
-
-Secondly, we will look at rate limiting with Gloo Mesh Gateway.  The rate limiting feature relies on a rate limit server that has been installed in our gloo-mesh-addons namespace.
-
-For rate limiting, we need to create three CRs.  Let's start with the `RateLimitClientConfig`.
-
-The `RateLimitClientConfig` defines the conditions in the request that will invoke rate limiting.  In this case, we will define a key coming from the header `X-Organization`.
-
-The `RateLimitPolicy` pulls together the `RateLimitClientConfig`, `RateLimitServerConfig` and sets the label selector to use in the `RouteTable`.
-
-* Apply the `RateLimitPolicy`
-
-```yaml
-kubectl apply -f - <<'EOF'
-apiVersion: trafficcontrol.policy.gloo.solo.io/v2
-kind: RateLimitClientConfig
-metadata:
-  name: rate-limit-client-config
-  namespace: dev-team
-spec:
-  raw:
-    rateLimits:
-    - actions:
-      - genericKey:
-          descriptorValue: counter
----
-apiVersion: admin.gloo.solo.io/v2
-kind: RateLimitServerConfig
-metadata:
-  name: rate-limit-server-config
-  namespace: dev-team
-spec:
-  destinationServers:
-  - ref:
-      name: rate-limiter
-      namespace: gloo-gateway-addons
-    port:
-      name: grpc
-  raw:
-    descriptors:
-    - key: generic_key
-      rateLimit:
-        requestsPerUnit: 3
-        unit: MINUTE
-      value: counter
----
-apiVersion: trafficcontrol.policy.gloo.solo.io/v2
-kind: RateLimitPolicy
-metadata:
-  name: rate-limit-policy
-  namespace: dev-team
-spec:
-  applyToRoutes:
-  - route:
-      labels:
-        route: httpbin ##### NOTE
-  config:
-    serverSettings:
-      name: rate-limit-server-settings
-      namespace: dev-team
-    ratelimitClientConfig:
-      name: rate-limit-client-config
-      namespace: dev-team
-    ratelimitServerConfig:
-      name: rate-limit-server-config
-      namespace: dev-team
-    phase:
-      preAuthz: { }
-EOF
-```
-
-* Test Rate Limiting
-
-```sh
-for i in {1..6}; do curl -iksS -X GET http://$GLOO_GATEWAY/httpbin/get | tail -n 10; done
-```
-
-* Expected Response - If you try the Online Boutique UI you will see a blank page because the rate-limit response is in the headers
-
-```sh
-HTTP/2 429
-x-envoy-ratelimited: true
-date: Sun, 05 Jun 2022 18:50:53 GMT
-server: istio-envoy
-x-envoy-upstream-service-time: 7
-```
-
-### Authentication
+### Lab 9 - Authentication / API Key<a name="Lab-9"></a>
 
 ```
 echo -n "admin" | base64
@@ -655,7 +568,7 @@ curl -H "x-api-key: developer" -v http://$GLOO_GATEWAY/httpbin/get
 curl -H "x-api-key: admin" -v http://$GLOO_GATEWAY/httpbin/get
 ```
 
-* JWT Token
+## Lab 10 - Authentication / JWT + JWKS<a name="Lab-10"></a>
 
 ```yaml
 kubectl apply -f - <<EOF
@@ -737,7 +650,7 @@ grpcurl --plaintext --proto ./install/online-boutique/online-boutique.proto -d '
 grpcurl -H "Authorization: Bearer ${ACCESS_TOKEN}" --plaintext --proto ./install/online-boutique/online-boutique.proto -d '{ "from": { "currency_code": "USD", "nanos": 44637071, "units": "31" }, "to_code": "JPY" }' $GLOO_GATEWAY:80 hipstershop.CurrencyService/Convert
 ```
 
-#### External Authorization (OIDC)
+## Lab 11 - Authentication / OIDC<a name="Lab-11"></a>
 
 Another valuable feature of API gateways is integration into your IdP (Identity Provider). In this section of the lab, we see how Gloo Mesh Gateway can be configured to redirect unauthenticated users via OIDC.  We will use Keycloak as our IdP, but you could use other OIDC-compliant providers in your production clusters.
 
@@ -820,3 +733,91 @@ And the application is now accessible.
 
 
 * When you are finished, click the 'logout' button in the top right corner of the screen.
+
+
+## Lab 12 - Rate Limiting<a name="Lab-12"></a>
+
+Secondly, we will look at rate limiting with Gloo Mesh Gateway.  The rate limiting feature relies on a rate limit server that has been installed in our gloo-mesh-addons namespace.
+
+For rate limiting, we need to create three CRs.  Let's start with the `RateLimitClientConfig`.
+
+The `RateLimitClientConfig` defines the conditions in the request that will invoke rate limiting.  In this case, we will define a key coming from the header `X-Organization`.
+
+The `RateLimitPolicy` pulls together the `RateLimitClientConfig`, `RateLimitServerConfig` and sets the label selector to use in the `RouteTable`.
+
+* Apply the `RateLimitPolicy`
+
+```yaml
+kubectl apply -f - <<'EOF'
+apiVersion: trafficcontrol.policy.gloo.solo.io/v2
+kind: RateLimitClientConfig
+metadata:
+  name: rate-limit-client-config
+  namespace: dev-team
+spec:
+  raw:
+    rateLimits:
+    - actions:
+      - genericKey:
+          descriptorValue: counter
+---
+apiVersion: admin.gloo.solo.io/v2
+kind: RateLimitServerConfig
+metadata:
+  name: rate-limit-server-config
+  namespace: ops-team
+spec:
+  destinationServers:
+  - ref:
+      name: rate-limiter
+      namespace: gloo-gateway-addons
+    port:
+      name: grpc
+  raw:
+    descriptors:
+    - key: generic_key
+      rateLimit:
+        requestsPerUnit: 3
+        unit: MINUTE
+      value: counter
+---
+apiVersion: trafficcontrol.policy.gloo.solo.io/v2
+kind: RateLimitPolicy
+metadata:
+  name: rate-limit-policy
+  namespace: dev-team
+spec:
+  applyToRoutes:
+  - route:
+      labels:
+        rate-limit: "enabled" ##### NOTE
+  config:
+    serverSettings:
+      name: rate-limit-server-settings
+      namespace: dev-team
+    ratelimitClientConfig:
+      name: rate-limit-client-config
+      namespace: dev-team
+    ratelimitServerConfig:
+      name: rate-limit-server-config
+      namespace: ops-team
+    phase:
+      preAuthz: { }
+EOF
+```
+
+* Test Rate Limiting
+
+```sh
+for i in {1..6}; do curl -iksS -H "x-api-key: developer" -X GET http://$GLOO_GATEWAY/httpbin/get | tail -n 10; done
+```
+
+* Expected Response
+
+```sh
+HTTP/2 429
+x-envoy-ratelimited: true
+date: Sun, 05 Jun 2022 18:50:53 GMT
+server: istio-envoy
+x-envoy-upstream-service-time: 7
+```
