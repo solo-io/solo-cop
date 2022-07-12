@@ -9,11 +9,6 @@ If using MacOS + Homebrew:
 brew install k3d
 ```
 
-# Deploy a single k3d cluster
-```
-create-k3d-cluster <name> </path/to/k3d/config>
-```
-
 # Using Install Script
 Installs 3 clusters using k3d
 ```
