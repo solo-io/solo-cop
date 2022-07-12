@@ -1,0 +1,38 @@
+apiVersion: k3d.io/v1alpha4
+kind: Simple
+metadata:
+  name: mgmt
+#image: rancher/k3s:v1.21.9-k3s1
+#image: rancher/k3s:v1.22.8-k3s1 
+image: rancher/k3s:v1.23.5-k3s1 
+network: k3d-cluster-network
+ports:
+  - port: 8090:8090 # same as `--port '8090:8090@loadbalancer'`
+    nodeFilters:
+      - loadbalancer
+  - port: 8200:8200 # same as `--port '8200:8200@loadbalancer'`
+    nodeFilters:
+      - loadbalancer
+registries: # define how registries should be created or used
+  use:
+    - k3d-registry.localhost:12345
+options:
+  k3d: # k3d runtime settings
+    wait: true # wait for cluster to be usable before returining; same as `--wait` (default: true)
+    timeout: "60s" # wait timeout before aborting; same as `--timeout 60s`
+    disableLoadbalancer: false # same as `--no-lb`
+  k3s: # options passed on to K3s itself
+    extraArgs: # additional arguments passed to the `k3s server` command; same as `--k3s-server-arg`
+      - arg: --disable=traefik
+        nodeFilters:
+          - server:*
+    nodeLabels:
+      - label: topology.kubernetes.io/region=us-east-1 # same as `--k3s-node-label 'foo=bar@agent:1'` -> this results in a Kubernetes node label
+        nodeFilters:
+          - agent:*
+      - label: topology.kubernetes.io/zone=us-east-1a # same as `--k3s-node-label 'foo=bar@agent:1'` -> this results in a Kubernetes node label
+        nodeFilters:
+          - agent:*
+  kubeconfig:
+    updateDefaultKubeconfig: true # add new cluster to your default Kubeconfig; same as `--kubeconfig-update-default` (default: true)
+    switchCurrentContext: false # also set current-context to the new cluster's context; same as `--kubeconfig-switch-context` (default: true)
