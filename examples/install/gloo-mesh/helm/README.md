@@ -11,7 +11,7 @@ export MGMT_CONTEXT=mgmt
 export REMOTE_CONTEXT1=cluster1
 export REMOTE_CONTEXT2=cluster2
 
-export GLOO_MESH_VERSION=v2.0.0-beta33
+export GLOO_MESH_VERSION=v2.0.11
 ```
 
 ## Helm Repositories
@@ -75,10 +75,10 @@ EOF
 
 * Grab the mgmt plane IP address that the agents will connect through
 ```sh
-MGMT_INGRESS_ADDRESS=$(kubectl get svc -n gloo-mesh gloo-mesh-mgmt-server --context $MGMT -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-MGMT_INGRESS_PORT=$(kubectl -n gloo-mesh get service gloo-mesh-mgmt-server --context $MGMT -o jsonpath='{.spec.ports[?(@.name=="grpc")].port}')
-RELAY_ADDRESS=${MGMT_INGRESS_ADDRESS}:${MGMT_INGRESS_PORT}
-echo "RELAY_ADDRESS: ${RELAY_ADDRESS}"
+MGMT_SERVER_NETWORKING_DOMAIN=$(kubectl get svc -n gloo-mesh gloo-mesh-mgmt-server --context $MGMT_CONTEXT -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+MGMT_SERVER_NETWORKING_PORT=$(kubectl -n gloo-mesh get service gloo-mesh-mgmt-server --context $MGMT_CONTEXT -o jsonpath='{.spec.ports[?(@.name=="grpc")].port}')
+MGMT_SERVER_NETWORKING_ADDRESS=${MGMT_SERVER_NETWORKING_DOMAIN}:${MGMT_SERVER_NETWORKING_PORT}
+echo $MGMT_SERVER_NETWORKING_ADDRESS
 ```
 
 ## Control Plane Authentication
