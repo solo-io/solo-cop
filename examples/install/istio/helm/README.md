@@ -15,8 +15,8 @@ helm repo update
 ## Environment Variables
 ```sh
 ISTIO_VERSION=1.12.6
-REMOTE_CLUSTER1=cluster1
-REMOTE_CLUSTER2=cluster2
+REMOTE_CLUSTER1=cluster-1
+REMOTE_CLUSTER2=cluster-2
 ```
 
 ## Istio Installation
