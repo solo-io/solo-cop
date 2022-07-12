@@ -802,7 +802,7 @@ spec:
   applyToRoutes:
   - route:
       labels:
-        rate-limit: "enabled" ##### NOTE
+        route: "httpbin" ##### NOTE
   config:
     serverSettings:
       name: rate-limit-server-settings
@@ -813,8 +813,6 @@ spec:
     ratelimitServerConfig:
       name: rate-limit-server-config
       namespace: ops-team
-    phase:
-      preAuthz: { }
 EOF
 ```
 
