@@ -20,7 +20,8 @@
 export ISTIO_VERSION=1.14.1
 export MGMT=<mgmt context>
 export CLUSTER1=<cluster1 context>
-```
+export GLOO_MESH_VERSION=v2.1.0-beta10
+``1
 
 ## Lab 2 - Deploy Vault
 
@@ -97,7 +98,7 @@ metadata:
   namespace: cert-manager
 spec:
   vault:
-    path: pki_int_gloo_mesh/roles/gloo-mesh-issuer
+    path: pki_int_gloo_mesh/sign/gloo-mesh-issuer
     server: $VAULT_ADDR
     auth:
       tokenSecretRef:
@@ -131,7 +132,7 @@ metadata:
   namespace: cert-manager
 spec:
   vault:
-    path: pki_int_gloo_mesh/roles/gloo-mesh-issuer
+    path: pki_int_gloo_mesh/sign/gloo-mesh-issuer
     server: $VAULT_ADDR
     auth:
       tokenSecretRef:
@@ -237,7 +238,7 @@ spec:
     kind: ClusterIssuer
     name: vault-issuer-gloo-mesh
   renewBefore: 8736h0m0s
-  secretName: gloo-mesh-mgmt-server-tls-secret
+  secretName: gloo-mesh-mgmt-server-tls-cert
   usages:
     - server auth
     - client auth
@@ -311,8 +312,12 @@ helm show values gloo-mesh-agent/gloo-mesh-agent --version $GLOO_MESH_VERSION
 helm upgrade --install gloo-mesh-enterprise gloo-mesh-enterprise/gloo-mesh-enterprise \
   --version=${GLOO_MESH_VERSION} \
   --set licenseKey=${GLOO_MESH_LICENSE_KEY} \
-  --namespace gloo-mesh \
   --kube-context ${MGMT} \
+  --namespace gloo-mesh \
+  --set glooMeshMgmtServer.relay.disableTokenGeneration=true \
+  --set glooMeshMgmtServer.relay.disableCa=true \
+  --set glooMeshMgmtServer.relay.disableCaCertGeneration=true \
+  --set glooMeshMgmtServer.relay.tlsSecret.name=gloo-mesh-mgmt-server-tls-cert \
   --wait
 ```
 
@@ -323,7 +328,7 @@ kubectl apply --context $MGMT -f- <<EOF
 apiVersion: admin.gloo.solo.io/v2
 kind: KubernetesCluster
 metadata:
-  name: mgmt
+  name: mgmt-cluster
   namespace: gloo-mesh
 spec:
   clusterDomain: cluster.local
@@ -347,6 +352,19 @@ RELAY_ADDRESS=${MGMT_INGRESS_ADDRESS}:${MGMT_INGRESS_PORT}
 echo "RELAY_ADDRESS: ${RELAY_ADDRESS}"
 ```
 
+* Install mgmt cluster agent
+
+```sh
+helm upgrade --install gloo-mesh-agent gloo-mesh-agent/gloo-mesh-agent \
+--kube-context=${MGMT} \
+--namespace gloo-mesh \
+--set relay.serverAddress=${RELAY_ADDRESS} \
+--set cluster=mgmt-cluster \
+--set relay.clientTlsSecret.name=gloo-mesh-mgmt-server-tls-cert \
+--version ${GLOO_MESH_VERSION} \
+--wait
+```
+
 * Install remote cluster
 
 ```sh
@@ -355,7 +373,7 @@ helm upgrade --install gloo-mesh-agent gloo-mesh-agent/gloo-mesh-agent \
 --namespace gloo-mesh \
 --set relay.serverAddress=${RELAY_ADDRESS} \
 --set cluster=${CLUSTER1} \
---set relay.tokenSecret.name=gloo-mesh-agent-tls-cert \
+--set relay.clientTlsSecret.name=gloo-mesh-agent-tls-cert \
 --version ${GLOO_MESH_VERSION} \
 --wait
 ```
@@ -363,42 +381,42 @@ helm upgrade --install gloo-mesh-agent gloo-mesh-agent/gloo-mesh-agent \
 ## Install Istio
 
 ```sh
-  helm repo add istio https://istio-release.storage.googleapis.com/charts
-  helm repo update
+helm repo add istio https://istio-release.storage.googleapis.com/charts
+helm repo update
 ```
 
 * Install Istio CRDs
 
 ```sh
-  helm upgrade --install istio-base istio/base \
-    -n istio-system \
-    --version $ISTIO_VERSION \
-    --kube-context $MGMT \
-    --create-namespace
+helm upgrade --install istio-base istio/base \
+  -n istio-system \
+  --version $ISTIO_VERSION \
+  --kube-context $MGMT \
+  --create-namespace
 
-  helm upgrade --install istio-base istio/base \
-    -n istio-system \
-    --version $ISTIO_VERSION \
-    --kube-context $CLUSTER1\
-    --create-namespace
+helm upgrade --install istio-base istio/base \
+  -n istio-system \
+  --version $ISTIO_VERSION \
+  --kube-context $CLUSTER1\
+  --create-namespace
 ```
 
 * Install Istio control plane
 
 ```sh
-  helm upgrade --install istiod istio/istiod \
-    -f install/istio/operator-mgmt.yaml \
-    --namespace istio-system \
-    --version $ISTIO_VERSION \
-    --kube-context $MGMT \
-    --wait
+helm upgrade --install istiod istio/istiod \
+  -f install/istio/operator-mgmt.yaml \
+  --namespace istio-system \
+  --version $ISTIO_VERSION \
+  --kube-context $MGMT \
+  --wait
 
-  helm upgrade --install istiod istio/istiod \
-    -f install/istio/operator-cluster1.yaml \
-    --namespace istio-system \
-    --version $ISTIO_VERSION \
-    --kube-context $CLUSTER1 \
-    --wait
+helm upgrade --install istiod istio/istiod \
+  -f install/istio/operator-cluster1.yaml \
+  --namespace istio-system \
+  --version $ISTIO_VERSION \
+  --kube-context $CLUSTER1 \
+  --wait
 ```
 
 * Install Gateways in mgmt cluster

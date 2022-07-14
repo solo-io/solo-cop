@@ -1,0 +1,25 @@
+apiVersion: k3d.io/v1alpha3
+kind: Simple
+name: mgmt
+image: rancher/k3s:v1.21.3-k3s1
+network: gloo-mesh-network
+ports:
+  - port: 9900:9900
+    nodeFilters:
+      - loadbalancer
+  - port: 8200:8200
+    nodeFilters:
+      - loadbalancer
+options:
+  k3d: 
+    wait: true
+    timeout: "60s"
+    disableLoadbalancer: false
+  k3s:
+    extraArgs:
+      - arg: --disable=traefik
+        nodeFilters:
+          - server:*
+  kubeconfig:
+    updateDefaultKubeconfig: true
+    switchCurrentContext: false

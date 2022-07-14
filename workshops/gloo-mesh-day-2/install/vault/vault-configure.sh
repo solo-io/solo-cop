@@ -71,6 +71,9 @@ vault write pki_int_gloo_mesh/intermediate/set-signed certificate=@/intermediate
 
 vault write pki_int_gloo_mesh/roles/gloo-mesh-issuer \
      allow_any_name=true \
+     client_flad=true \
+     server_flag=true \
+     enforce_hostnames=false \
      max_ttl="720h"
 
 # create token for cert manager to use
