@@ -21,7 +21,7 @@ export ISTIO_VERSION=1.14.1
 export MGMT=<mgmt context>
 export CLUSTER1=<cluster1 context>
 export GLOO_MESH_VERSION=v2.1.0-beta10
-``1
+```
 
 ## Lab 2 - Deploy Vault
 
