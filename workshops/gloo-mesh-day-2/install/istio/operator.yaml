@@ -5,5 +5,5 @@ metadata:
   namespace: istio-system
 spec:
   profile: minimal
-  hub: k3d-registry.localhost:12345
-  tag: tls-secret-cacerts
+  hub: gcr.io/istio-testing
+  tag: 1.14-dev

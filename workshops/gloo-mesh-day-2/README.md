@@ -16,6 +16,12 @@
 
 2 cluster setup, mgmt and agent cluster
 
+```sh
+export ISTIO_VERSION=1.14.1
+export MGMT=<mgmt context>
+export CLUSTER1=<cluster1 context>
+```
+
 ## Lab 2 - Deploy Vault
 
 ```sh
@@ -43,6 +49,8 @@ password: admin
 
 ```sh
 export VAULT_TOKEN=$(kubectl get configmap -n vault --context $MGMT cert-manager-token -o json | jq -r '.data.token')
+
+printf "\n\nYour vault token: $VAULT_TOKEN\n"
 ```
 
 ## Lab 3 - Deploy Cert Manager
@@ -71,7 +79,7 @@ kubectl apply --context $MGMT -f- <<EOF
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
 metadata:
-  name: vault-istio-issuer
+  name: vault-issuer-istio
   namespace: cert-manager
 spec:
   vault:
@@ -85,7 +93,7 @@ spec:
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
 metadata:
-  name: vault-gloo-mesh-issuer
+  name: vault-issuer-gloo-mesh
   namespace: cert-manager
 spec:
   vault:
@@ -105,7 +113,7 @@ kubectl apply --context ${CLUSTER1} -f- <<EOF
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
 metadata:
-  name: vault-istio-issuer
+  name: vault-issuer-istio
   namespace: cert-manager
 spec:
   vault:
@@ -119,7 +127,7 @@ spec:
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
 metadata:
-  name: vault-gloo-mesh-issuer
+  name: vault-issuer-gloo-mesh
   namespace: cert-manager
 spec:
   vault:
@@ -171,7 +179,7 @@ EOF
 * Create Istio `cacerts` certificate in the `cluster1` cluster
 
 ```yaml
-kubectl apply --context $MGMT -f- <<EOF
+kubectl apply --context $CLUSTER1 -f- <<EOF
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
@@ -195,7 +203,21 @@ spec:
 EOF
 ```
 
+* Verify Secrets are created
+
+```sh
+kubectl get secret -n istio-system cacerts --context $MGMT
+kubectl get secret -n istio-system cacerts --context $CLUSTER1
+```
+
 ## Gloo Mesh Certificate Setup
+
+* Create gloo-mesh namespaces
+
+```sh
+kubectl create namespace gloo-mesh --context $MGMT
+kubectl create namespace gloo-mesh --context $CLUSTER1
+```
 
 * Generate a certificate for the `gloo-mesh-mgmt-server` service
 
@@ -212,11 +234,10 @@ spec:
     - "*.gloo-mesh"
   duration: 8760h0m0s   ### 1 year life
   issuerRef:
-    group: cert-manager.io
-    kind: Issuer
-    name: relay-root-ca
+    kind: ClusterIssuer
+    name: vault-issuer-gloo-mesh
   renewBefore: 8736h0m0s
-  secretName: relay-server-tls-secret
+  secretName: gloo-mesh-mgmt-server-tls-secret
   usages:
     - server auth
     - client auth
@@ -242,9 +263,8 @@ spec:
     - "$CLUSTER1"
   duration: 8760h0m0s   ### 1 year life
   issuerRef:
-    group: cert-manager.io
-    kind: Issuer
-    name: relay-root-ca
+    kind: ClusterIssuer
+    name: vault-issuer-gloo-mesh
   renewBefore: 8736h0m0s
   secretName: gloo-mesh-agent-tls-cert
   usages:
@@ -256,6 +276,13 @@ spec:
     algorithm: "RSA"
     size: 4096
 EOF
+```
+
+* Verify secrets
+
+```sh
+kubectl get secret gloo-mesh-mgmt-server-tls-secret -n gloo-mesh --context $MGMT
+kubectl get secret gloo-mesh-agent-tls-cert -n gloo-mesh --context $CLUSTER1
 ```
 
 ## Install Gloo Mesh
@@ -279,6 +306,7 @@ helm show values gloo-mesh-agent/gloo-mesh-agent --version $GLOO_MESH_VERSION
 ```
 
 * Install Management Plane
+
 ```sh
 helm upgrade --install gloo-mesh-enterprise gloo-mesh-enterprise/gloo-mesh-enterprise \
   --version=${GLOO_MESH_VERSION} \
