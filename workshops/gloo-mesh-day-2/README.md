@@ -457,3 +457,21 @@ helm upgrade --install istio-eastwestgateway istio/gateway \
   --version $ISTIO_VERSION \
   --kube-context $CLUSTER1
 ```
+
+
+### Monitoring
+
+* Install prometheus in the mgmt plane
+
+```
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo update
+
+helm upgrade --install --create-namespace prom prometheus-community/prometheus --version 15.10.3 -n monitoring --kube-context ${MGMT} -f install/prometheus/prom-values.yaml
+```
+
+* Install Grafana in the mgmt plane
+
+```
+kubectl apply -f install/grafana/grafana.yaml --context ${MGMT}
+```
