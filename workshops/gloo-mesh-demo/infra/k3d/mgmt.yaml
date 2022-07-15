@@ -10,6 +10,12 @@ ports:
   - port: 8090:8090
     nodeFilters:
       - loadbalancer
+  - port: 3000:3000
+    nodeFilters:
+      - loadbalancer
+  - port: 9090:9090
+    nodeFilters:
+      - loadbalancer
 options:
   k3d: 
     wait: true
