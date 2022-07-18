@@ -11,6 +11,7 @@
 * [Lab 4 - Install Istio](#Lab-4)
 * [Lab 5 - Tune Gloo Management Server](#Lab-5)
 * [Lab 6 - Monitoring](#Lab-6)
+* [Lab 7 - Expose Centralized Apps via Gloo Gateway](#Lab-7)
 
 ## Introduction <a name="introduction"></a>
 
@@ -576,3 +577,5 @@ helm upgrade --install --create-namespace prom prometheus-community/prometheus -
 ```
 kubectl apply -f install/grafana/grafana.yaml --context ${MGMT}
 ```
+
+## Expose Centralized Apps via Gloo Gateway<a name="Lab-7"></a>
