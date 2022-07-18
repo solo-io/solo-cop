@@ -51,25 +51,25 @@ vault write  pki_int_istio/intermediate/set-signed certificate=@/intermediate_is
 #      allow_subdomains=true \
 #      max_ttl="720h"
 
-## GLoo Mesh Intermediate
-vault secrets enable -path=pki_int_gloo_mesh pki
+## GLoo Intermediate
+vault secrets enable -path=pki_int_gloo pki
 
-vault secrets tune -max-lease-ttl=43800h pki_int_gloo_mesh
+vault secrets tune -max-lease-ttl=43800h pki_int_gloo
 
-vault write -format=json  pki_int_gloo_mesh/intermediate/generate/internal \
-     common_name="Solo.io Gloo Mesh CA Issuer" \
-     issuer_name="solo.io-gloo-mesh-issuer" \
-     | jq -r '.data.csr' > /pki_intermediate_gloo_mesh.csr
+vault write -format=json  pki_int_gloo/intermediate/generate/internal \
+     common_name="Solo.io Gloo CA Issuer" \
+     issuer_name="solo.io-gloo-issuer" \
+     | jq -r '.data.csr' > /pki_intermediate_gloo.csr
 
 vault write -format=json pki/root/sign-intermediate \
      issuer_ref="root-2022" \
-     csr=@/pki_intermediate_gloo_mesh.csr \
+     csr=@/pki_intermediate_gloo.csr \
      format=pem_bundle ttl="43800h" \
-     | jq -r '.data.certificate' > /intermediate_gloo_mesh.cert.pem
+     | jq -r '.data.certificate' > /intermediate_gloo.cert.pem
 
-vault write pki_int_gloo_mesh/intermediate/set-signed certificate=@/intermediate_gloo_mesh.cert.pem
+vault write pki_int_gloo/intermediate/set-signed certificate=@/intermediate_gloo.cert.pem
 
-vault write pki_int_gloo_mesh/roles/gloo-mesh-issuer \
+vault write pki_int_gloo/roles/gloo-issuer \
      allow_any_name=true \
      client_flad=true \
      server_flag=true \
