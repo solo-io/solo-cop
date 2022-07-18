@@ -16,7 +16,7 @@
 
 ![Day 2 Workshop Architecture](images/day2-arch.png)
 
-They day 2 Gloo workshop is all about the best practices and architectures to make your mutli-cluster deployment resilient, secure, and maintainable for the long term. This workshop was created based upon how Solo.io customers have been able to successfully run Gloo in Production as well as the knowledge from our Istio experts. 
+The day 2 Gloo workshop is all about the best practices and architectures to make your mutli-cluster deployment resilient, secure, and maintainable for the long term. This workshop was created based upon how Solo.io customers have been able to successfully run Gloo in Production as well as the knowledge from our Istio experts. 
 
 High level best practices:
 * Use helm and GitOps for deploying infrastructure to kubernetes
