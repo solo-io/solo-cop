@@ -10,7 +10,7 @@
 * [Lab 3 - Install Gloo Mesh](#Lab-3)
 * [Lab 4 - Install Istio](#Lab-4)
 * [Lab 5 - Expose Centralized Apps via Gloo Gateway](#Lab-5)
-* [Lab 6 - Tune Gloo Management Server](#Lab-6)
+* [Lab 6 - Tune Components](#Lab-6)
 * [Lab 7 - Monitoring](#Lab-7)
 
 
@@ -535,7 +535,6 @@ Istio will be installed into both clusters. In a previous step, a gloo mesh agen
 
 ![Istio Architecture](./images/istio-arch.png)
 
-
 Lets begin
 * Add the Istio charts repository
 
@@ -661,9 +660,10 @@ helm upgrade --install istio-ingressgateway-${ISTIO_REVISION} istio/gateway \
   --kube-context ${MGMT} \
   --wait \
   -f- <<EOF
-name: istio-ingressgateway
+name: istio-ingressgateway-${ISTIO_REVISION}
 labels:
   istio: ingressgateway
+  revision: ${ISTIO_REVISION}
 service:
   type: LoadBalancer
   ports:
@@ -687,9 +687,10 @@ helm upgrade --install istio-eastwestgateway-${ISTIO_REVISION} istio/gateway \
   --kube-context ${MGMT} \
   --wait \
   -f- <<EOF
-name: istio-eastwestgateway
+name: istio-eastwestgateway-${ISTIO_REVISION}
 labels:
   istio: eastwestgateway
+  revision: ${ISTIO_REVISION}
 service:
   type: LoadBalancer
   ports:
@@ -715,9 +716,10 @@ helm upgrade --install istio-ingressgateway-${ISTIO_REVISION} istio/gateway \
   --kube-context ${CLUSTER1} \
   --wait \
   -f- <<EOF
-name: istio-ingressgateway
+name: istio-ingressgateway-${ISTIO_REVISION}
 labels:
   istio: ingressgateway
+  revision: ${ISTIO_REVISION}
 service:
   type: LoadBalancer
   ports:
@@ -741,9 +743,10 @@ helm upgrade --install istio-eastwestgateway-${ISTIO_REVISION} istio/gateway \
   --kube-context ${CLUSTER1} \
   --wait \
   -f- <<EOF
-name: istio-eastwestgateway
+name: istio-eastwestgateway-${ISTIO_REVISION}
 labels:
   istio: eastwestgateway
+  revision: ${ISTIO_REVISION}
 service:
   type: LoadBalancer
   ports:
@@ -758,7 +761,92 @@ EOF
 
 ## Expose Centralized Apps via Gloo Gateway<a name="Lab-5"></a>
 
-## Tune Gloo Management Server<a name="Lab-6"></a>
+* Setup Gloo workspace
+
+```yaml
+kubectl create namespace ops-team --context ${MGMT}
+kubectl --context ${MGMT} apply -f - <<EOF
+apiVersion: admin.gloo.solo.io/v2
+kind: Workspace
+metadata:
+  name: ops-team
+  namespace: gloo-mesh
+spec:
+  workloadClusters:
+  - name: 'mgmt-cluster'
+    namespaces:
+    - name: ops-team
+    - name: istio-ingress
+    - name: istio-eastwest
+    - name: gloo-mesh-addons
+    - name: monitoring
+  - name: 'cluster1'
+    namespaces:
+    - name: istio-ingress
+    - name: istio-eastwest
+---
+apiVersion: admin.gloo.solo.io/v2
+kind: WorkspaceSettings
+metadata:
+  name: ops-team
+  namespace: ops-team
+spec:
+  exportTo:
+  - workspaces:
+    - name: "*"
+    resources:
+    - kind: SERVICE
+      namespace: gloo-mesh-addons
+    - kind: VIRTUAL_DESTINATION
+      namespace: gloo-mesh-addons
+  options:
+    federation:
+      enabled: true
+      serviceSelector:
+      - namespace: gloo-mesh-addons
+    eastWestGateways:
+    - selector:
+        labels:
+          istio: eastwestgateway
+          revision: ${ISTIO_REVISION}
+EOF
+```
+
+* Create a VirtualGateway to expose the Gloo Dashboard
+
+```yaml
+kubectl --context ${MGMT} apply -f - <<EOF
+apiVersion: networking.gloo.solo.io/v2
+kind: VirtualGateway
+metadata:
+  name: north-south-gw
+  namespace: ops-team
+spec:
+  workloads:
+    - selector:
+        labels:
+          istio: ingressgateway
+        cluster: mgmt-cluster
+        namespace: istio-ingress
+  listeners: 
+    - http: {}
+      port:
+        number: 80
+      allowedRouteTables:
+        - host: '*'
+          selector:
+            workspace: ops-team
+EOF
+```
+
+* Create the RouteTable
+
+```sh
+
+```
+
+
+## Tune Components<a name="Lab-6"></a>
 
 ```sh
 --reuse-values
@@ -766,7 +854,7 @@ EOF
 
 
 
-## Monitoring <a name="Lab-7"></a>
+## Monitoring<a name="Lab-7"></a>
 
 * Install prometheus in the mgmt plane
 

@@ -720,7 +720,7 @@
           "refId": "A"
         }
       ],
-      "title": "Tanslation Warnings Per Workspace",
+      "title": "Translation Warnings Per Workspace",
       "transformations": [
         {
           "id": "organize",
@@ -887,7 +887,7 @@
           "refId": "A"
         }
       ],
-      "title": "Tanslation Time p95 (Seconds)",
+      "title": "Translation Time p95 (Seconds)",
       "type": "timeseries"
     },
     {
