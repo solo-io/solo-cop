@@ -9,9 +9,10 @@
 * [Lab 2 - PKI / Vault and Cert Manager](#Lab-2)
 * [Lab 3 - Install Gloo Mesh](#Lab-3)
 * [Lab 4 - Install Istio](#Lab-4)
-* [Lab 5 - Tune Gloo Management Server](#Lab-5)
-* [Lab 6 - Monitoring](#Lab-6)
-* [Lab 7 - Expose Centralized Apps via Gloo Gateway](#Lab-7)
+* [Lab 5 - Expose Centralized Apps via Gloo Gateway](#Lab-5)
+* [Lab 6 - Tune Gloo Management Server](#Lab-6)
+* [Lab 7 - Monitoring](#Lab-7)
+
 
 ## Introduction <a name="introduction"></a>
 
@@ -46,8 +47,13 @@ Set these environment variables which will be used throughout the workshop.
 ```sh
 # Used to enable Gloo (please ask for a trail license key)
 export GLOO_LICENSE_KEY=<licence_key>
-export GLOO_PLATFORM_VERSION=v2.0.11
-export ISTIO_VERSION=1.14.1
+export GLOO_PLATFORM_VERSION=v2.0.12
+# export ISTIO_IMAGE_REPO=us-docker.pkg.dev/gloo-mesh/istio-workshops
+# export ISTIO_IMAGE_TAG=1.14.2-solo
+export ISTIO_IMAGE_REPO=gcr.io/istio-release
+export ISTIO_IMAGE_TAG=1.14.2
+export ISTIO_VERSION=1.14.2
+export ISTIO_REVISION=1-14
 ```
 
 ## Lab 1 - Configure/Deploy the Kubernetes clusters <a name="Lab-1"></a>
@@ -119,8 +125,8 @@ This workshop chose cert manager as the last-mile certificate management solutio
 * Deploy cert-manager to both the `mgmt` and `cluster1` clusters
 
 ```sh
-kubectl --context ${MGMT} apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.8.0/cert-manager.yaml
-kubectl --context ${CLUSTER1} apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.8.0/cert-manager.yaml
+kubectl --context ${MGMT} apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.8.2/cert-manager.yaml
+kubectl --context ${CLUSTER1} apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.8.2/cert-manager.yaml
 
 kubectl wait deployment --for condition=Available=True -n cert-manager --context $MGMT --all
 kubectl wait deployment --for condition=Available=True -n cert-manager --context $CLUSTER1 --all
@@ -375,7 +381,8 @@ EOF
 * Verify secrets
 
 ```sh
-kubectl get secret gloo-server-tls-secret -n gloo-mesh --context $MGMT
+kubectl get secret gloo-server-tls-cert -n gloo-mesh --context $MGMT
+kubectl get secret gloo-agent-tls-cert -n gloo-mesh --context $MGMT
 kubectl get secret gloo-agent-tls-cert -n gloo-mesh --context $CLUSTER1
 ```
 
@@ -419,6 +426,7 @@ helm upgrade --install gloo-mesh-enterprise gloo-mesh-enterprise/gloo-mesh-enter
   --set glooMeshMgmtServer.relay.disableCa=true \
   --set glooMeshMgmtServer.relay.disableCaCertGeneration=true \
   --set glooMeshMgmtServer.relay.tlsSecret.name=gloo-server-tls-cert \
+  --set prometheus.enabled=false \
   --wait
 ```
 
@@ -457,111 +465,308 @@ echo "RELAY_ADDRESS: ${RELAY_ADDRESS}"
 
 ```sh
 helm upgrade --install gloo-mesh-agent gloo-mesh-agent/gloo-mesh-agent \
---kube-context=${MGMT} \
---namespace gloo-mesh \
---set relay.serverAddress=${RELAY_ADDRESS} \
---set cluster=mgmt-cluster \
---set relay.clientTlsSecret.name=gloo-agent-tls-cert \
---version ${GLOO_PLATFORM_VERSION} \
---wait
+  --kube-context=${MGMT} \
+  --namespace gloo-mesh \
+  --set relay.serverAddress=${RELAY_ADDRESS} \
+  --set cluster=mgmt-cluster \
+  --set relay.clientTlsSecret.name=gloo-agent-tls-cert \
+  --version ${GLOO_PLATFORM_VERSION} \
+  --wait
 ```
 
 * Install a Gloo agent on the remote cluster.
 
 ```sh
 helm upgrade --install gloo-mesh-agent gloo-mesh-agent/gloo-mesh-agent \
---kube-context=${CLUSTER1} \
---namespace gloo-mesh \
---set relay.serverAddress=${RELAY_ADDRESS} \
---set cluster=${CLUSTER1} \
---set relay.clientTlsSecret.name=gloo-mesh-agent-tls-cert \
---version ${GLOO_PLATFORM_VERSION} \
---wait
+  --kube-context=${CLUSTER1} \
+  --namespace gloo-mesh \
+  --set relay.serverAddress=${RELAY_ADDRESS} \
+  --set cluster=${CLUSTER1} \
+  --set relay.clientTlsSecret.name=gloo-agent-tls-cert \
+  --version ${GLOO_PLATFORM_VERSION} \
+  --wait
 ```
 
+* Install the gloo mesh addons (rate-limiter/ext-auth-service) in the `mgmt` cluster
+
+```sh
+helm upgrade --install gloo-mesh-addons gloo-mesh-agent/gloo-mesh-agent \
+  --kube-context=${MGMT} \
+  --create-namespace \
+  --namespace gloo-mesh-addons \
+  --set glooMeshAgent.enabled=false \
+  --set rate-limiter.enabled=true \
+  --set ext-auth-service.enabled=true \
+  --version ${GLOO_PLATFORM_VERSION} \
+  --wait
+```
+
+* Download `meshctl`
+
+```sh
+curl -sL https://run.solo.io/meshctl/install | GLOO_MESH_VERSION=${GLOO_PLATFORM_VERSION} sh -
+
+export PATH=$HOME/.gloo-mesh/bin:$PATH
+```
+
+* Verify install by running `meshctl dashboard --kubecontext $MGMT`
+
 ## Install Istio <a name="Lab-4"></a>
+
+Istio now recommends using `helm` to install its components. The helm charts are broken up into a few distinct charts. This makes it easier to manage istio and upgrade the component individually when needed. 
+
+Istio charts:
+* istio/base - Istio custom resource definitions
+* istio/istiod - Istio control plane installation
+* istio/gateway - Single Istio gateway (ingress/eastwest/egress) installation
+
+There are a number of recommended best practices to employ when installing Istio for production. This workshop does not implement them all but does setup the architecture enabling the end user to iterate later on.
+
+Recommended architecture best practices:
+* Use `helm` based deployments
+* Use revisions to verion the control plane and gateways
+* Deploy ingress and eastwest to their own namespaces
+* Use PKI to provision `cacerts`
+* Monitor istiod and gateways health via observability tools
+
+### Installation
+
+Istio will be installed into both clusters. In a previous step, a gloo mesh agent was installed in the `mgmt` cluster. This was so that the centralized management tools could be exposed via an Istio gateway to the end user which will be done in a later step. This workshop uses a Solo.io specific build of Istio that has solo addon filters that enable such features as `external authorization`, `rate limiting`, and `GraphQL`.
+
+![Istio Architecture](./images/istio-arch.png)
+
+
+Lets begin
+* Add the Istio charts repository
 
 ```sh
 helm repo add istio https://istio-release.storage.googleapis.com/charts
 helm repo update
 ```
 
-* Install Istio CRDs
+* Install Istio CRDs to each cluster
 
 ```sh
 helm upgrade --install istio-base istio/base \
   -n istio-system \
-  --version $ISTIO_VERSION \
-  --kube-context $MGMT \
+  --version ${ISTIO_VERSION} \
+  --kube-context ${MGMT} \
   --create-namespace
 
 helm upgrade --install istio-base istio/base \
   -n istio-system \
-  --version $ISTIO_VERSION \
-  --kube-context $CLUSTER1\
+  --version ${ISTIO_VERSION} \
+  --kube-context ${CLUSTER1} \
   --create-namespace
 ```
 
-* Install Istio control plane
+* Install Istio control plane to the `mgmt` cluster
 
-```sh
-helm upgrade --install istiod istio/istiod \
-  -f install/istio/operator-mgmt.yaml \
+```yaml
+helm upgrade --install istiod-${ISTIO_REVISION} istio/istiod \
+  --set revision=${ISTIO_REVISION} \
+  --set global.hub=${ISTIO_IMAGE_REPO} \
+  --set global.tag=${ISTIO_IMAGE_TAG} \
+  --version ${ISTIO_VERSION} \
   --namespace istio-system \
-  --version $ISTIO_VERSION \
-  --kube-context $MGMT \
-  --wait
+  --kube-context ${MGMT} \
+  --wait \
+  -f- <<EOF
+meshConfig:
+  # The trust domain corresponds to the trust root of a system. 
+  # For Gloo this should be the name of the cluster that cooresponds with the CA certificate CommonName identity
+  trustDomain: mgmt-cluster
+  # enable access logging to standard output
+  accessLogFile: /dev/stdout
+  defaultConfig:
+    # wait for the istio-proxy to start before application pods
+    holdApplicationUntilProxyStarts: true
+    # enable Gloo metrics service (required for Gloo UI)
+    envoyMetricsService:
+      address: gloo-mesh-agent.gloo-mesh:9977
+      # enable Gloo accesslog service (required for Gloo Access Logging)
+    envoyAccessLogService:
+      address: gloo-mesh-agent.gloo-mesh:9977
+    proxyMetadata:
+      # Enable Istio agent to handle DNS requests for known hosts
+      # Unknown hosts will automatically be resolved using upstream dns servers in resolv.conf
+      # (for proxy-dns)
+      ISTIO_META_DNS_CAPTURE: "true"
+      # Enable automatic address allocation (for proxy-dns)
+      ISTIO_META_DNS_AUTO_ALLOCATE: "true"
+      # Used for gloo mesh metrics aggregation
+      # should match trustDomain (required for Gloo UI)
+      GLOO_MESH_CLUSTER_NAME: mgmt-cluster
+pilot:
+  env:
+    # Allow multiple trust domains (Required for Gloo east/west routing)
+    PILOT_SKIP_VALIDATE_TRUST_DOMAIN: "true"
+EOF
+```
 
-helm upgrade --install istiod istio/istiod \
-  -f install/istio/operator-cluster1.yaml \
+* Install Istio control plane to the `cluster1` cluster
+
+```yaml
+helm upgrade --install istiod-${ISTIO_REVISION} istio/istiod \
+  --set revision=${ISTIO_REVISION} \
+  --set global.hub=${ISTIO_IMAGE_REPO} \
+  --set global.tag=${ISTIO_IMAGE_TAG} \
+  --version ${ISTIO_VERSION} \
   --namespace istio-system \
-  --version $ISTIO_VERSION \
-  --kube-context $CLUSTER1 \
-  --wait
+  --kube-context ${CLUSTER1} \
+  --wait \
+  -f- <<EOF
+meshConfig:
+  # The trust domain corresponds to the trust root of a system. 
+  # For Gloo this should be the name of the cluster that cooresponds with the CA certificate CommonName identity
+  trustDomain: cluster1
+  # enable access logging to standard output
+  accessLogFile: /dev/stdout
+  defaultConfig:
+    # wait for the istio-proxy to start before application pods
+    holdApplicationUntilProxyStarts: true
+    # enable Gloo metrics service (required for Gloo UI)
+    envoyMetricsService:
+      address: gloo-mesh-agent.gloo-mesh:9977
+      # enable Gloo accesslog service (required for Gloo Access Logging)
+    envoyAccessLogService:
+      address: gloo-mesh-agent.gloo-mesh:9977
+    proxyMetadata:
+      # Enable Istio agent to handle DNS requests for known hosts
+      # Unknown hosts will automatically be resolved using upstream dns servers in resolv.conf
+      # (for proxy-dns)
+      ISTIO_META_DNS_CAPTURE: "true"
+      # Enable automatic address allocation (for proxy-dns)
+      ISTIO_META_DNS_AUTO_ALLOCATE: "true"
+      # Used for gloo mesh metrics aggregation
+      # should match trustDomain (required for Gloo UI)
+      GLOO_MESH_CLUSTER_NAME: cluster1
+pilot:
+  env:
+    # Allow multiple trust domains (Required for Gloo east/west routing)
+    PILOT_SKIP_VALIDATE_TRUST_DOMAIN: "true"
+EOF
 ```
 
 * Install Gateways in mgmt cluster
 
 ```sh
-helm upgrade --install istio-ingressgateway istio/gateway \
-  -f install/istio/ingress-gateway-mgmt.yaml \
+helm upgrade --install istio-ingressgateway-${ISTIO_REVISION} istio/gateway \
+  --set revision=${ISTIO_REVISION} \
+  --set global.hub=${ISTIO_IMAGE_REPO} \
+  --set global.tag=${ISTIO_IMAGE_TAG} \
+  --version ${ISTIO_VERSION} \
   --create-namespace \
-  --namespace istio-gateways \
-  --version $ISTIO_VERSION \
-  --kube-context $MGMT \
-  --wait
+  --namespace istio-ingress \
+  --kube-context ${MGMT} \
+  --wait \
+  -f- <<EOF
+name: istio-ingressgateway
+labels:
+  istio: ingressgateway
+service:
+  type: LoadBalancer
+  ports:
+  # main http ingress port
+  - port: 80
+    targetPort: 8080
+    name: http2
+  # main https ingress port
+  - port: 443
+    targetPort: 8443
+    name: https
+EOF
 
-
-helm upgrade --install istio-eastwestgateway istio/gateway \
-  -f $tmp_dir/eastwest-gateway-mgmt.yaml \
+helm upgrade --install istio-eastwestgateway-${ISTIO_REVISION} istio/gateway \
+  --set revision=${ISTIO_REVISION} \
+  --set global.hub=${ISTIO_IMAGE_REPO} \
+  --set global.tag=${ISTIO_IMAGE_TAG} \
+  --version ${ISTIO_VERSION} \
   --create-namespace \
-  --namespace istio-gateways \
-  --version $ISTIO_VERSION \
-  --kube-context $MGMT
+  --namespace istio-eastwest \
+  --kube-context ${MGMT} \
+  --wait \
+  -f- <<EOF
+name: istio-eastwestgateway
+labels:
+  istio: eastwestgateway
+service:
+  type: LoadBalancer
+  ports:
+  - name: tls
+    port: 15443
+    targetPort: 15443
+env:
+  # Required for Gloo multi-cluster routing
+  ISTIO_META_ROUTER_MODE: "sni-dnat"
+EOF
 ```
 
 * Install Gateways in cluster1
 
 ```sh
-helm upgrade --install istio-ingressgateway istio/gateway \
-  -f install/istio/ingress-gateway-cluster1.yaml \
+helm upgrade --install istio-ingressgateway-${ISTIO_REVISION} istio/gateway \
+  --set revision=${ISTIO_REVISION} \
+  --set global.hub=${ISTIO_IMAGE_REPO} \
+  --set global.tag=${ISTIO_IMAGE_TAG} \
+  --version ${ISTIO_VERSION} \
   --create-namespace \
-  --namespace istio-gateways \
-  --version $ISTIO_VERSION \
-  --kube-context $CLUSTER1 \
-  --wait
+  --namespace istio-ingress \
+  --kube-context ${CLUSTER1} \
+  --wait \
+  -f- <<EOF
+name: istio-ingressgateway
+labels:
+  istio: ingressgateway
+service:
+  type: LoadBalancer
+  ports:
+  # main http ingress port
+  - port: 80
+    targetPort: 8080
+    name: http2
+  # main https ingress port
+  - port: 443
+    targetPort: 8443
+    name: https
+EOF
 
-helm upgrade --install istio-eastwestgateway istio/gateway \
-  -f $tmp_dir/eastwest-gateway-cluster1.yaml \
+helm upgrade --install istio-eastwestgateway-${ISTIO_REVISION} istio/gateway \
+  --set revision=${ISTIO_REVISION} \
+  --set global.hub=${ISTIO_IMAGE_REPO} \
+  --set global.tag=${ISTIO_IMAGE_TAG} \
+  --version ${ISTIO_VERSION} \
   --create-namespace \
-  --namespace istio-gateways \
-  --version $ISTIO_VERSION \
-  --kube-context $CLUSTER1
+  --namespace istio-eastwest \
+  --kube-context ${CLUSTER1} \
+  --wait \
+  -f- <<EOF
+name: istio-eastwestgateway
+labels:
+  istio: eastwestgateway
+service:
+  type: LoadBalancer
+  ports:
+  - name: tls
+    port: 15443
+    targetPort: 15443
+env:
+  # Required for Gloo multi-cluster routing
+  ISTIO_META_ROUTER_MODE: "sni-dnat"
+EOF
 ```
 
-## Tune Gloo Management Server<a name="Lab-5"></a>
+## Expose Centralized Apps via Gloo Gateway<a name="Lab-5"></a>
 
-## Monitoring <a name="Lab-6"></a>
+## Tune Gloo Management Server<a name="Lab-6"></a>
+
+```sh
+--reuse-values
+```
+
+
+
+## Monitoring <a name="Lab-7"></a>
 
 * Install prometheus in the mgmt plane
 
@@ -578,4 +783,3 @@ helm upgrade --install --create-namespace prom prometheus-community/prometheus -
 kubectl apply -f install/grafana/grafana.yaml --context ${MGMT}
 ```
 
-## Expose Centralized Apps via Gloo Gateway<a name="Lab-7"></a>

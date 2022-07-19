@@ -1,9 +1,0 @@
-apiVersion: install.istio.io/v1alpha1
-kind: IstioOperator
-metadata:
-  name: istio-cert-manager
-  namespace: istio-system
-spec:
-  profile: minimal
-  hub: gcr.io/istio-testing
-  tag: 1.14-dev
