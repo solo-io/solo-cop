@@ -125,6 +125,8 @@ istioctl install -y  -f install/gloo-gateway/install.yaml
 Secondly, you need to setup our cluster environment to enable all the API gateway features. The below script deploys the optional `gloo-mesh-addons` features that enable features such as external authorization and rate limiting. Finally, you will also deploy your own OIDC provider `keycloak` which will allow you to secure your website with a user/pass login. 
 
 ```sh
+kubectl create namespace dev-team
+kubectl create namespace ops-team
 kubectl create namespace gloo-gateway-addons
 kubectl label namespace gloo-gateway-addons istio-injection=enabled
 
@@ -175,9 +177,6 @@ Imagine that you have the following teams. Each team represents a "tenant" in Gl
 Also note that a dedicated namespace is created for each workspace to place their configuration (`ops-team`, `dev-team` namespaces). It is recommended that the configuration is separate from your deployments.
 
 ```yaml
-kubectl create namespace dev-team
-kubectl create namespace ops-team
-
 kubectl apply -f - <<'EOF'
 apiVersion: admin.gloo.solo.io/v2
 kind: Workspace
