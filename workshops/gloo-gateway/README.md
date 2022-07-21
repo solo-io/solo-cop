@@ -1,6 +1,6 @@
-![Gloo API Gateway](images/gloo-gateway-logo.png)
+![Gloo Gateway](images/gloo-gateway-logo.png)
 
-# <center>Gloo API Gateway Workshop</center>
+# <center>Gloo Gateway Workshop</center>
 
 ## Table of Contents
 
@@ -22,15 +22,17 @@
 
 ![Gloo Products](images/gloo-products.png)
 
-Gloo API Gateway is a feature-rich, Kubernetes-native ingress controller, and next-generation API gateway. Gloo API Gateway is exceptional in its function-level routing; its support for legacy apps, microservices and serverless; its discovery capabilities; its numerous features; and its tight integration with leading open-source projects. Gloo API Gateway is uniquely designed to support hybrid applications, in which multiple technologies, architectures, protocols, and clouds can coexist.
+Gloo Gateway is a feature-rich next-generation API gateway and Ingress built on Envoy and Istio. Gloo Gateway is exceptional in its function-level routing; its support for legacy apps, microservices and serverless; its discovery capabilities; its numerous features; and its tight integration with leading open-source projects. Gloo Gateway is uniquely designed to support hybrid applications, in which multiple technologies, architectures, protocols, and clouds can coexist.
 
 ![Gloo Gateway Filters](images/gloo-gateway-filters.png)
 
-Built on top of the Istio ingress gateway, Gloo API Gateway extends Isito and Envoy by adding in custom filters to expand its existing feature set. 
+Built on top of the Istio ingress gateway, Gloo API Gateway extends Istio and Envoy by adding in additional functionality on top of its existing feature set. 
 
-### Want to learn more about Gloo API Gateway?
+While Gloo Gateways can be deployed across multiple clusters and centrally managed, in this lab, we will use a single cluster environment.
 
-You can find more information about Gloo API Gateway in the official documentation:
+### Want to learn more about Gloo Gateway?
+
+You can find more information about Gloo Gateway in the official documentation:
 
 [https://docs.solo.io/gloo-mesh-enterprise/latest/concepts/gateway/](https://docs.solo.io/gloo-mesh-enterprise/latest/concepts/gateway/)
 
@@ -58,7 +60,7 @@ export ISTIO_VERSION=1.13.4
 
 ## Lab 1 - Configure/Deploy the Kubernete cluster <a name="Lab-1"></a>
 
-You will need a single kubernetes cluster for this workshop.
+You will need a single Kubernetes cluster for this workshop.
 
 This workshop can run on many different Kubernetes distributions such as EKS, GKE, OpenShift, RKE, etc or you can 
 * [create local k3d cluster](infra/k3d/README.md)
@@ -66,7 +68,7 @@ This workshop can run on many different Kubernetes distributions such as EKS, GK
 * [create gke cluster using gcloud](infra/gke/README.md).
 
 
-* Set the kubernetes cluster as your current context.
+* Set the Kubernetes cluster as your current context.
 
 ```sh
 kubectl config use-context <context> 
@@ -76,7 +78,7 @@ kubectl config use-context <context>
 
 ![Gloo Architecture](images/gloo-architecture.png)
 
-Gloo Platform provides a management plane to interact with the clusters and gateways in your environment. The management plane is responsible for taking your supplied configuration and updating the API gateways you have deployed. Included is a UI for policy and traffic management.
+Gloo Platform provides a management plane to interact with the service mesh and gateways in your environment. The management plane exposes a unified API that is multi-tenant and multi-cluster aware. It is responsible for taking your supplied configuration and updating the gateways in your clusters. Included in the management plane is a UI for policy and traffic observability.
 
 The `meshctl` command line utility provides convenient functions to quickly set up Gloo Platform, register workload clusters, run sanity checks, and debug issues. Let's start by installing this utility.
 
@@ -99,7 +101,7 @@ meshctl version
 meshctl install --license $GLOO_GATEWAY_LICENSE_KEY --register --version $GLOO_PLATFORM_VERSION
 ```
 
-## Lab 3 - Deploy Gloo API Gateway Using Gloo Platform<a name="Lab-3"></a>
+## Lab 3 - Deploy Gloo API Gateway<a name="Lab-3"></a>
 
 The Gloo Platform can easily deploy and manage your API Gateways for you. You can even deploy them to many clusters with a single configuration. For this workshop we will be deploying an API gateway to the same cluster as the management platform.
 
@@ -112,7 +114,7 @@ export PATH=$PWD/istio-${ISTIO_VERSION}/bin:$PATH
 istioctl version
 ```
 
-* Install Gloo API gateway into the `gloo-gateway` namespace
+* Install Gloo API gateway into the `gloo-gateway` namespace. We are using the istioctl utility to install Gloo API Gateway the same way you would install Istio Ingress Gateway. 
 
 ```sh
 kubectl create namespace gloo-gateway
@@ -120,11 +122,9 @@ kubectl label namespace gloo-gateway istio-injection=enabled
 istioctl install -y  -f install/gloo-gateway/install.yaml
 ```
 
-Secondly you need to setup our cluster environment to enable all the API gateway features. The below script deploys the optional `gloo-mesh-addons` features that enable features such as external authorization and rate limiting. Finally you will also deploy your own OIDC provider `keycloak` which will allow you to secure your website with a user/pass login. 
+Secondly, you need to setup our cluster environment to enable all the API gateway features. The below script deploys the optional `gloo-mesh-addons` features that enable features such as external authorization and rate limiting. Finally, you will also deploy your own OIDC provider `keycloak` which will allow you to secure your website with a user/pass login. 
 
 ```sh
-kubectl create namespace dev-team
-kubectl create namespace ops-team
 kubectl create namespace gloo-gateway-addons
 kubectl label namespace gloo-gateway-addons istio-injection=enabled
 
@@ -166,7 +166,7 @@ kubectl apply -f install/online-boutique/web-ui.yaml
 
 ## Lab 5 - Configure Gloo Platform Workspaces <a name="Lab-5"></a>
 
-In this lab, you'll learn about the Gloo **Workspaces** feature. Workspaces bring multi-tenancy isolation to your teams. With workspaces, you can explore how multiple personas can work independently without conflicting with each others configuration.
+In this section, you'll learn about the Gloo **Workspaces** feature. Workspaces bring multi-tenancy isolation to your cluster. With Workspaces, you can explore how multiple personas can work independently without conflicting with each others configuration.
 
 Imagine that you have the following teams. Each team represents a "tenant" in Gloo.
 - The Ops team, who is responsible for the platform and ingress traffic.
@@ -175,6 +175,9 @@ Imagine that you have the following teams. Each team represents a "tenant" in Gl
 Also note that a dedicated namespace is created for each workspace to place their configuration (`ops-team`, `dev-team` namespaces). It is recommended that the configuration is separate from your deployments.
 
 ```yaml
+kubectl create namespace dev-team
+kubectl create namespace ops-team
+
 kubectl apply -f - <<'EOF'
 apiVersion: admin.gloo.solo.io/v2
 kind: Workspace
@@ -210,13 +213,21 @@ EOF
 kubectl apply -f tracks/workspace-settings.yaml
 ```
 
-The `WorkspaceSettings` custom resource lets each team define the services and gateways that they want other workspaces from other teams to be able to access. This way, you can control the discovery of services in your service mesh and enable each team to access only what they need.
+The `WorkspaceSettings` custom resource lets each team define the services and gateways that they want other workspaces from other teams to be able to access. This way, you can control the discovery of services in your service mesh and enable each team to access only what they need. To view the configuration, run `cat ./tracks/workspace-settings.yaml`
 
 Each workspace can have only one WorkspaceSettings resource.
 
 ## Lab 6 - Expose the Online Boutique <a name="Lab-6"></a>
 
-1. Create ingress routes from the gateway and delegate the traffic to the `dev-team`.
+To capture the traffic coming to the API Gateway and route them to your applications, you need to use the `VirtualGateway` and `RouteTable` resources.
+
+VirtualGateway represents a logical gateway configuration served by Gateway workloads. It describes a set of ports that the virtual gateway listens for incoming or outgoing HTTP/TCP connections, the type of protocol to use, SNI configuration etc.
+
+RouteTables defines one or more hosts and a set of traffic route rules to handle traffic for these hosts. The traffic route rules can be delegated to other RouteTable based on one or more given hosts or specific paths.
+
+This allows you to create a hierarchy of routing configuration and dynamically attach policies at various levels. 
+
+1. Let's start by assuming the role of a Ops team. Configure the Gateway to listen on port 80 and create a generic RouteTable that further delegates the traffic routing to RouteTables in the `dev-team` workspace.
 ```yaml
 kubectl apply -f - <<'EOF'
 apiVersion: networking.gloo.solo.io/v2
@@ -261,7 +272,7 @@ spec:
 EOF
 ```
 
-2. Create a route table to send traffic to the frontend application.
+2. The Dev team can now write their own RouteTables in their own namespace. Create a RouteTable to send traffic that matches URI `prefix: /` to the frontend application.
 
 ```yaml
 kubectl apply -f - <<'EOF'
@@ -296,9 +307,12 @@ export GLOO_GATEWAY=$(kubectl -n gloo-gateway get svc gloo-gateway -o jsonpath='
 printf "\n\nGloo Gateway available at http://$GLOO_GATEWAY\n"
 ```
 
+You've successfully exposed the frontend application thru the Gloo Gateway.
+
 ## Lab 7 - Routing <a name="Lab-7"></a>
 
-* Exposing a single service 
+### Routing to additional applications in the cluster
+Next, lets see how easy it is to expose another application. This time, we will match on URI `prefix: /hipstershop.CurrencyService/Convert` and send to the currencyservice application.
 
 ```yaml
 kubectl apply -f - <<'EOF'
@@ -314,7 +328,7 @@ spec:
     - matchers:
       - uri:
           prefix: /hipstershop.CurrencyService/Convert
-      name: frontend
+      name: currency
       labels:
         route: currency
       forwardTo:
@@ -327,11 +341,13 @@ spec:
 EOF
 ```
 
+The currencyservice converts units from one currency to another. Test the currencyservice by using the `grpcurl` utility to send traffic:
+
 ```sh
 grpcurl --plaintext --proto ./install/online-boutique/online-boutique.proto -d '{ "from": { "currency_code": "USD", "nanos": 44637071, "units": "31" }, "to_code": "JPY" }' $GLOO_GATEWAY:80 hipstershop.CurrencyService/Convert
 ```
 
-* Request
+* We sent the following request:
 
 ```json
 {
@@ -344,7 +360,7 @@ grpcurl --plaintext --proto ./install/online-boutique/online-boutique.proto -d '
 }
 ```
 
-* Response
+* The expected response:
 
 ```json
 {
@@ -354,7 +370,11 @@ grpcurl --plaintext --proto ./install/online-boutique/online-boutique.proto -d '
 }
 ```
 
-* External endpoint
+### Routing to External endpoints
+
+Next, lets route to an endpoint (http://httpbin.org) that is external to the cluster. `ExternalEndpoint` resource defines a static IP for routing which exist outside the mesh. ExternalEndpoints provide a mechanism for direct resolution of the addresses backing ExternalServices.
+
+Once an ExternalEndpoint is created, a RouteTable can be used to send traffic to it. In this example, we will send traffic on URI prefix: /httpbin to this external service.
 
 ```yaml
 kubectl apply -f - <<'EOF'
@@ -418,7 +438,7 @@ spec:
 EOF
 ```
 
-
+Let's test it:
 ```
 curl -v $GLOO_GATEWAY/httpbin/get
 ```
