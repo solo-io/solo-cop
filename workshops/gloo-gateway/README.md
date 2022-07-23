@@ -1,4 +1,4 @@
-![Gloo Gateway](images/gloo-gateway-logo.png)
+<center>![Gloo Gateway](images/gloo-gateway-logo.png)</center>
 
 # <center>Gloo Gateway Workshop</center>
 
@@ -26,7 +26,7 @@ Gloo Gateway is a feature-rich next-generation API gateway and Ingress built on 
 
 ![Gloo Gateway Filters](images/gloo-gateway-filters.png)
 
-Built on top of the Istio ingress gateway, Gloo API Gateway extends Istio and Envoy by adding in additional functionality on top of its existing feature set. 
+Built on top of the Istio ingress gateway, Gloo API Gateway extends Istio and Envoy by adding in additional functionality on top of its existing feature set.
 
 While Gloo Gateways can be deployed across multiple clusters and centrally managed, in this lab, we will use a single cluster environment.
 
@@ -50,7 +50,7 @@ Set these environment variables which will be used throughout the workshop.
 ```sh
 # Used to enable Gloo Mesh (please ask for a trail license key)
 export GLOO_GATEWAY_LICENSE_KEY=<licence_key>
-export GLOO_PLATFORM_VERSION=v2.1.0-beta10
+export GLOO_PLATFORM_VERSION=v2.1.0-beta13
 
 # Istio version information
 export ISTIO_IMAGE_REPO=us-docker.pkg.dev/gloo-mesh/istio-workshops
@@ -58,15 +58,15 @@ export ISTIO_IMAGE_TAG=1.13.4-solo
 export ISTIO_VERSION=1.13.4
 ```
 
-## Lab 1 - Configure/Deploy the Kubernete cluster <a name="Lab-1"></a>
+## Lab 1 - Configure/Deploy the Kubernetes cluster <a name="Lab-1"></a>
 
 You will need a single Kubernetes cluster for this workshop.
 
-This workshop can run on many different Kubernetes distributions such as EKS, GKE, OpenShift, RKE, etc or you can 
+This workshop can run on many different Kubernetes distributions such as EKS, GKE, OpenShift, RKE, etc or you can run locally using kind or k3d.
+
 * [create local k3d cluster](infra/k3d/README.md)
 * [create eks cluster using eksctl](infra/eks/README.md).
 * [create gke cluster using gcloud](infra/gke/README.md).
-
 
 * Set the Kubernetes cluster as your current context.
 
@@ -762,9 +762,7 @@ password: solo.io
 
 And the application is now accessible.
 
-
 * When you are finished, click the 'logout' button in the top right corner of the screen.
-
 
 ## Lab 12 - Rate Limiting<a name="Lab-12"></a>
 
