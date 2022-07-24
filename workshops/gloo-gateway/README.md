@@ -1,5 +1,23 @@
 # <center>Gloo Gateway Workshop</center>
 
+## Introduction <a name="introduction"></a>
+
+![Gloo Products](images/gloo-products.png)
+
+Gloo Gateway is a feature-rich next-generation API gateway and Ingress built on Envoy and Istio. Gloo Gateway is exceptional in its function-level routing; its support for legacy apps, microservices and serverless; its discovery capabilities; its numerous features; and its tight integration with leading open-source projects. Gloo Gateway is uniquely designed to support hybrid applications, in which multiple technologies, architectures, protocols, and clouds can coexist.
+
+![Gloo Gateway Filters](images/gloo-gateway-filter.png)
+
+Built on top of the Istio ingress gateway, Gloo API Gateway extends Istio and Envoy by adding in additional functionality on top of its existing feature set.
+
+While Gloo Gateways can be deployed across multiple clusters and centrally managed, in this lab, we will use a single cluster environment.
+
+### Want to learn more about Gloo Gateway?
+
+You can find more information about Gloo Gateway in the official documentation:
+
+[https://docs.solo.io/gloo-mesh-enterprise/latest/concepts/gateway/](https://docs.solo.io/gloo-mesh-enterprise/latest/concepts/gateway/)
+
 ## Table of Contents
 
 * [Introduction](#introduction)
@@ -15,24 +33,6 @@
 * [Lab 10 - Authentication / JWT + JWKS](#Lab-10)
 * [Lab 11 - Authentication / OIDC](#Lab-11)
 * [Lab 12 - Rate Limiting](#Lab-12)
-
-## Introduction <a name="introduction"></a>
-
-![Gloo Products](images/gloo-products.png)
-
-Gloo Gateway is a feature-rich next-generation API gateway and Ingress built on Envoy and Istio. Gloo Gateway is exceptional in its function-level routing; its support for legacy apps, microservices and serverless; its discovery capabilities; its numerous features; and its tight integration with leading open-source projects. Gloo Gateway is uniquely designed to support hybrid applications, in which multiple technologies, architectures, protocols, and clouds can coexist.
-
-![Gloo Gateway Filters](images/gloo-gateway-filters.png)
-
-Built on top of the Istio ingress gateway, Gloo API Gateway extends Istio and Envoy by adding in additional functionality on top of its existing feature set.
-
-While Gloo Gateways can be deployed across multiple clusters and centrally managed, in this lab, we will use a single cluster environment.
-
-### Want to learn more about Gloo Gateway?
-
-You can find more information about Gloo Gateway in the official documentation:
-
-[https://docs.solo.io/gloo-mesh-enterprise/latest/concepts/gateway/](https://docs.solo.io/gloo-mesh-enterprise/latest/concepts/gateway/)
 
 ## Begin
 
@@ -101,7 +101,7 @@ meshctl install --license $GLOO_GATEWAY_LICENSE_KEY --register --version $GLOO_P
 
 ## Lab 3 - Deploy Gloo API Gateway<a name="Lab-3"></a>
 
-![Gloo API Gateway](images/gloo-gateway-filter.png)
+![Gloo API Gateway](images/deploy.png)
 
 The Gloo Platform can easily deploy and manage your API Gateways for you. You can even deploy them to many clusters with a single configuration. For this workshop we will be deploying an API gateway to the same cluster as the management platform.
 
