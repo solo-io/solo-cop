@@ -2,3 +2,5 @@ tls.crt
 tls.key
 istiooperator.yaml
 iam_policy.json
+#For macs
+.DS_Store

@@ -2,6 +2,13 @@
 
 create-k3d-cluster() {
 
+  # k3d insists on treating KUBECONFIG as a variable pointing to a single filename
+  # It is actually a path VARIABLE containing a list of files https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/#the-kubeconfig-environment-variable
+  # if it's actually a path just unset it so k3d will use the default $HOME/.kube/config
+  if [[ $KUBECONFIG =~ ":" ]]
+    then unset KUBECONFIG
+  fi
+
   name=$1
   config=$2
   region=$3
