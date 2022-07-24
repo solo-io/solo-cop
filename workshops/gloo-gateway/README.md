@@ -384,6 +384,8 @@ Next, lets route to an endpoint (http://httpbin.org) that is external to the clu
 
 Once an ExternalEndpoint is created, a RouteTable can be used to send traffic to it. In this example, we will send traffic on URI prefix: /httpbin to this external service.
 
+1. Create a reference to the httpbin.org. The `ExternalEndpoint` is a definition of where you can reach the external application. The `ExternalService` is a Gloo internal reference that the `RouteTable` can utilize. In certain use cases, you can assign many `ExternalEndpoints` to a single `ExternalService`
+
 ```yaml
 kubectl apply -f - <<'EOF'
 apiVersion: networking.gloo.solo.io/v2
@@ -419,7 +421,11 @@ spec:
     number: 443
     protocol: HTTPS
     clientsideTls: {}   ### upgrade outbound call to HTTPS
----
+```
+
+2. Create a new `RouteTable` that will match on requests containing the prefix `/httpbin` and route it to the httpbin `ExternalService`
+
+```yaml
 apiVersion: networking.gloo.solo.io/v2
 kind: RouteTable
 metadata:
@@ -446,8 +452,9 @@ spec:
 EOF
 ```
 
-Let's test it:
-```
+3. Let's test it.
+
+```sh
 curl -v $GLOO_GATEWAY/httpbin/get
 ```
 
