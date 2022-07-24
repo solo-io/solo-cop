@@ -52,8 +52,8 @@ export GLOO_PLATFORM_VERSION=v2.1.0-beta13
 
 # Istio version information
 export ISTIO_IMAGE_REPO=us-docker.pkg.dev/gloo-mesh/istio-workshops
-export ISTIO_IMAGE_TAG=1.13.4-solo
-export ISTIO_VERSION=1.13.4
+export ISTIO_IMAGE_TAG=1.13.5-solo
+export ISTIO_VERSION=1.13.5
 ```
 
 ## Lab 1 - Configure/Deploy a Kubernetes cluster <a name="Lab-1"></a>
@@ -105,7 +105,7 @@ meshctl install --license $GLOO_GATEWAY_LICENSE_KEY --register --version $GLOO_P
 
 The Gloo Platform can easily deploy and manage your API Gateways for you. You can even deploy them to many clusters with a single configuration. For this workshop we will be deploying an API gateway to the same cluster as the management platform.
 
-* Download [istioctl](https://istio.io/latest/docs/setup/getting-started/)
+1. Download [istioctl](https://istio.io/latest/docs/setup/getting-started/)
 
 ```sh
 curl -L https://istio.io/downloadIstio | ISTIO_VERSION=${ISTIO_VERSION} sh -
@@ -114,15 +114,23 @@ export PATH=$PWD/istio-${ISTIO_VERSION}/bin:$PATH
 istioctl version
 ```
 
-* Install Gloo API gateway into the `gloo-gateway` namespace. We are using the istioctl utility to install Gloo API Gateway the same way you would install Istio Ingress Gateway. 
+2. Install Gloo API gateway into the `gloo-gateway` namespace. We are using the istioctl utility to install Gloo API Gateway the same way you would install Istio Ingress Gateway. 
 
 ```sh
 kubectl create namespace gloo-gateway
 kubectl label namespace gloo-gateway istio-injection=enabled
-istioctl install -y  -f install/gloo-gateway/install.yaml
+istioctl install -y --set hub=$ISTIO_IMAGE_REPO --set tag=$ISTIO_IMAGE_TAG -f install/gloo-gateway/install.yaml
 ```
 
-Secondly, you need to setup our cluster environment to enable all the API gateway features. The below script deploys the optional `gloo-mesh-addons` features that enable features such as external authorization and rate limiting. Finally, you will also deploy your own OIDC provider `keycloak` which will allow you to secure your website with a user/pass login. 
+3. Wait for the Gloo Gateway LoadBalancer to become ready
+
+```sh
+until kubectl get service/gloo-gateway -n gloo-gateway --output=jsonpath='{.status.loadBalancer}' | grep "ingress"; do : ; done
+export GLOO_GATEWAY=$(kubectl -n gloo-gateway get svc gloo-gateway -o jsonpath='{.status.loadBalancer.ingress[0].*}')
+printf "\n\nGloo Gateway available at http://$GLOO_GATEWAY\n"
+```
+
+4. You need to setup your cluster environment to enable all the API gateway features. The below script deploys the optional `gloo-mesh-addons` features that enable features such as external authorization and rate limiting. Finally, you will also deploy your own OIDC provider `keycloak` which will allow you to secure your website with a user/pass login. 
 
 ```sh
 kubectl create namespace dev-team
@@ -308,8 +316,7 @@ EOF
 * Open browser
 
 ```sh
-export GLOO_GATEWAY=$(kubectl -n gloo-gateway get svc gloo-gateway -o jsonpath='{.status.loadBalancer.ingress[0].*}')
-printf "\n\nGloo Gateway available at http://$GLOO_GATEWAY\n"
+printf "\n\nOnline Boutique available at http://$GLOO_GATEWAY\n"
 ```
 
 You've successfully exposed the frontend application thru the Gloo Gateway.
@@ -421,11 +428,13 @@ spec:
     number: 443
     protocol: HTTPS
     clientsideTls: {}   ### upgrade outbound call to HTTPS
+EOF
 ```
 
 2. Create a new `RouteTable` that will match on requests containing the prefix `/httpbin` and route it to the httpbin `ExternalService`
 
 ```yaml
+kubectl apply -f - <<'EOF'
 apiVersion: networking.gloo.solo.io/v2
 kind: RouteTable
 metadata:
@@ -585,7 +594,7 @@ spec:
 EOF
 ```
 
-3. Call httpbin without an api key and you will get a 401 unathenticated message. 
+3. Call httpbin without an api key and you will get a 401 unauthorized message.
 
 ```sh
 curl -v http://$GLOO_GATEWAY/httpbin/get
@@ -643,11 +652,13 @@ spec:
     number: 443
     protocol: HTTPS
     clientsideTls: {}
+EOF
 ```
 
 2. Create the `JWTPolicy` to authenticate JWT tokens.
 
 ```yaml
+kubectl apply -f - <<EOF
 apiVersion: security.policy.gloo.solo.io/v2
 kind: JWTPolicy
 metadata:
@@ -689,7 +700,7 @@ ACCESS_TOKEN=$(curl -sS --request POST \
 printf "\n\n Access Token: $ACCESS_TOKEN\n"
 ```
 
-4. Try calling currency service with no access token.
+4. Try calling currency service with no access token. You will need `grpcurl` installed and it can be downloaded here: [grpcurl installation](https://github.com/fullstorydev/grpcurl#installation)
 
 ```sh
 grpcurl --plaintext --proto ./install/online-boutique/online-boutique.proto -d '{ "from": { "currency_code": "USD", "nanos": 44637071, "units": "31" }, "to_code": "JPY" }' $GLOO_GATEWAY:80 hipstershop.CurrencyService/Convert

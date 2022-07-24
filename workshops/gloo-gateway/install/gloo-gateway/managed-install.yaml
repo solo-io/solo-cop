@@ -10,7 +10,7 @@ spec:
     - name: control-plane
       istioOperatorSpec:
         profile: minimal
-        tag: 1.13.4-solo
+        tag: 1.13.5-solo
         hub: us-docker.pkg.dev/gloo-mesh/istio-workshops
         meshConfig:
           defaultConfig:
@@ -40,7 +40,7 @@ spec:
     - name: gloo-gateway
       istioOperatorSpec:
         profile: empty
-        tag: 1.13.4-solo
+        tag: 1.13.5-solo
         hub: us-docker.pkg.dev/gloo-mesh/istio-workshops
         components:
           ingressGateways:

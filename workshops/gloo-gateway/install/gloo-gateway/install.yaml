@@ -6,8 +6,6 @@ metadata:
 spec:
   # only the control plane components are installed (https://istio.io/latest/docs/setup/additional-setup/config-profiles/)
   profile: minimal
-  tag: 1.13.4-solo
-  hub: us-docker.pkg.dev/gloo-mesh/istio-workshops
   meshConfig:
     # enable access logging to standard output
     accessLogFile: /dev/stdout
