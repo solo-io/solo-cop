@@ -689,7 +689,7 @@ spec:
 EOF
 ```
 
-3. Call Auth0 to generate a temporary JWT token
+3. Call `Auth0` to generate a temporary JWT token
 
 ```sh
 ACCESS_TOKEN=$(curl -sS --request POST \
