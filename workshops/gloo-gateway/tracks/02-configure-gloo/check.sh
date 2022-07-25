@@ -10,7 +10,7 @@ kubectl get Workspace ops-team -n gloo-mesh || fail-message "Could not find the 
 
 kubectl get WorkspaceSettings dev-team -n dev-team || fail-message "Could not find the dev-team WorkspaceSettings in the dev-team namespace."
 
-kubectl get WorkspaceSettings ops-team -n dev-team || fail-message "Could not find the ops-team WorkspaceSettings in the ops-team namespace."
+kubectl get WorkspaceSettings ops-team -n ops-team || fail-message "Could not find the ops-team WorkspaceSettings in the ops-team namespace."
 
 kubectl get RouteTable ingress -n ops-team || fail-message "Could not find the RouteTable ingress in the ops-team namespace."
 
