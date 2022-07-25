@@ -93,7 +93,7 @@ kubectl apply -f - <<EOF
 apiVersion: security.policy.gloo.solo.io/v2
 kind: JWTPolicy
 metadata:
-  name: curreny
+  name: currency
   namespace: dev-team
 spec:
   applyToRoutes:

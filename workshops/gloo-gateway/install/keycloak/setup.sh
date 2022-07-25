@@ -12,8 +12,6 @@ until kubectl get service/keycloak -n keycloak --output=jsonpath='{.status.loadB
 
 POD_NAME=$(kubectl get pods -n keycloak -l app=keycloak -o json | jq -r '.items[0].metadata.name')
 
-until kubectl get service/keycloak  -n keycloak --output=jsonpath='{.status.loadBalancer}' | grep "ingress"; do : ; done
-
 kubectl apply -f $LOCAL_DIR/keycloak-setup-pod.yaml
 kubectl wait --for=condition=ready pod -l app=keycloak-setup -n keycloak --timeout 60s
 
