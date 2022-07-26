@@ -920,7 +920,7 @@ kubectl --context ${MGMT} delete ExtAuthPolicy frontend -n web-team
 * Test Rate Limiting
 
 ```sh
-for i in {1..6}; do curl -iksS -X GET http://$GLOO_GATEWAY | tail -n 10; done
+for i in {1..6}; do curl -iksS -X GET https://$GLOO_GATEWAY | tail -n 10; done
 ```
 
 * Expected Response - If you try the Online Boutique UI you will see a blank page because the rate-limit response is in the headers
