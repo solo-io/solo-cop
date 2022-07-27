@@ -75,7 +75,7 @@ EOF
 
 * Grab the mgmt plane IP address that the agents will connect through
 ```sh
-MGMT_SERVER_NETWORKING_DOMAIN=$(kubectl get svc -n gloo-mesh gloo-mesh-mgmt-server --context $MGMT_CONTEXT -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+MGMT_SERVER_NETWORKING_DOMAIN=$(kubectl get svc -n gloo-mesh gloo-mesh-mgmt-server --context $MGMT_CONTEXT -o jsonpath='{.status.loadBalancer.ingress[0].*}')
 MGMT_SERVER_NETWORKING_PORT=$(kubectl -n gloo-mesh get service gloo-mesh-mgmt-server --context $MGMT_CONTEXT -o jsonpath='{.spec.ports[?(@.name=="grpc")].port}')
 MGMT_SERVER_NETWORKING_ADDRESS=${MGMT_SERVER_NETWORKING_DOMAIN}:${MGMT_SERVER_NETWORKING_PORT}
 echo $MGMT_SERVER_NETWORKING_ADDRESS
@@ -128,7 +128,7 @@ TODO Add examples.
 helm upgrade --install gloo-mesh-agent gloo-mesh-agent/gloo-mesh-agent \
   --kube-context=$REMOTE_CONTEXT1 \
   --namespace gloo-mesh \
-  --set relay.serverAddress=${RELAY_ADDRESS} \
+  --set relay.serverAddress=${MGMT_SERVER_NETWORKING_ADDRESS} \
   --set cluster=cluster1 \
   --set relay.tokenSecret.name=relay-identity-token-secret \
   --version ${GLOO_MESH_VERSION} \
@@ -138,7 +138,7 @@ helm upgrade --install gloo-mesh-agent gloo-mesh-agent/gloo-mesh-agent \
 helm upgrade --install gloo-mesh-agent gloo-mesh-agent/gloo-mesh-agent \
   --kube-context=$REMOTE_CONTEXT2 \
   --namespace gloo-mesh \
-  --set relay.serverAddress=${RELAY_ADDRESS} \
+  --set relay.serverAddress=${MGMT_SERVER_NETWORKING_ADDRESS} \
   --set cluster=cluster2 \
   --set relay.tokenSecret.name=relay-identity-token-secret \
   --version ${GLOO_MESH_VERSION} \
@@ -157,7 +157,7 @@ helm upgrade --install gloo-mesh-agent gloo-mesh-agent/gloo-mesh-agent \
 helm upgrade --install gloo-mesh-agent gloo-mesh-agent/gloo-mesh-agent \
   --kube-context=$REMOTE_CONTEXT1 \
   --namespace gloo-mesh \
-  --set relay.serverAddress=${RELAY_ADDRESS} \
+  --set relay.serverAddress=${MGMT_SERVER_NETWORKING_ADDRESS} \
   --set cluster=cluster1 \
   --set relay.clientTlsSecret.name=gloo-mesh-agent-cluster1-tls-cert \
   --version ${GLOO_MESH_VERSION} \
@@ -167,7 +167,7 @@ helm upgrade --install gloo-mesh-agent gloo-mesh-agent/gloo-mesh-agent \
 helm upgrade --install gloo-mesh-agent gloo-mesh-agent/gloo-mesh-agent \
   --kube-context=$REMOTE_CONTEXT2 \
   --namespace gloo-mesh \
-  --set relay.serverAddress=${RELAY_ADDRESS} \
+  --set relay.serverAddress=${MGMT_SERVER_NETWORKING_ADDRESS} \
   --set cluster=cluster2 \
   --set relay.clientTlsSecret.name=gloo-mesh-agent-cluster2-tls-cert \
   --version ${GLOO_MESH_VERSION} \
