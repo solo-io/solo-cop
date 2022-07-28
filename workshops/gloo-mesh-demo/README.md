@@ -57,7 +57,7 @@ export GLOO_MESH_LICENSE_KEY=<licence_key>
 export GLOO_MESH_VERSION=v2.0.11
 
 # Istio version information
-export ISTIO_IMAGE_REPO=<please ask for repo information>
+export ISTIO_IMAGE_REPO=us-docker.pkg.dev/gloo-mesh/istio-workshops
 export ISTIO_IMAGE_TAG=1.13.5-solo
 export ISTIO_VERSION=1.13.5
 ```
