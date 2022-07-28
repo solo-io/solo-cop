@@ -4,12 +4,12 @@ metadata:
   name: frontend
   namespace: dev-team
 spec:
-  applyToRoutes:
+  applyToRoutes: # Dynamically gets applied to all Routes with this label
   - route:
       labels:
         route: frontend
   config:
-    server:
+    server: # Points at the `ExtAuthServer` config that should be used.
       name: ext-auth-server
       namespace: dev-team
       cluster: mgmt-cluster
@@ -17,16 +17,16 @@ spec:
       configs:
       - oauth2:
           oidcAuthorizationCode:
-            appUrl: https://${GLOO_GATEWAY}
-            callbackPath: /callback
-            clientId: ${KEYCLOAK_CLIENTID}
-            clientSecretRef:
+            appUrl: https://${GLOO_GATEWAY} # where to redirect after successful auth
+            callbackPath: /callback # a path relative to app url that will be used for OIDC callbacks
+            clientId: ${KEYCLOAK_CLIENTID} # your client id as registered with the issuer
+            clientSecretRef: # your client secret as registered with the issuer
               name: oauth
               namespace: gloo-mesh
             issuerUrl: "${KEYCLOAK_URL}/realms/master/"
             logoutPath: /logout
             afterLogoutUrl: "${KEYCLOAK_URL}/realms/master/protocol/openid-connect/logout?redirect_uri=https://${GLOO_GATEWAY}"
-            scopes:
+            scopes: # Scopes to request in addition to openid scope
             - email
-            headers:
+            headers: # 	Configures headers added to requests
               idTokenHeader: jwt
