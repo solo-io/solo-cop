@@ -800,7 +800,7 @@ echo "Secure Online Boutique URL: https://$GLOO_GATEWAY"
 Get the keycloak URL and Client ID.
 
 ```sh
-export KEYCLOAK_URL=http://$(kubectl -n keycloak get service keycloak -o jsonpath='{.status.loadBalancer.ingress[0].*}'):9000/auth
+export KEYCLOAK_URL=http://$(kubectl -n keycloak --context $CLUSTER1 get service keycloak -o jsonpath='{.status.loadBalancer.ingress[0].*}'):9000/auth
 export KEYCLOAK_CLIENTID=$(kubectl get configmap -n gloo-mesh --context $CLUSTER1 keycloak-info -o json | jq -r '.data."client-id"')
 
 echo "Keycloak available at: $KEYCLOAK_URL"
