@@ -136,26 +136,7 @@ meshctl cluster register \
 
 **Problems?** meshctl tries to automatically detect the management server endpoint, but sometimes this can fail. If that happens, it can be supplied manually. Follow the steps [here](problems-manual-registration.md) if you run into this.
 
-4. Apply a RootTustPolicy to tell the management plane to handle setting up a [shared trust](https://docs.solo.io/gloo-mesh-enterprise/latest/setup/prod/certs/federate-identity/) between the two workload clusters. Gloo Mesh will create a common root certificate and issues an intermediate signing certificate authority (CA) to each of the remote clusters that contain a common root.
-
-```yaml
-cat << EOF | kubectl --context ${MGMT} apply -f -
-apiVersion: admin.gloo.solo.io/v2
-kind: RootTrustPolicy
-metadata:
-  name: root-trust-policy
-  namespace: gloo-mesh
-spec:
-  config:
-    mgmtServerCa:
-      generated: {}
-    autoRestartPods: true
-EOF
-```
-
-Gloo Mesh can also integrate with various vendor technologies, including Vault, AWSCA, and more to ensure the CA meets your company's requirements.
-
-6. Verify proper installation by opening the Gloo Mesh Dashboard. Click [here](problems-dashboard.md) if that command did not work. It's best to run this command in a separate terminal.
+4. Verify proper installation by opening the Gloo Mesh Dashboard. Click [here](problems-dashboard.md) if that command did not work. It's best to run this command in a separate terminal.
 
 ```sh
 meshctl dashboard --kubecontext mgmt
@@ -186,6 +167,25 @@ istioctl install --set hub=$ISTIO_IMAGE_REPO --set tag=$ISTIO_IMAGE_TAG  -y --co
 3. Verify in the Gloo Mesh Dashboard that the deployed Istio information was discovered.
 
 ![istio-installed](images/istio-installed.png)
+
+4. Apply a RootTustPolicy to tell the management plane to handle setting up a [shared trust](https://docs.solo.io/gloo-mesh-enterprise/latest/setup/prod/certs/federate-identity/) between the two workload clusters. Gloo Mesh will create a common root certificate and issues an intermediate signing certificate authority (CA) to each of the remote clusters that contain a common root.
+
+```yaml
+cat << EOF | kubectl --context ${MGMT} apply -f -
+apiVersion: admin.gloo.solo.io/v2
+kind: RootTrustPolicy
+metadata:
+  name: root-trust-policy
+  namespace: gloo-mesh
+spec:
+  config:
+    mgmtServerCa:
+      generated: {}
+    autoRestartPods: true
+EOF
+```
+
+Gloo Mesh can also integrate with various vendor technologies, including Vault, AWSCA, and more to ensure the CA meets your company's requirements.
 
 ## Lab 4 - Deploy Online Boutique Sample Application<a name="Lab-4"></a>
 
