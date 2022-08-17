@@ -3,13 +3,11 @@
 If you are using an M1 or M2 macbook and doing a local kubernetes deployment use this arm based istiooperator file
 
 * Istio installation compatible with ARM / M1 / M2 macbooks
+
 ```sh
-curl -0l https://raw.githubusercontent.com/solo-io/solo-cop/workshop/workshops/gloo-mesh-demo/install/istio/istiooperator-arm.yaml > istiooperator.yaml
+kubectl create namespace istio-gateways --context $CLUSTER1
+istioctl install --set hub=$ISTIO_IMAGE_REPO --set tag=$ISTIO_IMAGE_TAG  -y --context $CLUSTER1 -f install/istio/istiooperator-arm-cluster1.yaml
 
-export CLUSTER_NAME=$CLUSTER1
-cat istiooperator-arm.yaml| envsubst | istioctl install --set hub=$ISTIO_IMAGE_REPO --set tag=$ISTIO_IMAGE_TAG  -y --context $CLUSTER_NAME -f -
-
-
-export CLUSTER_NAME=$CLUSTER2
-cat istiooperator-arm.yaml| envsubst | istioctl install --set hub=$ISTIO_IMAGE_REPO --set tag=$ISTIO_IMAGE_TAG  -y --context $CLUSTER_NAME -f -
+kubectl create namespace istio-gateways --context $CLUSTER2
+istioctl install --set hub=$ISTIO_IMAGE_REPO --set tag=$ISTIO_IMAGE_TAG  -y --context $CLUSTER2 -f install/istio/istiooperator-arm-cluster2.yaml
 ```
