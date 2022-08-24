@@ -4,7 +4,7 @@ metadata:
   name: gloo-mesh-istio
   namespace: istio-system
 spec:
-  # only the control plane components are installed (https://istio.io/latest/docs/setup/additional-setup/config-profiles/)
+  # Start with just the basic control plane, customize and add gateways
   profile: minimal
 
   meshConfig:
