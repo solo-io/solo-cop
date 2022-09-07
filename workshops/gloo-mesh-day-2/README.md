@@ -45,7 +45,7 @@ cd solo-cop/workshops/gloo-mesh-demo && git checkout v1.1.0
 Set these environment variables which will be used throughout the workshop.
 
 ```sh
-# Used to enable Gloo (please ask for a trail license key)
+# Used to enable Gloo (please ask for a trial license key)
 export GLOO_LICENSE_KEY=<licence_key>
 export GLOO_PLATFORM_VERSION=v2.0.12
 # export ISTIO_IMAGE_REPO=us-docker.pkg.dev/gloo-mesh/istio-workshops
@@ -83,7 +83,7 @@ kubectl config rename-context <context-to-rename> ${CLUSTER1}
 
 Gloo and Istio heavily rely on TLS certificates to facilitate safe and secure communitcation. Gloo Platform uses mutual tls authentication for communication between the Server and the Agents. Istio requires an Intermediate Signing CA so that it can issue workload certificates to each of the mesh enabled services. These workload certificates encrypt and authenticate traffic between each of your microservices.
 
-It is important to design and implement a secure and reliable Public Key Infrastructure (PKI) that Gloo and Istio can rely on. In this workload we have chosen `Vault` and `cert-manager` as the PKI due to their versiatility and reliability for managing certificates. 
+It is important to design and implement a secure and reliable Public Key Infrastructure (PKI) that Gloo and Istio can rely on. In this workload we have chosen `Vault` and `cert-manager` as the PKI due to their versatility and reliability for managing certificates. 
 
 ![PKI Deployment](images/pki-arch.png)
 
