@@ -12,6 +12,7 @@ Workspaces serve a few different purposes as it relates to a service mesh.
 * Routing - 
 * Policy Enforcement
 * Security 
+* Gloo Mesh Configuration
 
 
 **How do Workspaces interact with other Workspaces?**
@@ -20,10 +21,9 @@ Workspaces serve a few different purposes as it relates to a service mesh.
 
 
 
-## Default Workspaces
+# Workspaces
 
-Here are some recommended example workspaces for users just getting started with Gloo Mesh. These workspaces have been simplified so that users can get up and running without worrying about the advanced features.
-
+Here are some recommended example workspaces for users just getting started with Gloo Mesh.
 
 >The below examples will utilize workspaces to represent different teams within an organization.
 >
@@ -32,7 +32,7 @@ Here are some recommended example workspaces for users just getting started with
 >- apis-team - Manages backend API services
 
 
-* Wildcard clusters - The below Workspace utilizes a wildcard `*` for the cluster name to represent any cluster in the environment that has the namespace `web-ui`. One advantage of using wildcards is that as new clusters are added, if they contain the namespace `web-ui` they will automatically be added to said Workspace. 
+* **Wildcard clusters** - The below Workspace utilizes a wildcard `*` for the cluster name to represent any cluster in the environment that has the namespace `web-ui`. One advantage of using wildcards is that as new clusters are added, if they contain the namespace `web-ui` they will automatically be added to said Workspace. 
 
 ```yaml
 apiVersion: admin.gloo.solo.io/v2
@@ -51,7 +51,7 @@ The above configuration will create the `web-team` Worksapace which contains bot
 ![Wilcard Cluster Names](./images/wildcard-cluster.png)
 
 
-* Wildcard namespaces - Some users may want to allow any service within a cluster to belong to a workspace regardless of the namespace it is in. You can wildcard the namespace to include all namespaces within a given cluster. 
+* **Wildcard namespaces** - Some users may want to allow any service within a cluster to belong to a workspace regardless of the namespace it is in. You can wildcard the namespace to include all namespaces within a given cluster. 
 
 ```yaml
 apiVersion: admin.gloo.solo.io/v2
@@ -79,7 +79,7 @@ spec:
 
 ![Wilcard Namespaces](./images/wildcard-namespaces.png)
 
-* Wildcard namespaces match labels - Using a wildcard for all namespace within a cluster may include namespaces not intended to be managed by Gloo Mesh. You can filter the workspace using namespace label selectors. The below example only selects namespaces where Istio sidecars are enabled.
+* **Wildcard namespaces match labels** - Using a wildcard for all namespace within a cluster may include namespaces not intended to be managed by Gloo Mesh. You can filter the workspace using namespace label selectors. The below example only selects namespaces where Istio sidecars are enabled.
 
 ```yaml
 apiVersion: admin.gloo.solo.io/v2
@@ -98,7 +98,7 @@ spec:
 
 ![Wilcard Namespaces Label Selectors](./images/wildcard-namespaces-labels.png)
 
-* Exact namespaces - In some cases, users may want to select specific namespaces that belong to a Workspace. This creats a 'static' Workspace that will not update dynamically as new namespaces and clusters are added. 
+* **Exact namespaces** - In some cases, users may want to select specific namespaces that belong to a Workspace. This creats a 'static' Workspace that will not update dynamically as new namespaces and clusters are added. 
 
 ```yaml
 apiVersion: admin.gloo.solo.io/v2
@@ -120,16 +120,393 @@ spec:
 ![Static Workspace](./images/static-workspace.png)
 
 
-## East West Gateways
+* **Global Workspace** - In some cases it may be easier to include all services within the same workspace. This means that they all share the same service discovery policies and security. This is only recommended for beginners learning gloo mesh as long term **it may have potential performance issues**.
+
+```yaml
+apiVersion: admin.gloo.solo.io/v2
+kind: Workspace
+metadata:
+  name: global
+  namespace: gloo-mesh
+spec:
+  workloadClusters:
+  - name: '*'            # all namespaces in all clusters
+    namespaces:
+    - name: '*'
+```
+
+![Global Workspace](./images/global-workspace.png)
+
+
+* **Management Plane Configuration Namespace** - It is recommended that a user store their Gloo Mesh Configuration (VirtualGateways/RouteTables/Policies/etc.) in the management plane unless otherwise stated. To make sure the correct configuration makes it to the right workspace, its recommended to create a `config` namespace per workspace in the mgmt plane like so.
+
+```yaml
+apiVersion: admin.gloo.solo.io/v2
+kind: Workspace
+metadata:
+  name: web-team
+  namespace: gloo-mesh
+spec:
+  workloadClusters:
+  - name: 'mgmt-cluster'       # gloo mesh configuration only namespace in the management plane
+    namespaces:
+    - name: 'web-team-config'
+  - name: '*'                  # any cluster that has the namespace 'web-ui'
+      namespaces:
+      - name: 'web-ui'
+---
+apiVersion: admin.gloo.solo.io/v2
+kind: Workspace
+metadata:
+  name: apis-team
+  namespace: gloo-mesh
+spec:
+  workloadClusters:
+  - name: 'mgmt-cluster'       # gloo mesh configuration only namespace in the management plane
+    namespaces:
+    - name: 'apis-team-config'
+  - name: 'cluster1'           # apis namespace in cluster1
+      namespaces:
+      - name: 'aips'
+```
+
+![Global Workspace](./images/mgmt-config-namespace.png)
+
+
+* **Config Only Namespaces** - By default Gloo Mesh will read Gloo Mesh configuration from **ANY** namespace that is in the Workspace. If you would like to limit who and where Gloo Mesh configuration can be read, you can use the `configEnabled: true|false` field.
+
+```yaml
+apiVersion: admin.gloo.solo.io/v2
+kind: Workspace
+metadata:
+  name: web-team
+  namespace: gloo-mesh
+spec:
+  workloadClusters:
+  - name: 'mgmt-cluster'
+    namespaces:
+    - name: 'web-team-config'
+    configEnabled: true         # Gloo Mesh will read Gloo Mesh configuration from this namespace
+  - name: '*'
+      namespaces:
+      - name: 'web-ui'
+    configEnabled: false        # Dont read Gloo Mesh configuration from this namespace
+```
+
+
+## Gateways
+
+* Ingress Gateways - In order to apply Gloo Mesh configuration to Istio ingress gateways it will need to be a part of a workspace. It is typically recommended to be in a separate workspace than the developer applications so it can be managed separately, especially when shared by multiple workspaces. It will be explained below in WorkspaceSettings how to share this ingress gateway with multiple workspaces.
+
+```yaml
+apiVersion: admin.gloo.solo.io/v2
+kind: Workspace
+metadata:
+  name: ops-team
+  namespace: gloo-mesh
+spec:
+  workloadClusters:
+  - name: 'cluster1'            # istio-ingress and istio-eastwest in cluster1
+    namespaces:
+    - name: 'istio-ingress'
+```
+
+* Eastwest Gateways - Istio eastwest gateways are required for multi cluster routing within Gloo Mesh. These gateways just need to exist in a workspace to enable multi cluster routing for all workspaces. It is recommended to have a workspace 
+
+```yaml
+apiVersion: admin.gloo.solo.io/v2
+kind: Workspace
+metadata:
+  name: gloo-mesh-internal
+  namespace: gloo-mesh
+spec:
+  workloadClusters:
+  - name: '*'            # selects istio-eastwest namespaces in all clusters
+    namespaces:
+    - name: 'istio-eastwest'
+```
 
 
 ## Gloo Mesh Addons
 
+If you have deployed the gloo-mesh-addons features you will need to include them into a Workspace. If these addons are being used by multiple Workspaces, it is recommended to place these into a separate Workspace and use WorkspaceSettings to export them. Alternatively you could include them in the `gloo-mesh-internal` workspace described above with the `istio-eastwest` gateways.
+
+```yaml
+apiVersion: admin.gloo.solo.io/v2
+kind: Workspace
+metadata:
+  name: gloo-mesh-addons
+  namespace: gloo-mesh
+spec:
+  workloadClusters:
+- name: '*'                   ## any cluster that has the namespace 'gloo-mesh-addons'
+    namespaces:
+    - name: 'gloo-mesh-addons'
+
+```
+
+
+# WorkspaceSettings
+
+The WorkspaceSettings API allows each Workspace administrator to decide which other workspaces it interacts with. There are a number of settings discussed below that allow Gloo Mesh users to tune their environment based on their use cases.
+
+## Federation
+
+Federation is one of the main features within Gloo Mesh. It is the mechanism in which makes applications discoverable and routable from other clusters. In almost all cases it is recommended to enable federation if the applications within the workspace need multi-cluster availability.
+
+> When federation is enabled, Gloo Mesh creates Istio ServiceEntries in each cluster that are used for multi cluster routing. Example....
+> ```yaml
+>apiVersion: networking.istio.io/v1beta1
+>kind: ServiceEntry
+>metadata:
+>  generation: 1
+>  name: vd-frontend-currency-apis-svc-cluster2-apis-team
+>  namespace: currency-apis
+>spec:
+>  addresses:
+>  - 252.38.49.193
+>  endpoints:
+>  - address: 172.18.0.7
+>    labels:
+>      app: frontend
+>      security.istio.io/tlsMode: istio
+>      version: v1
+>    ports:
+>      http-8080: 15443
+>      http2-9080: 15443
+>  exportTo:
+>  - .
+>  hosts:
+>  - currency.apis.svc.cluster2
+>  location: MESH_INTERNAL
+>  ports:
+>  - name: http-8080
+>    number: 8080
+>    protocol: HTTP
+>  - name: http2-9080
+>    number: 9080
+>    protocol: HTTP2
+>  resolution: STATIC
+>  subjectAltNames:
+>  - spiffe://cluster2.solo.io/ns/apis/sa/currency
+> ```
+
+* Recommended Default
+
+```yaml
+apiVersion: admin.gloo.solo.io/v2
+kind: WorkspaceSettings
+metadata:
+  name: web-team
+  namespace: web-team-config
+spec:
+  options:
+    federation:
+      enabled: true  # enables multi-cluster routing between services in this Workspace
+...
+```
+
+* Optional Filtering - in larger workspaces it may make more sense to only federate a subset of services that are used for multi cluster routing.
+
+```yaml
+apiVersion: admin.gloo.solo.io/v2
+kind: WorkspaceSettings
+metadata:
+  name: web-team
+  namespace: web-team-config
+spec:
+  options:
+    federation:
+      enabled: true       # enables multi-cluster routing/availability for services in `web-ui` namespace
+      serviceSelector:
+      - namespace: web-ui
+```
+
+## Eastwest Gateway Selection
+
+Users have the option to chose the eastwest gateways used for multi-cluster routing if multiple are deployed. By default, it is recommended to use the following configuration for most deployments of Istio, Gloo Mesh will look for a port named `tls` on the gateway to facilitate the routing.
+
+```yaml
+apiVersion: admin.gloo.solo.io/v2
+kind: WorkspaceSettings
+metadata:
+  name: web-team
+  namespace: web-team-config
+spec:
+  options:
+    eastWestGateways:
+    - selector:
+        labels:
+          istio: eastwestgateway       # select any Gateway with the following label
+        # port:
+        #   name: cross-cluster-mtls   # optional override of named port used for mtls
+...
+```
 
 ## Import / Export
 
+To form a relationship between two Workspaces, **both workspaces must agree to the relationship**. This is done by one Workspace exporting its services, VirtualDestinations, RouteTables, or VirtualGateways, and another workspace importing them. 
+
+> The services, VirtualDestinations, RouteTables, and VirtualGateways that are exported and imported can be filtered using selectors to reduce the amount of information shared. 
+
+**Importing other Workspaces** - Allows the current Workspace to 'import' services, VirtualDestinations, RouteTables, and VirtualGateways from another workspace. The other workspace must export to the current workspace or resources will not be shared.
+
+
+* **Importing a Workspace (recommended)** - 
+```yaml
+apiVersion: admin.gloo.solo.io/v2
+kind: WorkspaceSettings
+metadata:
+  name: ops-team
+  namespace: ops-team-config
+spec:
+  importFrom:
+  - workspaces:
+    - name: web-team
+...
+```
+
+* **Import using label selectors (not recommended)** - Optionally you can import any Workspace that has a given label. This is considered an advanced feature and not recommended for most environments. **This relinquishes the ability for your workspace to control which workspaces it imports and could have unintended side affects.**
+
+```yaml
+apiVersion: admin.gloo.solo.io/v2
+kind: WorkspaceSettings
+metadata:
+  name: web-team
+  namespace: web-team-config
+spec:
+  importFrom:
+  - workspaces:
+    - selector:
+        allow_ingress: "true"
+...
+---
+apiVersion: admin.gloo.solo.io/v2
+kind: Workspace
+metadata:
+  name: apis-team
+  namespace: gloo-mesh
+  labels:
+    allow_ingress: "true"
+spec:
+  workloadClusters:
+  - name: cluster1
+    namespaces:
+    - name: apis
+```
+
+* **Import specific resources (advanced)** - In certain situations you may be importing from a large Workspace that has a lot of services. You can filter those resources using the resource selector on `importFrom` shown below. **If you only import specific kinds, it may be difficult to debug why your applciation or Gloo Mesh configuration cannot route to or attach to a specific resource.**
+
+  > resource kinds: ALL, SERVICE, ROUTE_TABLE, VIRTUAL_DESTINATION, EXTERNAL_SERVICE
+
+```yaml
+apiVersion: admin.gloo.solo.io/v2
+kind: WorkspaceSettings
+metadata:
+  name: web-team
+  namespace: web-team-config
+spec:
+  options:
+    eastWestGateways:
+    - selector:
+        labels:
+          istio: eastwestgateway
+    federation:
+      enabled: false
+  importFrom:
+  - workspaces:
+    - name: apis-team
+    resources:
+    - kind: VIRTUAL_DESTINATION      # Import VirtualDestinations created in the backend-apis-team-config namespace on the mgmt-cluster
+      namespace: apis-team-config
+      cluster: mgmt-cluster
+    - kind: SERVICE                  # import kubernetes services from the apis namespace belonging to the apis team
+      namespace: apis
+```
+
+**Exporting to other Workspaces** - Shares services, VirtualDestinations, RouteTables, and VirtualGateways with another workspace. Requires the other workspace to 'import' the current workspace
+
+```yaml
+apiVersion: admin.gloo.solo.io/v2
+kind: WorkspaceSettings
+metadata:
+  name: web-team
+  namespace: web-team
+spec:
+  exportTo:
+  - workspaces:
+    - name: ops-team               # export web-team service and Gloo Mesh config with ops-team Workspace
+```
+
+* **Export specific resources (advanced)** - A Workspace may contain service meant for outside consumption as well as internal services. Using resource filtering a Workspace can share only specific services with other workspaces.
+
+```yaml
+apiVersion: admin.gloo.solo.io/v2
+kind: WorkspaceSettings
+metadata:
+  name: ops-team
+  namespace: ops-team-config
+spec:
+  exportTo:
+  - workspaces:
+    - name: "web-team"
+    resources:
+    - kind: SERVICE
+      namespace: external-apis    # only export kubernetes services in the external-apis namespace
+    - kind: VIRTUAL_DESTINATION
+      namespace: ops-team-config  # only export VirtualDestinations with the label expose: true
+      labels:
+        expose: "true"
+...
+---
+apiVersion: networking.gloo.solo.io/v2
+kind: VirtualDestination
+metadata:
+  name: currency-app
+  namespace: ops-team-config
+  labels:
+    expose: "true"            # share this VirtualDestination with other workspaces
+spec:
+  hosts:
+  - currency.mesh.external
+  services:
+  - labels:
+      app: currency
+  ports:
+  - number: 80
+    protocol: HTTP
+    targetPort:
+      number: 8080
+```
+
+* **Wildcard Export** - Sometimes you will want to expose your application to be available to any mesh service who wants to consume your application. Rather than having to update your WorkspaceSettings everytime a new consumer is added you can allow any Workspace to import your Workspace. This is recommended for Workspaces wishing to use the Gloo Mesh Addons. 
+
+```yaml
+apiVersion: admin.gloo.solo.io/v2
+kind: WorkspaceSettings
+metadata:
+  name: gloo-mesh-internal
+  namespace: gloo-mesh-internal-config
+spec:
+  exportTo:
+  - workspaces:
+    - name: "*"                     # allow any Workspace to import the gloo-mesh-addons services and VirtualDestination
+    resources:
+    - kind: SERVICE
+      namespace: gloo-mesh-addons
+      cluster: cluster1
+    - kind: VIRTUAL_DESTINATION
+      namespace: gloo-mesh-internal-config
+      cluster: mgmt-cluster
+...
+```
 
 ### Service Selection
 
 
 ### Service Isolation
+
+
+# Full Example
+
+This example shows the relationship between 3 different workspaces (ops-team, web-team, backend-apis-team)
