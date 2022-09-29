@@ -172,7 +172,6 @@ spec:
 
 ![Global Workspace](./images/mgmt-config-namespace.png)
 
-
 * **Config Only Namespaces** - By default Gloo Mesh will read Gloo Mesh configuration from **ANY** namespace that is in the Workspace. If you would like to limit who and where Gloo Mesh configuration can be read, you can use the `configEnabled: true|false` field.
 
 ```yaml
@@ -192,7 +191,6 @@ spec:
       - name: 'web-ui'
     configEnabled: false        # Dont read Gloo Mesh configuration from this namespace
 ```
-
 
 ## Gateways
 
@@ -351,7 +349,6 @@ To form a relationship between two Workspaces, **both workspaces must agree to t
 
 **Importing other Workspaces** - Allows the current Workspace to 'import' services, VirtualDestinations, RouteTables, and VirtualGateways from another workspace. The other workspace must export to the current workspace or resources will not be shared.
 
-
 * **Importing a Workspace (recommended)** - 
 ```yaml
 apiVersion: admin.gloo.solo.io/v2
@@ -501,11 +498,47 @@ spec:
 ...
 ```
 
-### Service Selection
+### Service Isolation (recommended)
 
+Service Isolation is a great way to set sane security defaults when it relates to service access. If enabled, service isolation will allow communication between services within a given workspace and deny all others. It will also extend to allow access from workspaces that import the Workspace to make things easy.
 
-### Service Isolation
+However if you would like to employ full Zero Trust architecture its recommended to disable this feature and manage service access using Gloo Mesh AccessPolicies
 
+* **Enable service isolation** - sets up a walled garden of access around the apis-team workspace as well as allows access from the web-team applications
+
+```yaml
+apiVersion: admin.gloo.solo.io/v2
+kind: WorkspaceSettings
+metadata:
+  name: apis-team
+  namespace: apis-team-config
+spec:
+  exportTpo:
+  - workspaces:
+    - name: web-team         # Workspaces importing apis-team Workspace will still have access
+  options:
+    serviceIsolation:
+      enabled: true          # block traffic from outside the Workspace
+...
+```
+
+* **Trim Proxy Config ( performance improvement)** - Scopes service discovery of the sidecar to only the workspace and services that are imported. This improves resource usage on the sidecar in large environments and is recommended. For Istio users this creates the `Sidecar` resource in each namespace for the Workspace.
+
+```yaml
+apiVersion: admin.gloo.solo.io/v2
+kind: WorkspaceSettings
+metadata:
+  name: apis-team
+  namespace: apis-team-config
+spec:
+  exportTpo:
+  - workspaces:
+    - name: web-team
+  options:
+    serviceIsolation:
+      enabled: true
+      trimProxyConfig: true      # enable scoping of service discovery to the workspace
+```
 
 # Full Example
 
