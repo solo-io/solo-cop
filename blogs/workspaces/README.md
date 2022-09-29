@@ -96,7 +96,7 @@ spec:
         istio-injection: enabled
 ```
 
-![Wilcard Namespaces Label Selectors](./images/wildcard-namespaces.png)
+![Wilcard Namespaces Label Selectors](./images/wildcard-namespaces-labels.png)
 
 * Exact namespaces - In some cases, users may want to select specific namespaces that belong to a Workspace. This creats a 'static' Workspace that will not update dynamically as new namespaces and clusters are added. 
 
