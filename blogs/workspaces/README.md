@@ -1,5 +1,17 @@
 # Gloo Mesh Workspaces
 
+- [Gloo Mesh Workspaces](#gloo-mesh-workspaces)
+- [Workspaces](#workspaces)
+  * [Gateways](#gateways)
+  * [Gloo Mesh Addons](#gloo-mesh-addons)
+- [WorkspaceSettings](#workspacesettings)
+  * [Federation](#federation)
+  * [Eastwest Gateway Selection](#eastwest-gateway-selection)
+  * [Import / Export](#import-export)
+  * [Service Isolation (recommended)](#service-isolation)
+- [Full Example](#full-example)
+
+
 Gloo Mesh Workspaces set the foundation for building a mutli-cluster/multi-tenant service mesh. Workspaces serve as a logical separation of services and policies to reduce risk and scope when operating on your environment.
 
 Workspaces were created for organizations to better represent the logical business functions as it relates to managing services within your company. For example, a Workspace could represent the services a team/product/line of business needs to manage. 
@@ -9,15 +21,15 @@ Workspaces were created for organizations to better represent the logical busine
 Workspaces serve a few different purposes as it relates to a service mesh. 
 
 * Service Discovery - Workspaces must select the clusters and namespace that it represents. Services that run in these namespaces will be added to a service discovery group. A Developer then will be able to implement service mesh features for these services. By default, services within the same Workspace can 'see' other services within the same workspace but not services in other workspaces. 
-* Routing - 
-* Policy Enforcement
-* Security 
-* Gloo Mesh Configuration
+* Routing - TODO
+* Policy Enforcement - TODO
+* Security  - TODO
+* Gloo Mesh Configuration - TODO
 
 
 **How do Workspaces interact with other Workspaces?**
 
-
+TODO
 
 
 
@@ -341,7 +353,7 @@ spec:
 ...
 ```
 
-## Import / Export
+## Import / Export <a name="import-export"></a>
 
 To form a relationship between two Workspaces, **both workspaces must agree to the relationship**. This is done by one Workspace exporting its services, VirtualDestinations, RouteTables, or VirtualGateways, and another workspace importing them. 
 
@@ -498,7 +510,7 @@ spec:
 ...
 ```
 
-### Service Isolation (recommended)
+## Service Isolation (recommended) <a name="service-isolation"></a>
 
 Service Isolation is a great way to set sane security defaults when it relates to service access. If enabled, service isolation will allow communication between services within a given workspace and deny all others. It will also extend to allow access from workspaces that import the Workspace to make things easy.
 
