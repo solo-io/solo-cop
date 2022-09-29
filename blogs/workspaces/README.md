@@ -543,3 +543,136 @@ spec:
 # Full Example
 
 This example shows the relationship between 3 different workspaces (ops-team, web-team, backend-apis-team)
+
+
+```yaml
+# Ops-team owns the istio gateways and gloo mesh addons
+apiVersion: admin.gloo.solo.io/v2
+kind: Workspace
+metadata:
+  name: ops-team
+  namespace: gloo-mesh
+spec:
+  workloadClusters:
+  - name: 'mgmt'             # mgmt plane gloo mesh config namespace
+    namespaces:
+    - name: ops-team-config
+  - name: '*'
+    namespaces:              # gloo mesh addons and gateways namespaces
+    - name: istio-gateways   
+    - name: gloo-mesh-addons
+---
+apiVersion: admin.gloo.solo.io/v2
+kind: Workspace
+metadata:
+  name: web-team
+  namespace: gloo-mesh
+spec:
+  workloadClusters:
+  - name: 'mgmt'            # mgmt plane gloo mesh config namespace
+    namespaces:
+    - name: web-team-config
+  - name: '*'               # application namespaces
+    namespaces:
+    - name: web-ui
+---
+apiVersion: admin.gloo.solo.io/v2
+kind: Workspace
+metadata:
+  name: backend-apis-team
+  namespace: gloo-mesh
+spec:
+  workloadClusters:
+  - name: 'mgmt'                       # mgmt plane gloo mesh config namespace
+    namespaces:
+    - name: backend-apis-team-config
+  - name: '*'                          # application namespaces
+    namespaces:
+    - name: backend-apis
+```
+
+* WorkspaceSettings
+
+```yaml
+apiVersion: admin.gloo.solo.io/v2
+kind: WorkspaceSettings
+metadata:
+  name: ops-team
+  namespace: ops-team-config
+spec:
+  importFrom:              # import services/RouteTables/VirtualDestinations from the web-team so the gateway can route to them
+  - workspaces:
+    - name: web-team
+  exportTo:                # export to any Workspace that wants to use the Gloo Mesh Addons
+  - workspaces:
+    - name: "*"
+    resources:
+    - kind: SERVICE
+      namespace: gloo-mesh-addons
+    - kind: VIRTUAL_DESTINATION
+      namespace: gloo-mesh-addons
+  options:
+    federation:                     # federate only the gloo-mesh-addons
+      enabled: true
+      serviceSelector:
+      - namespace: gloo-mesh-addons
+    eastWestGateways:               # default eastwest gateway routing
+    - selector:
+        labels:
+          istio: eastwestgateway
+    serviceIsolation:               # enable service isolation and Istio Sidecar resource
+      enabled: true
+      trimProxyConfig: true
+---
+apiVersion: admin.gloo.solo.io/v2
+kind: WorkspaceSettings
+metadata:
+  name: web-team
+  namespace: web-team-config
+spec:
+  importFrom:
+  - workspaces:
+    - name: backend-apis-team      # import service and VirtualDestinations from the backend APIs so frontend can call them
+  - workspaces:
+    - name: ops-team               # import the gloo-mesh-addons and Gloo Mesh Gateway resource
+  exportTo:
+  - workspaces:
+    - name: ops-team               # export frontend services to the ops-team to enable routing from gateway
+  options:
+    eastWestGateways:               # default eastwest gateway routing
+    - selector:
+        labels:
+          istio: eastwestgateway
+    federation:                     # enable service federation of the web-ui namespace
+      enabled: true
+      serviceSelector:
+      - namespace: web-ui
+    serviceIsolation:               # enable service isolation and Istio Sidecar resource
+      enabled: true
+      trimProxyConfig: true
+---
+apiVersion: admin.gloo.solo.io/v2
+kind: WorkspaceSettings
+metadata:
+  name: backend-apis-team
+  namespace: backend-apis-team
+spec:
+  exportTo:
+  - workspaces:
+    - name: web-team                 # export services to the web-team so they can call our services
+  importFrom:
+  - workspaces:
+    - name: ops-team                 # import gloo-mesh-addons
+  options: 
+    eastWestGateways:                # default eastwest gateway routing
+    - selector:
+        labels:
+          istio: eastwestgateway
+    federation:                      # enable federation of the services in the backend-apis namespace
+      enabled: true
+      serviceSelector:
+      - namespace: backend-apis
+    serviceIsolation:                # disable service isolation and instead use AccessPolicies to control fine grained access
+      enabled: false
+      trimProxyConfig: false
+```
