@@ -1,6 +1,5 @@
 # Gloo Mesh Workspaces
 
-- [Gloo Mesh Workspaces](#gloo-mesh-workspaces)
 - [Workspaces](#workspaces)
   * [Gateways](#gateways)
   * [Gloo Mesh Addons](#gloo-mesh-addons)
@@ -361,7 +360,7 @@ To form a relationship between two Workspaces, **both workspaces must agree to t
 
 **Importing other Workspaces** - Allows the current Workspace to 'import' services, VirtualDestinations, RouteTables, and VirtualGateways from another workspace. The other workspace must export to the current workspace or resources will not be shared.
 
-* **Importing a Workspace (recommended)** - 
+* **Importing a Workspace (recommended)**
 ```yaml
 apiVersion: admin.gloo.solo.io/v2
 kind: WorkspaceSettings
