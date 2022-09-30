@@ -155,8 +155,8 @@ spec:
 
 ![Global Workspace](./images/global-workspace.png)
 
-
-* **Management Plane Configuration Namespace** - It is recommended that a user store their Gloo Mesh Configuration (VirtualGateways/RouteTables/Policies/etc.) in the management plane unless otherwise stated. To make sure the correct configuration makes it to the right workspace, its recommended to create a `config` namespace per workspace in the mgmt plane like so.
+### Management Plane Configuration Namespace
+It is recommended that a user store their Gloo Mesh Configuration (VirtualGateways/RouteTables/Policies/etc.) in the management plane unless otherwise stated. To make sure the correct configuration makes it to the right workspace, its recommended to create a `config` namespace per workspace in the mgmt plane like so.
 
 ```yaml
 apiVersion: admin.gloo.solo.io/v2
