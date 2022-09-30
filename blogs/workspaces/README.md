@@ -522,7 +522,7 @@ spec:
 
 Service Isolation is a great way to set sane security defaults when it relates to service access. If enabled, service isolation will allow communication between services within a given workspace and deny all others. It will also extend to allow access from workspaces that import the Workspace to make things easy.
 
-However if you would like to employ full Zero Trust architecture its recommended to disable this feature and manage service access using Gloo Mesh AccessPolicies
+However if you would like to employ full Zero Trust architecture it is recommended to disable this feature and manage service access using Gloo Mesh AccessPolicies
 
 * **Enable service isolation** - sets up a walled garden of access around the apis-team workspace as well as allows access from the web-team applications
 
