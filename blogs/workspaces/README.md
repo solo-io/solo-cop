@@ -23,7 +23,7 @@ Workspaces serve a few different purposes as it relates to a service mesh.
 * Routing - Workspaces are a logical boundary for which services can route to one another. To route to services in other workspaces one must import/export with that Workspace.
 * Policy Enforcement - Workspaces define the scope at which a policy can impact your environment. This helps reduce the blast radius of a misconfiguration. 
 * Security - Workspaces set a virtual boundary to protect services from traffic outside of the given Workspace. 
-* Gloo Mesh Configuration - Gloo Mesh configs will only apply to the workspace of which they are associated. The Gloo Mes config must be in one of the contained namespaces in a Workspace. 
+* Gloo Mesh Configuration - Gloo Mesh configs will only apply to the workspace of which they are associated. The Gloo Mesh config must be in one of the contained namespaces in a Workspace. 
 
 **How do Workspaces interact with other Workspaces?**
 
