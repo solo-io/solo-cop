@@ -229,7 +229,7 @@ spec:
     - name: 'istio-ingress'
 ```
 
-* Eastwest Gateways - Istio eastwest gateways are required for multi cluster routing within Gloo Mesh. These gateways just need to exist in a workspace to enable multi cluster routing for all workspaces. It is recommended to have a workspace 
+* Eastwest Gateways - Istio eastwest gateways are required for multi cluster routing within Gloo Mesh. These gateways just need to exist in a workspace to enable multi cluster routing for all workspaces. It is recommended to have a workspace for internal Gloo Mesh resources like the gloo-mesh-addons (see below). Typically these gateways are the responsibility of the DevOps team so it does make sense that they could also be a part of the ops-team workspaces as well. 
 
 ```yaml
 apiVersion: admin.gloo.solo.io/v2
@@ -246,6 +246,8 @@ spec:
 
 
 ## Gloo Mesh Addons
+
+The Gloo Mesh Addons are a set of services that are deployed to add functionality such as rate limiting, OIDC, and other types of authentication. Typically these services are deployed on each cluster in the `gloo-mesh-addons` namespace.
 
 If you have deployed the gloo-mesh-addons features you will need to include them into a Workspace. If these addons are being used by multiple Workspaces, it is recommended to place these into a separate Workspace and use WorkspaceSettings to export them. Alternatively you could include them in the `gloo-mesh-internal` workspace described above with the `istio-eastwest` gateways.
 
@@ -309,7 +311,7 @@ Federation is one of the main features within Gloo Mesh. It is the mechanism whi
 >  - spiffe://cluster2.solo.io/ns/apis/sa/currency
 > ```
 
-* Recommended Default
+* Recommended Default when starting out - This is easiest way to get started with multi-cluster routing because it enables multi-cluster routing for all services in the workspace. When your workspaces exceed tens of services it may negatively impact performance so you should use the optional filtering shown below. 
 
 ```yaml
 apiVersion: admin.gloo.solo.io/v2
@@ -320,7 +322,9 @@ metadata:
 spec:
   options:
     federation:
-      enabled: true  # enables multi-cluster routing between services in this Workspace
+      enabled: true    # enables multi-cluster routing between services in this Workspace
+      serviceSelector:
+      - {}              # federate all services in your workspace
 ...
 ```
 
@@ -434,7 +438,7 @@ spec:
   - workspaces:
     - name: apis-team
     resources:
-    - kind: VIRTUAL_DESTINATION      # Import VirtualDestinations created in the backend-apis-team-config namespace on the mgmt-cluster
+    - kind: VIRTUAL_DESTINATION      # Import VirtualDestinations created in the apis-team-config namespace on the mgmt-cluster
       namespace: apis-team-config
       cluster: mgmt-cluster
     - kind: SERVICE                  # import kubernetes services from the apis namespace belonging to the apis team
