@@ -69,7 +69,8 @@ The above configuration will create the `web-team` Worksapace which contains bot
 ![Wilcard Cluster Names](./images/wildcard-cluster.png)
 
 
-* **Wildcard namespaces** - Some users may want to allow any service within a cluster to belong to a workspace regardless of the namespace it is in. You can wildcard the namespace to include all namespaces within a given cluster. 
+### Wildcard namespaces
+Some users may want to allow any service within a cluster to belong to a workspace regardless of the namespace it is in. You can wildcard the namespace to include all namespaces within a given cluster. 
 
 ```yaml
 apiVersion: admin.gloo.solo.io/v2
@@ -97,7 +98,8 @@ spec:
 
 ![Wilcard Namespaces](./images/wildcard-namespaces.png)
 
-* **Wildcard namespaces match labels** - Using a wildcard for all namespace within a cluster may include namespaces not intended to be managed by Gloo Mesh. You can filter the workspace using namespace label selectors. The below example only selects namespaces where Istio sidecars are enabled.
+### Wildcard namespaces match labels
+Using a wildcard for all namespace within a cluster may include namespaces not intended to be managed by Gloo Mesh. You can filter the workspace using namespace label selectors. The below example only selects namespaces where Istio sidecars are enabled.
 
 ```yaml
 apiVersion: admin.gloo.solo.io/v2
@@ -116,7 +118,8 @@ spec:
 
 ![Wilcard Namespaces Label Selectors](./images/wildcard-namespaces-labels.png)
 
-* **Exact namespaces** - In some cases, users may want to select specific namespaces that belong to a Workspace. This creats a 'static' Workspace that will not update dynamically as new namespaces and clusters are added. 
+### Exact namespaces
+In some cases, users may want to select specific namespaces that belong to a Workspace. This creats a 'static' Workspace that will not update dynamically as new namespaces and clusters are added. 
 
 ```yaml
 apiVersion: admin.gloo.solo.io/v2
@@ -137,8 +140,8 @@ spec:
 
 ![Static Workspace](./images/static-workspace.png)
 
-
-* **Global Workspace** - In some cases it may be easier to include all services within the same workspace. This means that they all share the same service discovery policies and security. This is only recommended for beginners learning gloo mesh as long term **it may have potential performance issues**.
+### Global Workspace
+In some cases it may be easier to include all services within the same workspace. This means that they all share the same service discovery policies and security. This is only recommended for beginners learning gloo mesh as long term **it may have potential performance issues**.
 
 ```yaml
 apiVersion: admin.gloo.solo.io/v2
@@ -190,7 +193,8 @@ spec:
 
 ![Global Workspace](./images/gloo-mesh-config.png)
 
-* **Config Only Namespaces** - By default Gloo Mesh will read Gloo Mesh configuration from **ANY** namespace that is in the Workspace. If you would like to limit who and where Gloo Mesh configuration can be read, you can use the `configEnabled: true|false` field.
+### Config only namespaces
+By default Gloo Mesh will read Gloo Mesh configuration from **ANY** namespace that is in the Workspace. If you would like to limit who and where Gloo Mesh configuration can be read, you can use the `configEnabled: true|false` field.
 
 ```yaml
 apiVersion: admin.gloo.solo.io/v2
