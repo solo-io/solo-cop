@@ -270,7 +270,7 @@ The WorkspaceSettings API allows each Workspace administrator to decide which ot
 
 ## Federation
 
-Federation is one of the main features within Gloo Mesh. It is the mechanism in which makes applications discoverable and routable from other clusters. In almost all cases it is recommended to enable federation if the applications within the workspace need multi-cluster availability.
+Federation is one of the main features within Gloo Mesh. It is the mechanism which makes applications discoverable and routable from other clusters. In almost all cases it is recommended to enable federation if the applications within the workspace need multi-cluster availability.
 
 > When federation is enabled, Gloo Mesh creates Istio ServiceEntries in each cluster that are used for multi cluster routing. Example....
 > ```yaml
