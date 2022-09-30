@@ -342,7 +342,7 @@ spec:
 
 ## Eastwest Gateway Selection
 
-Users have the option to chose the eastwest gateways used for multi-cluster routing if multiple are deployed. By default, it is recommended to use the following configuration for most deployments of Istio, Gloo Mesh will look for a port named `tls` on the gateway to facilitate the routing.
+Users have the option to choose the eastwest gateways used for multi-cluster routing if multiple are deployed. By default, it is recommended to use the following configuration for most deployments of Istio, Gloo Mesh will look for a port named `tls` on the gateway to facilitate the routing.
 
 ```yaml
 apiVersion: admin.gloo.solo.io/v2
