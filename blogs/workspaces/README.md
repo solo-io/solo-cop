@@ -229,7 +229,7 @@ spec:
     - name: 'istio-ingress'
 ```
 
-* Eastwest Gateways - Istio eastwest gateways are required for multi cluster routing within Gloo Mesh. These gateways just need to exist in a workspace to enable multi cluster routing for all workspaces. It is recommended to have a workspace 
+* Eastwest Gateways - Istio eastwest gateways are required for multi cluster routing within Gloo Mesh. These gateways just need to exist in a workspace to enable multi cluster routing for all workspaces. It is recommended to have a workspace for internal Gloo Mesh resources like the gloo-mesh-addons (see below). Typically these gateways are the responsibility of the DevOps team so it does make sense that they could also be a part of the ops-team workspaces as well. 
 
 ```yaml
 apiVersion: admin.gloo.solo.io/v2
