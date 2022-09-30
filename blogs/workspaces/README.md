@@ -247,6 +247,8 @@ spec:
 
 ## Gloo Mesh Addons
 
+The Gloo Mesh Addons are a set of services that are deployed to add functionality such as rate limiting, OIDC, and other types of authentication. Typically these services are deployed on each cluster in the `gloo-mesh-addons` namespace.
+
 If you have deployed the gloo-mesh-addons features you will need to include them into a Workspace. If these addons are being used by multiple Workspaces, it is recommended to place these into a separate Workspace and use WorkspaceSettings to export them. Alternatively you could include them in the `gloo-mesh-internal` workspace described above with the `istio-eastwest` gateways.
 
 ```yaml
