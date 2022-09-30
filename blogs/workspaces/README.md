@@ -1,6 +1,6 @@
 # Gloo Mesh Workspaces
 
-- [Workspaces](#workspaces)
+- [Workspace Config](#workspaces)
   * [Gateways](#gateways)
   * [Gloo Mesh Addons](#gloo-mesh-addons)
 - [WorkspaceSettings](#workspacesettings)
@@ -20,21 +20,28 @@ Workspaces were created for organizations to better represent the logical busine
 Workspaces serve a few different purposes as it relates to a service mesh. 
 
 * Service Discovery - Workspaces must select the clusters and namespace that it represents. Services that run in these namespaces will be added to a service discovery group. A Developer then will be able to implement service mesh features for these services. By default, services within the same Workspace can 'see' other services within the same workspace but not services in other workspaces. 
-* Routing - TODO
-* Policy Enforcement - TODO
-* Security  - TODO
-* Gloo Mesh Configuration - TODO
-
+* Routing - Workspaces are a logical boundary for which services can route to one another. To route to services in other workspaces one must import/export with that Workspace.
+* Policy Enforcement - Workspaces define the scope at which a policy can impact your environment. This helps reduce the blast radius of a misconfiguration. 
+* Security - Workspaces set a virtual boundary to protect services from traffic outside of the given Workspace. 
+* Gloo Mesh Configuration - Gloo Mesh configs will only apply to the workspace of which they are associated. The Gloo Mes config must be in one of the contained namespaces in a Workspace. 
 
 **How do Workspaces interact with other Workspaces?**
 
-TODO
+Most use cases require sevices to communicate with services from other Workspaces. To establish a relationship with another Workspace, both Workspaces must agree to the union. The source Workspace must `export` its resources and the destination Workspace must `import` the sources resources. This is an important security detail to prevent either side from inadvertantly oversharing with other Workspaces. 
+
+Some examples of Workspace relationships
+* Ingress gateway workspace imports Workspaces that will recieve traffic that flows through the gateway.
+* Services from one Workspace need to communicate with Services in another Workspace so each Workspace imports/exports to the other.
+* One Workspace wants to share its APIs with all other Workspaces.
 
 
+![Gateway Import UI](./images/gateway-import.png)
 
-# Workspaces
+# Workspace Configuration
 
 Here are some recommended example workspaces for users just getting started with Gloo Mesh.
+
+**Workspace configs must be placed in the `gloo-mesh` namespace in the management cluster.**
 
 >The below examples will utilize workspaces to represent different teams within an organization.
 >
@@ -181,7 +188,7 @@ spec:
       - name: 'aips'
 ```
 
-![Global Workspace](./images/mgmt-config-namespace.png)
+![Global Workspace](./images/gloo-mesh-config.png)
 
 * **Config Only Namespaces** - By default Gloo Mesh will read Gloo Mesh configuration from **ANY** namespace that is in the Workspace. If you would like to limit who and where Gloo Mesh configuration can be read, you can use the `configEnabled: true|false` field.
 
@@ -202,6 +209,8 @@ spec:
       - name: 'web-ui'
     configEnabled: false        # Dont read Gloo Mesh configuration from this namespace
 ```
+
+![Only allow mgmt plane config](./images/config-only-workspace.png)
 
 ## Gateways
 
@@ -524,7 +533,7 @@ metadata:
   name: apis-team
   namespace: apis-team-config
 spec:
-  exportTpo:
+  exportTo:
   - workspaces:
     - name: web-team         # Workspaces importing apis-team Workspace will still have access
   options:
@@ -534,6 +543,8 @@ spec:
 ```
 
 * **Trim Proxy Config ( performance improvement)** - Scopes service discovery of the sidecar to only the workspace and services that are imported. This improves resource usage on the sidecar in large environments and is recommended. For Istio users this creates the `Sidecar` resource in each namespace for the Workspace.
+
+> This feature currently only works if serviceIsolation.enabled=true
 
 ```yaml
 apiVersion: admin.gloo.solo.io/v2
@@ -551,10 +562,29 @@ spec:
       trimProxyConfig: true      # enable scoping of service discovery to the workspace
 ```
 
+  Example Sidecar output
+  ```yaml
+  apiVersion: networking.istio.io/v1beta1
+  kind: Sidecar
+  metadata:
+    name: sidecar-backend-v1-backend-apis-cluster1-backend-apis-team
+    namespace: backend-apis
+  spec:
+    egress:
+    - hosts:
+      - '*/backend.backend-apis.svc.cluster.local'
+      - '*/backend.solo-io.mesh'
+      - '*/frontend.backend-apis.svc.cluster.local'
+      - '*/istio-eastwestgateway.istio-gateways.svc.cluster.local'
+      - '*/istio-in
+  ```
+
+
 # Full Example
 
-This example shows the relationship between 3 different workspaces (ops-team, web-team, backend-apis-team)
+![Full Example](./images/example-workspaces.png)
 
+This example shows the relationship between 3 different workspaces (ops-team, web-team, backend-apis-team). All Gloo Mesh configuration for this example is assumed to be placed in the management plane. See configuration above for alternatives.
 
 ```yaml
 # Ops-team owns the istio gateways and gloo mesh addons
