@@ -266,17 +266,17 @@ spec:
 - name: '*'                   ## any cluster that has the namespace 'gloo-mesh-addons'
     namespaces:
     - name: 'gloo-mesh-addons'
-
 ```
-
 
 # WorkspaceSettings
 
 The WorkspaceSettings API allows each Workspace administrator to decide which other workspaces it interacts with. There are a number of settings discussed below that allow Gloo Mesh users to tune their environment based on their use cases.
 
-## Federation
+## Federation (not recommended in most environments)
 
-Federation is one of the main features within Gloo Mesh. It is the mechanism which makes applications discoverable and routable from other clusters. In almost all cases it is recommended to enable federation if the applications within the workspace need multi-cluster availability.
+Federation is a feature that allows individual kubernetes services to be available from any other cluster via a unique hostname in the format `<service_name>.<namespace>.svc.<cluster_name>` (See ServiceEntry below). This is useful in a select few use cases but can have performance impacts on Istio and Gloo Mesh if too many services are federated. 
+
+**It is recommended to use VirtualDestination for all multi-cluster routing instead of federation if possible as much more functionality is available to VirtualDestinations, like attaching policies.**
 
 > When federation is enabled, Gloo Mesh creates Istio ServiceEntries in each cluster that are used for multi cluster routing. Example....
 > ```yaml
@@ -315,24 +315,36 @@ Federation is one of the main features within Gloo Mesh. It is the mechanism whi
 >  - spiffe://cluster2.solo.io/ns/apis/sa/currency
 > ```
 
-* Recommended Default when starting out - This is easiest way to get started with multi-cluster routing because it enables multi-cluster routing for all services in the workspace. When your workspaces exceed tens of services it may negatively impact performance so you should use the optional filtering shown below. 
+* When can you use Federation? - Federation can be used when Routing to a very specific application in another cluster. This typically is done when the Ingress Gateway does not exist in the same cluster as the service its routing to (See below). **Again its recommended that any routing would be done to VirtualDestinations instead.**
 
 ```yaml
-apiVersion: admin.gloo.solo.io/v2
-kind: WorkspaceSettings
+apiVersion: networking.gloo.solo.io/v2
+kind: RouteTable
 metadata:
-  name: web-team
-  namespace: web-team-config
+  name: frontend
+  namespace: web-team
 spec:
-  options:
-    federation:
-      enabled: true    # enables multi-cluster routing between services in this Workspace
-      serviceSelector:
-      - {}              # federate all services in your workspace
-...
+  hosts:
+    - '*'
+  virtualGateways:
+    - name: north-south-gw
+      namespace: ops-team
+      cluster: mgmt
+  workloadSelectors: []
+  http:
+    - name: frontend
+      forwardTo:
+        destinations:
+          - ref:
+              name: frontend       # Requires federation because a specific kubernetes service is selected
+              namespace: web-ui
+              cluster: cluster1
+            port:
+              number: 80
 ```
 
-* Optional Filtering - in larger workspaces it may make more sense to only federate a subset of services that are used for multi cluster routing.
+
+* Federation With Filtering - in larger workspaces it may make more sense to only federate a subset of services that are used for multi cluster routing.
 
 ```yaml
 apiVersion: admin.gloo.solo.io/v2
@@ -343,7 +355,7 @@ metadata:
 spec:
   options:
     federation:
-      enabled: true       # enables multi-cluster routing/availability for services in `web-ui` namespace
+      enabled: true       # creates ServiceEntries in workspace namespaces for services in the web-ui namespace
       serviceSelector:
       - namespace: web-ui
 ```
