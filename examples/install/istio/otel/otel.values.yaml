@@ -26,13 +26,10 @@ config:
     zipkin:
       endpoint: 0.0.0.0:9411
   exporters:
-    otlp:
+    otlp: #OTLP = OpenTelemetry Protocol
       endpoint: "api.honeycomb.io:443"
       headers:
-        "x-honeycomb-team": "APIKEY"
-      #      endpoint: "tempo.tempo.svc.cluster.local:4317" # debugging
-      #      tls:
-      #        insecure: true
+        "x-honeycomb-team": "APIKEY" #CHANGE THE API KEY
     logging:
       loglevel: debug # debugging
   service:
