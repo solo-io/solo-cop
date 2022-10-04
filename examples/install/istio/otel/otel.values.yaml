@@ -1,0 +1,52 @@
+config:
+  exporters:
+    logging:
+      loglevel: debug
+  extensions:
+    # The health_check extension is mandatory for this chart.
+    # Without the health_check extension the collector will fail the readiness and liveliness probes.
+    # The health_check extension can be modified, but should never be removed.
+    health_check: {}
+    memory_ballast: {}
+  processors:
+    batch: {}
+    # If set to null, will be overridden with values based on k8s resource limits
+    memory_limiter: null
+  receivers:
+    jaeger: null
+
+    otlp:
+      protocols:
+        grpc:
+          endpoint: 0.0.0.0:4317
+        http:
+          endpoint: 0.0.0.0:4318
+
+    prometheus: null
+    zipkin:
+      endpoint: 0.0.0.0:9411
+  exporters:
+    otlp:
+      endpoint: "api.honeycomb.io:443"
+      headers:
+        "x-honeycomb-team": "APIKEY"
+      #      endpoint: "tempo.tempo.svc.cluster.local:4317" # debugging
+      #      tls:
+      #        insecure: true
+    logging:
+      loglevel: debug # debugging
+  service:
+    pipelines:
+      logs:
+        exporters:
+          - logging # debugging
+      metrics: null
+      traces:
+        exporters:
+          - otlp
+          - logging
+        processors:
+          - memory_limiter
+          - batch
+        receivers:
+          - zipkin
