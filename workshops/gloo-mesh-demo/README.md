@@ -54,12 +54,12 @@ Set these environment variables which will be used throughout the workshop.
 ```sh
 # Used to enable Gloo Mesh (please ask for a trail license key)
 export GLOO_MESH_LICENSE_KEY=<licence_key>
-export GLOO_MESH_VERSION=v2.0.11
+export GLOO_MESH_VERSION=v2.1.0-beta29
 
 # Istio version information
 export ISTIO_IMAGE_REPO=us-docker.pkg.dev/gloo-mesh/istio-workshops
-export ISTIO_IMAGE_TAG=1.13.5-solo
-export ISTIO_VERSION=1.13.5
+export ISTIO_IMAGE_TAG=1.15.1-solo
+export ISTIO_VERSION=1.15.1
 ```
 
 ## Lab 1 - Configure/Deploy the Kubernetes clusters <a name="Lab-1"></a>
@@ -154,7 +154,7 @@ export PATH=$PWD/istio-${ISTIO_VERSION}/bin:$PATH
 istioctl version
 ```
 
-2. Install Istio to each of the remote clusters. If you're using local Kubernetes clusters on a Mac M1 or M2, use [these ARM instructions](problems-istio-arm.md) instead.
+2. Install Istio to each of the remote clusters.
 
 ```sh
 kubectl create namespace istio-gateways --context $CLUSTER1
