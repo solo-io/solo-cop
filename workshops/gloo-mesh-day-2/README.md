@@ -649,6 +649,16 @@ pilot:
 EOF
 ```
 
+* Verify that Istio is using the plugged in certs `kubectl logs --context ${MGMT} -l app=istiod -n istio-system --tail 100`
+```sh
+2022-10-05T19:50:32.288662Z    info    Using kubernetes.io/tls secret type for signing ca files
+2022-10-05T19:50:32.288667Z    info    Use plugged-in cert at etc/cacerts/tls.key
+2022-10-05T19:50:32.288759Z    info    x509 cert - Issuer: "CN=cluster1.solo.io", Subject: "", SN: 7d9a3353a9fcf01ed7e492a5ee11f9ef, NotBefore: "2022-10-05T19:48:32Z", NotAfter: "2032-10-02T19:50:32Z"
+2022-10-05T19:50:32.288773Z    info    x509 cert - Issuer: "CN=Solo.io Istio CA Issuer", Subject: "CN=cluster1.solo.io", SN: 534ef6afdefd0bda57eade9181f01ddf9cca1a82, NotBefore: "2022-10-05T19:45:03Z" NotAfter: "2022-11-04T19:45:33Z"
+2022-10-05T19:50:32.288788Z    info    x509 cert - Issuer: "CN=solo.io", Subject: "CN=Solo.io Istio CA Issuer", SN: 56f87198ca42c8f622987c4336fc4103e719c122, NotBefore: "2022-10-05T19:36:53Z", NotAfter: "2027-10-04T19:37:23Z"
+```
+
+
 * Install Gateways in mgmt cluster
 
 ```sh
