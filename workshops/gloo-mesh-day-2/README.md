@@ -47,12 +47,10 @@ Set these environment variables which will be used throughout the workshop.
 ```sh
 # Used to enable Gloo (please ask for a trial license key)
 export GLOO_LICENSE_KEY=<licence_key>
-export GLOO_PLATFORM_VERSION=v2.0.12
-# export ISTIO_IMAGE_REPO=us-docker.pkg.dev/gloo-mesh/istio-workshops
-# export ISTIO_IMAGE_TAG=1.14.2-solo
-export ISTIO_IMAGE_REPO=gcr.io/istio-release
-export ISTIO_IMAGE_TAG=1.14.2
-export ISTIO_VERSION=1.14.2
+export GLOO_PLATFORM_VERSION=v2.1.0-beta29
+export ISTIO_IMAGE_REPO=us-docker.pkg.dev/gloo-mesh/istio-workshops
+export ISTIO_IMAGE_TAG=1.14.4-solo
+export ISTIO_VERSION=1.14.4
 export ISTIO_REVISION=1-14
 ```
 
@@ -125,8 +123,8 @@ This workshop chose cert manager as the last-mile certificate management solutio
 * Deploy cert-manager to both the `mgmt` and `cluster1` clusters
 
 ```sh
-kubectl --context ${MGMT} apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.8.2/cert-manager.yaml
-kubectl --context ${CLUSTER1} apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.8.2/cert-manager.yaml
+kubectl --context ${MGMT} apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.9.1/cert-manager.yaml
+kubectl --context ${CLUSTER1} apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.9.1/cert-manager.yaml
 
 kubectl wait deployment --for condition=Available=True -n cert-manager --context $MGMT --all
 kubectl wait deployment --for condition=Available=True -n cert-manager --context $CLUSTER1 --all
@@ -231,8 +229,8 @@ metadata:
   namespace: istio-system
 spec:
   secretName: cacerts
-  duration: 1h
-  renewBefore: 30m
+  duration: 720h # 30d
+  renewBefore: 360h # 15d
   commonName: mgmt.solo.io
   isCA: true
   usages:
@@ -258,8 +256,8 @@ metadata:
   namespace: istio-system
 spec:
   secretName: cacerts
-  duration: 1h
-  renewBefore: 30m
+  duration: 720h # 30d
+  renewBefore: 360h # 15d
   commonName: cluster1.solo.io
   isCA: true
   usages:
@@ -308,10 +306,10 @@ spec:
   dnsNames:
     - "*.gloo-mesh"
   duration: 8760h0m0s   ### 1 year life
+  renewBefore: 8736h0m0s
   issuerRef:
     kind: ClusterIssuer
     name: vault-issuer-gloo
-  renewBefore: 8736h0m0s
   secretName: gloo-server-tls-cert
   usages:
     - server auth
@@ -331,10 +329,10 @@ spec:
     # Must match the cluster name used in the helm chart install
     - "mgmt-cluster"
   duration: 8760h0m0s   ### 1 year life
+  renewBefore: 8736h0m0s
   issuerRef:
     kind: ClusterIssuer
     name: vault-issuer-gloo
-  renewBefore: 8736h0m0s
   secretName: gloo-agent-tls-cert
   usages:
     - digital signature
@@ -362,10 +360,10 @@ spec:
     # Must match the cluster name used in the helm chart install
     - "$CLUSTER1"
   duration: 8760h0m0s   ### 1 year life
+  renewBefore: 8736h0m0s
   issuerRef:
     kind: ClusterIssuer
     name: vault-issuer-gloo
-  renewBefore: 8736h0m0s
   secretName: gloo-agent-tls-cert
   usages:
     - digital signature
@@ -600,6 +598,8 @@ pilot:
   env:
     # Allow multiple trust domains (Required for Gloo east/west routing)
     PILOT_SKIP_VALIDATE_TRUST_DOMAIN: "true"
+    # Reload cacerts when cert-manager changes it
+    AUTO_RELOAD_PLUGIN_CERTS: "true"
 EOF
 ```
 
@@ -644,8 +644,20 @@ pilot:
   env:
     # Allow multiple trust domains (Required for Gloo east/west routing)
     PILOT_SKIP_VALIDATE_TRUST_DOMAIN: "true"
+    # Reload cacerts when cert-manager changes it
+    AUTO_RELOAD_PLUGIN_CERTS: "true"
 EOF
 ```
+
+* Verify that Istio is using the plugged in certs `kubectl logs --context ${MGMT} -l app=istiod -n istio-system --tail 100`
+```sh
+2022-10-05T19:50:32.288662Z    info    Using kubernetes.io/tls secret type for signing ca files
+2022-10-05T19:50:32.288667Z    info    Use plugged-in cert at etc/cacerts/tls.key
+2022-10-05T19:50:32.288759Z    info    x509 cert - Issuer: "CN=cluster1.solo.io", Subject: "", SN: 7d9a3353a9fcf01ed7e492a5ee11f9ef, NotBefore: "2022-10-05T19:48:32Z", NotAfter: "2032-10-02T19:50:32Z"
+2022-10-05T19:50:32.288773Z    info    x509 cert - Issuer: "CN=Solo.io Istio CA Issuer", Subject: "CN=cluster1.solo.io", SN: 534ef6afdefd0bda57eade9181f01ddf9cca1a82, NotBefore: "2022-10-05T19:45:03Z" NotAfter: "2022-11-04T19:45:33Z"
+2022-10-05T19:50:32.288788Z    info    x509 cert - Issuer: "CN=solo.io", Subject: "CN=Solo.io Istio CA Issuer", SN: 56f87198ca42c8f622987c4336fc4103e719c122, NotBefore: "2022-10-05T19:36:53Z", NotAfter: "2027-10-04T19:37:23Z"
+```
+
 
 * Install Gateways in mgmt cluster
 
