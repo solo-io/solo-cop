@@ -158,7 +158,7 @@ Checking Gloo Mesh Management Cluster Installation
 +----------+------------+--------------------------------------------------+
 ```
 
-5. Verify proper installation by opening the Gloo Mesh Dashboard. Click [here](problems-dashboard.md) if that command did not work. It's best to run this command in a separate terminal.
+5. In addition, you can verify proper installation by opening the Gloo Mesh Dashboard. Click [here](problems-dashboard.md) if that command did not work. It's best to run this command in a separate terminal.
 
 ```sh
 meshctl dashboard --kubecontext $MGMT
