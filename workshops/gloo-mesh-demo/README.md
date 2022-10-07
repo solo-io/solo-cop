@@ -58,8 +58,8 @@ export GLOO_MESH_VERSION=v2.1.0-beta29
 
 # Istio version information
 export ISTIO_IMAGE_REPO=us-docker.pkg.dev/gloo-mesh/istio-workshops
-export ISTIO_IMAGE_TAG=1.15.1-solo
-export ISTIO_VERSION=1.15.1
+export ISTIO_IMAGE_TAG=1.13.8-solo
+export ISTIO_VERSION=1.13.8
 ```
 
 ## Lab 1 - Configure/Deploy the Kubernetes clusters <a name="Lab-1"></a>
@@ -136,10 +136,32 @@ meshctl cluster register \
 
 **Problems?** meshctl tries to automatically detect the management server endpoint, but sometimes this can fail. If that happens, it can be supplied manually. Follow the steps [here](problems-manual-registration.md) if you run into this.
 
-4. Verify proper installation by opening the Gloo Mesh Dashboard. Click [here](problems-dashboard.md) if that command did not work. It's best to run this command in a separate terminal.
+4. Now verify that the installation is healthy
+```sh
+meshctl check --kubecontext $MGMT
+```
+
+You should see output similar to the following:
+```sh
+Checking Gloo Mesh Management Cluster Installation
+--------------------------------------------
+
+🟢 Gloo Mgmt Server Deployment Status
+
+🟢 Gloo Mgmt Server Connectivity to Agents
++----------+------------+--------------------------------------------------+
+| CLUSTER  | REGISTERED |                  CONNECTED POD                   |
++----------+------------+--------------------------------------------------+
+| cluster1 | true       | gloo-mesh/gloo-mesh-mgmt-server-6c697cb869-48vq7 |
++----------+------------+--------------------------------------------------+
+| cluster2 | true       | gloo-mesh/gloo-mesh-mgmt-server-6c697cb869-48vq7 |
++----------+------------+--------------------------------------------------+
+```
+
+5. Verify proper installation by opening the Gloo Mesh Dashboard. Click [here](problems-dashboard.md) if that command did not work. It's best to run this command in a separate terminal.
 
 ```sh
-meshctl dashboard --kubecontext mgmt
+meshctl dashboard --kubecontext $MGMT
 ```
 
 ## Lab 3 - Deploy Istio on the Workload Clusters<a name="Lab-3"></a>
@@ -154,7 +176,7 @@ export PATH=$PWD/istio-${ISTIO_VERSION}/bin:$PATH
 istioctl version
 ```
 
-2. Install Istio to each of the remote clusters.
+2. Install Istio to each of the remote clusters. If you're using local Kubernetes clusters on a Mac M1 or M2, use [these ARM instructions](problems-istio-arm.md) instead.
 
 ```sh
 kubectl create namespace istio-gateways --context $CLUSTER1
