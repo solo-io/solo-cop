@@ -101,7 +101,7 @@ Vault is not only a reliable secret store, but also great at managing and issuin
 * Save the Vault address to be later used by `cert-manager`
 
 ```sh
-export VAULT_ADDR=http://$(kubectl --context ${MGMT} -n vault get svc vault -o jsonpath='{.status.loadBalancer.ingress[0].*}'):8200
+export VAULT_ADDR=https://:8200
 
 printf "\n\nVault available at: $VAULT_ADDR\n"
 ```
@@ -150,6 +150,7 @@ spec:
   vault:
     path: pki_int_istio/root/sign-intermediate
     server: $VAULT_ADDR
+    namespace: admin
     auth:
       tokenSecretRef:
         name: vault-token
@@ -164,6 +165,7 @@ spec:
   vault:
     path: pki_int_gloo/sign/gloo-issuer
     server: $VAULT_ADDR
+    namespace: admin
     auth:
       tokenSecretRef:
         name: vault-token
@@ -184,6 +186,7 @@ spec:
   vault:
     path: pki_int_istio/root/sign-intermediate ## This path allows ca: TRUE certificaets
     server: $VAULT_ADDR
+    namespace: admin
     auth:
       tokenSecretRef:
         name: vault-token
@@ -198,6 +201,7 @@ spec:
   vault:
     path: pki_int_gloo/sign/gloo-issuer ## This path is for client/server certificates
     server: $VAULT_ADDR
+    namespace: admin
     auth:
       tokenSecretRef:
         name: vault-token
@@ -248,7 +252,6 @@ EOF
 * Create Istio `cacerts` certificate in the `cluster1` cluster
 
 ```yaml
-kubectl apply --context $CLUSTER1 -f- <<EOF
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:

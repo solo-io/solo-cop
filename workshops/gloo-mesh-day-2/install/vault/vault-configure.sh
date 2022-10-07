@@ -21,7 +21,7 @@ vault secrets tune -max-lease-ttl=87600h pki
 
 vault write -field=certificate pki/root/generate/internal \
      common_name="solo.io" \
-     issuer_name="Solo Root Certificate" \
+     issuer_name="solo-io" \
      ttl=87600h > /root-ca.crt
 
 
@@ -35,11 +35,11 @@ vault secrets tune -max-lease-ttl=43800h pki_int_istio
 
 vault write -format=json  pki_int_istio/intermediate/generate/internal \
      common_name="Solo.io Istio CA Issuer" \
-     issuer_name="solo.io-istio-issuer" \
+     issuer_name="solo-io-istio-issuer" \
      | jq -r '.data.csr' > /pki_intermediate_istio.csr
 
 vault write -format=json pki/root/sign-intermediate \
-     issuer_ref="root-2022" \
+     issuer_ref="solo-io" \
      csr=@/pki_intermediate_istio.csr \
      format=pem_bundle ttl="43800h" \
      | jq -r '.data.certificate' > /intermediate_istio.cert.pem
@@ -58,11 +58,11 @@ vault secrets tune -max-lease-ttl=43800h pki_int_gloo
 
 vault write -format=json  pki_int_gloo/intermediate/generate/internal \
      common_name="Solo.io Gloo CA Issuer" \
-     issuer_name="solo.io-gloo-issuer" \
+     issuer_name="solo-io-gloo-issuer" \
      | jq -r '.data.csr' > /pki_intermediate_gloo.csr
 
 vault write -format=json pki/root/sign-intermediate \
-     issuer_ref="root-2022" \
+     issuer_ref="solo-io" \
      csr=@/pki_intermediate_gloo.csr \
      format=pem_bundle ttl="43800h" \
      | jq -r '.data.certificate' > /intermediate_gloo.cert.pem
@@ -71,7 +71,7 @@ vault write pki_int_gloo/intermediate/set-signed certificate=@/intermediate_gloo
 
 vault write pki_int_gloo/roles/gloo-issuer \
      allow_any_name=true \
-     client_flad=true \
+     client_flag=true \
      server_flag=true \
      enforce_hostnames=false \
      max_ttl="720h"
