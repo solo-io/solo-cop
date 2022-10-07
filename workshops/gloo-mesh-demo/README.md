@@ -46,7 +46,7 @@ To get started with this workshop, clone this repo.
 
 ```sh
 git clone https://github.com/solo-io/solo-cop.git
-cd solo-cop/workshops/gloo-mesh-demo && git checkout v1.0.4
+cd solo-cop/workshops/gloo-mesh-demo
 ```
 
 Set these environment variables which will be used throughout the workshop.
@@ -54,12 +54,12 @@ Set these environment variables which will be used throughout the workshop.
 ```sh
 # Used to enable Gloo Mesh (please ask for a trail license key)
 export GLOO_MESH_LICENSE_KEY=<licence_key>
-export GLOO_MESH_VERSION=v2.0.11
+export GLOO_MESH_VERSION=v2.1.0-beta29
 
 # Istio version information
 export ISTIO_IMAGE_REPO=us-docker.pkg.dev/gloo-mesh/istio-workshops
-export ISTIO_IMAGE_TAG=1.13.5-solo
-export ISTIO_VERSION=1.13.5
+export ISTIO_IMAGE_TAG=1.13.8-solo
+export ISTIO_VERSION=1.13.8
 ```
 
 ## Lab 1 - Configure/Deploy the Kubernetes clusters <a name="Lab-1"></a>
@@ -136,10 +136,32 @@ meshctl cluster register \
 
 **Problems?** meshctl tries to automatically detect the management server endpoint, but sometimes this can fail. If that happens, it can be supplied manually. Follow the steps [here](problems-manual-registration.md) if you run into this.
 
-4. Verify proper installation by opening the Gloo Mesh Dashboard. Click [here](problems-dashboard.md) if that command did not work. It's best to run this command in a separate terminal.
+4. Now verify that the installation is healthy
+```sh
+meshctl check --kubecontext $MGMT
+```
+
+You should see output similar to the following:
+```sh
+Checking Gloo Mesh Management Cluster Installation
+--------------------------------------------
+
+🟢 Gloo Mgmt Server Deployment Status
+
+🟢 Gloo Mgmt Server Connectivity to Agents
++----------+------------+--------------------------------------------------+
+| CLUSTER  | REGISTERED |                  CONNECTED POD                   |
++----------+------------+--------------------------------------------------+
+| cluster1 | true       | gloo-mesh/gloo-mesh-mgmt-server-6c697cb869-48vq7 |
++----------+------------+--------------------------------------------------+
+| cluster2 | true       | gloo-mesh/gloo-mesh-mgmt-server-6c697cb869-48vq7 |
++----------+------------+--------------------------------------------------+
+```
+
+5. In addition, you can verify proper installation by opening the Gloo Mesh Dashboard. Click [here](problems-dashboard.md) if that command did not work. It's best to run this command in a separate terminal.
 
 ```sh
-meshctl dashboard --kubecontext mgmt
+meshctl dashboard --kubecontext $MGMT
 ```
 
 ## Lab 3 - Deploy Istio on the Workload Clusters<a name="Lab-3"></a>
