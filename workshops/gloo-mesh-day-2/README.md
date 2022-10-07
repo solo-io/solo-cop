@@ -101,7 +101,7 @@ Vault is not only a reliable secret store, but also great at managing and issuin
 * Save the Vault address to be later used by `cert-manager`
 
 ```sh
-export VAULT_ADDR=https://:8200
+export VAULT_ADDR=http://$(kubectl --context ${MGMT} -n vault get svc vault -o jsonpath='{.status.loadBalancer.ingress[0].*}'):8200
 
 printf "\n\nVault available at: $VAULT_ADDR\n"
 ```
@@ -109,9 +109,10 @@ printf "\n\nVault available at: $VAULT_ADDR\n"
 * Generate a token to give to cert-manager
 
 ```sh
-export VAULT_TOKEN=$(kubectl get configmap -n vault --context $MGMT cert-manager-token -o json | jq -r '.data.token')
+export VAULT_APPROLE_ID=$(kubectl get configmap -n vault --context $MGMT cert-manager-app-role -o json | jq -r '.data.role_id')
+export VAULT_APPROLE_SECRET_ID=$(kubectl get configmap -n vault --context $MGMT cert-manager-app-role -o json | jq -r '.data.secret_id')
 
-printf "\n\nYour vault token: $VAULT_TOKEN\n"
+printf "\n\nYour cert-manager AppRole RoleID: $VAULT_APPROLE_ID\nSecretID: $VAULT_APPROLE_SECRET_ID"
 ```
 
 ### Cert Manager
@@ -133,8 +134,8 @@ kubectl wait deployment --for condition=Available=True -n cert-manager --context
 * Create the kubernetes secret containing the Vault token in each `cert-manager` namespace. This will be used by cert-manager to authenticate with Vault
 
 ```sh
-kubectl create secret generic vault-token -n cert-manager --context $MGMT --from-literal=token=$VAULT_TOKEN
-kubectl create secret generic vault-token -n cert-manager --context $CLUSTER1 --from-literal=token=$VAULT_TOKEN
+kubectl create secret generic cert-manager-vault-approle -n cert-manager --context $MGMT --from-literal=secretId=$VAULT_APPROLE_SECRET_ID
+kubectl create secret generic cert-manager-vault-approle -n cert-manager --context $CLUSTER1 --from-literal=secretId=$VAULT_APPROLE_SECRET_ID
 ```
 
 * Create a ClusterIssuer for Gloo and Istio in `mgmt` cluster
@@ -150,11 +151,14 @@ spec:
   vault:
     path: pki_int_istio/root/sign-intermediate
     server: $VAULT_ADDR
-    namespace: admin
+    # namespace: admin   # Required for multi-tenant vaukt or HCP CLoud
     auth:
-      tokenSecretRef:
-        name: vault-token
-        key: token
+      appRole:
+        path: approle
+        roleId: $VAULT_APPROLE_ID
+        secretRef:
+          name: cert-manager-vault-approle
+          key: secretId
 ---
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
@@ -165,11 +169,14 @@ spec:
   vault:
     path: pki_int_gloo/sign/gloo-issuer
     server: $VAULT_ADDR
-    namespace: admin
+    # namespace: admin   # Required for multi-tenant vaukt or HCP CLoud
     auth:
-      tokenSecretRef:
-        name: vault-token
-        key: token
+      appRole:
+        path: approle
+        roleId: $VAULT_APPROLE_ID
+        secretRef:
+          name: cert-manager-vault-approle
+          key: secretId
 EOF
 ```
 
@@ -186,11 +193,14 @@ spec:
   vault:
     path: pki_int_istio/root/sign-intermediate ## This path allows ca: TRUE certificaets
     server: $VAULT_ADDR
-    namespace: admin
+    # namespace: admin   # Required for multi-tenant vaukt or HCP CLoud
     auth:
-      tokenSecretRef:
-        name: vault-token
-        key: token
+      appRole:
+        path: approle
+        roleId: $VAULT_APPROLE_ID
+        secretRef:
+          name: cert-manager-vault-approle
+          key: secretId
 ---
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
@@ -201,11 +211,14 @@ spec:
   vault:
     path: pki_int_gloo/sign/gloo-issuer ## This path is for client/server certificates
     server: $VAULT_ADDR
-    namespace: admin
+    # namespace: admin   # Required for multi-tenant vaukt or HCP CLoud
     auth:
-      tokenSecretRef:
-        name: vault-token
-        key: token
+      appRole:
+        path: approle
+        roleId: $VAULT_APPROLE_ID
+        secretRef:
+          name: cert-manager-vault-approle
+          key: secretId
 EOF
 ```
 
@@ -252,6 +265,7 @@ EOF
 * Create Istio `cacerts` certificate in the `cluster1` cluster
 
 ```yaml
+kubectl apply --context $CLUSTER1 -f- <<EOF
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:

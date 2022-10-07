@@ -15,6 +15,7 @@ vault login -method=userpass \
     username=admin \
     password=admin
 
+# Root Certificate
 vault secrets enable pki
 
 vault secrets tune -max-lease-ttl=87600h pki
@@ -24,11 +25,11 @@ vault write -field=certificate pki/root/generate/internal \
      issuer_name="solo-io" \
      ttl=87600h > /root-ca.crt
 
-
 vault write pki/config/urls \
      issuing_certificates="$VAULT_ADDR/v1/pki/ca" \
      crl_distribution_points="$VAULT_ADDR/v1/pki/crl"
 
+# Istio Intermediate
 vault secrets enable -path=pki_int_istio pki
 
 vault secrets tune -max-lease-ttl=43800h pki_int_istio
@@ -45,11 +46,6 @@ vault write -format=json pki/root/sign-intermediate \
      | jq -r '.data.certificate' > /intermediate_istio.cert.pem
 
 vault write  pki_int_istio/intermediate/set-signed certificate=@/intermediate_istio.cert.pem
-
-# vault write  pki_int_istio/roles/istio-ca-issuer \
-#      allowed_domains="solo.io" \
-#      allow_subdomains=true \
-#      max_ttl="720h"
 
 ## GLoo Intermediate
 vault secrets enable -path=pki_int_gloo pki
@@ -76,8 +72,22 @@ vault write pki_int_gloo/roles/gloo-issuer \
      enforce_hostnames=false \
      max_ttl="720h"
 
-# create token for cert manager to use
-TOKEN_RESPONSE=$(vault token create -policy=admin -format json)
-TOKEN=$(echo $TOKEN_RESPONSE | jq -r '.auth.client_token')
+# Create role for signing certs
+vault policy write sign-certs -<<EOF
+path "pki*"                        { capabilities = ["read", "list"] }
+path "pki_int_istio/root/sign-intermediate"    { capabilities = ["create", "update"] }
+path "pki_int_gloo/sign/gloo-issuer"   { capabilities = ["create", "update"] }
+EOF
 
-kubectl create configmap cert-manager-token -n vault --from-literal=token=$TOKEN
+# Enable AppRole For cert manger
+
+vault auth enable approle
+
+vault write auth/approle/role/cert-manager secret_id_ttl=43800h policies=sign-certs
+
+ROLE_ID=$(vault read auth/approle/role/cert-manager/role-id -format=json | jq -r '.data.role_id')
+SECRET_ID=$(vault write -format=json -f auth/approle/role/cert-manager/secret-id | jq -r '.data.secret_id')
+
+echo "Cert-Manager AppRole: $ROLE_ID SecretID: $SECRET_ID"
+
+kubectl create configmap cert-manager-app-role -n vault --from-literal=role_id=$ROLE_ID --from-literal=secret_id=$SECRET_ID
