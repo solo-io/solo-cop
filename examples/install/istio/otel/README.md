@@ -15,7 +15,7 @@ kubectl create ns otel
 helm repo add open-telemetry https://open-telemetry.github.io/opentelemetry-helm-charts
 ```
 ```
-helm install opentelemetry-collector open-telemetry/opentelemetry-collector -f otel.values.yaml -n otel --createnamespace --debug
+helm install opentelemetry-collector open-telemetry/opentelemetry-collector -f otel.values.yaml -n otel --create-namespace --debug
 ```
 
 ## Istio
