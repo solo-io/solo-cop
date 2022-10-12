@@ -32,6 +32,6 @@ spec:
     - command:
         - sleep
         - "20h"
-      image: bitnami/kubectl:latest
+      image: bitnami/kubectl:1.22.11-debian-11-r4
       name: keycloak-setup
   
