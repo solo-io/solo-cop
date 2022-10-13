@@ -40,7 +40,7 @@ To get started with this workshop, clone this repo.
 
 ```sh
 git clone https://github.com/solo-io/solo-cop.git
-cd solo-cop/workshops/gloo-gateway && git checkout v1.1.0
+cd solo-cop/workshops/gloo-gateway && git checkout v1.1.2
 ```
 
 Set these environment variables which will be used throughout the workshop.
