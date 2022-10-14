@@ -3,7 +3,7 @@ kind: Namespace
 metadata:
   name: web-ui
   labels:
-    istio-injection: enabled
+    istio.io/rev=1-15
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -40,7 +40,7 @@ spec:
       labels:
         app: in-mesh
         version: v1
-        istio.io/rev: 1-11
+        istio.io/rev: 1-12
     spec:
       serviceAccountName: in-mesh
       containers:

