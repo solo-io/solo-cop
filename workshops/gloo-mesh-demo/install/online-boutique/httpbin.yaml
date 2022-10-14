@@ -40,7 +40,7 @@ spec:
       labels:
         app: in-mesh
         version: v1
-        istio.io/rev: 1-12
+        istio.io/rev: 1-15
     spec:
       serviceAccountName: in-mesh
       containers:
