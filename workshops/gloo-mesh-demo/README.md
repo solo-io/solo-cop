@@ -195,6 +195,18 @@ kubectl apply -f install/istio/gm-istiod.yaml --context $MGMT
 kubectl apply -f install/istio/gm-ingress-gateway.yaml --context $MGMT
 ```
 
+Now see what's been deployed as a result
+```sh
+kubectl get all -n gm-iop-$ISTIO_REVISION --context $CLUSTER1
+kubectl get all -n istio-system --context $CLUSTER1
+kubectl get all -n istio-gateways --context $CLUSTER1
+```
+```sh
+kubectl get all -n gm-iop-$ISTIO_REVISION --context $CLUSTER2
+kubectl get all -n istio-system --context $CLUSTER2
+kubectl get all -n istio-gateways --context $CLUSTER2
+```
+
 3. Verify in the Gloo Mesh Dashboard that the deployed Istio information was discovered.
 
 ![istio-installed](images/istio-installed.png)
