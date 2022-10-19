@@ -58,9 +58,9 @@ export GLOO_MESH_VERSION=v2.1.0-rc2
 
 # Istio version information
 export ISTIO_IMAGE_REPO=us-docker.pkg.dev/gloo-mesh/istio-workshops
-export ISTIO_IMAGE_TAG=1.15.1-solo
-export ISTIO_VERSION=1.15.1
-export ISTIO_REVISION=1-15
+export ISTIO_IMAGE_TAG=1.13.8-solo
+export ISTIO_VERSION=1.13.8
+export ISTIO_REVISION=1-13
 ```
 
 ## Lab 1 - Configure/Deploy the Kubernetes clusters <a name="Lab-1"></a>
@@ -681,7 +681,7 @@ In order to use the various features of the Gloo Mesh gateway you will need to d
 
 ```sh
 kubectl --context ${CLUSTER1} create namespace gloo-mesh-addons
-kubectl --context ${CLUSTER1} label namespace gloo-mesh-addons istio.io/rev=1-15
+kubectl --context ${CLUSTER1} label namespace gloo-mesh-addons istio.io/rev=1-13
 
 helm repo add gloo-mesh-agent https://storage.googleapis.com/gloo-mesh-enterprise/gloo-mesh-agent
 helm repo update
