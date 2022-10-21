@@ -6,7 +6,7 @@ echo "VAULT endpoint: ${1}"
 
 export VAULT_ADDR=${1}
 
-apk update && apk add jq curl
+apk update && apk add jq curl openssl
 
 curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
 install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
@@ -20,10 +20,19 @@ vault secrets enable pki
 
 vault secrets tune -max-lease-ttl=87600h pki
 
-vault write -field=certificate pki/root/generate/internal \
-     common_name="solo.io" \
-     issuer_name="solo-io" \
-     ttl=87600h > /root-ca.crt
+openssl req -new -newkey rsa:4096 -x509 -sha256 \
+        -days 3650 -nodes -out /relay-root-ca.crt -keyout /relay-root-ca.key \
+        -subj "/CN=Root Certificate" \
+        -addext "keyUsage = critical, digitalSignature, nonRepudiation, keyEncipherment, keyCertSign"
+
+cat /relay-root-ca.crt /relay-root-ca.key > /ca-bundle.pem
+
+vault write /pki/config/ca pem_bundle=@/ca-bundle.pem
+
+# vault write -field=certificate pki/root/generate/internal \
+#      common_name="solo.io" \
+#      issuer_name="solo-io" \
+#      ttl=87600h > /root-ca.crt
 
 vault write pki/config/urls \
      issuing_certificates="$VAULT_ADDR/v1/pki/ca" \
@@ -34,18 +43,47 @@ vault secrets enable -path=pki_int_istio pki
 
 vault secrets tune -max-lease-ttl=43800h pki_int_istio
 
-vault write -format=json  pki_int_istio/intermediate/generate/internal \
-     common_name="Solo.io Istio CA Issuer" \
-     issuer_name="solo-io-istio-issuer" \
-     | jq -r '.data.csr' > /pki_intermediate_istio.csr
+# gen private key
+openssl genrsa -out /key.pem 2048
 
+# conf for csr
+cat > "/istio-intermediate.conf" <<EOF
+[ req ]
+encrypt_key = no
+prompt = no
+utf8 = yes
+default_md = sha256
+default_bits = 4096
+req_extensions = req_ext
+x509_extensions = req_ext
+distinguished_name = req_dn
+[ req_ext ]
+subjectKeyIdentifier = hash
+basicConstraints = critical, CA:true
+keyUsage = critical, digitalSignature, nonRepudiation, keyEncipherment, keyCertSign
+[ req_dn ]
+O = Istio
+CN = Intermediate CA
+EOF
+
+openssl req -new -config /istio-intermediate.conf -key /key.pem -out /pki_intermediate_istio.csr
+
+# vault write -format=json  pki_int_istio/intermediate/generate/internal \
+#      common_name="Solo.io Istio CA Issuer" \
+#      issuer_name="solo-io-istio-issuer" \
+#      | jq -r '.data.csr' > /pki_intermediate_istio.csr
+
+          # Very important that we set use_csr_values to get our key usage we need
 vault write -format=json pki/root/sign-intermediate \
      issuer_ref="solo-io" \
      csr=@/pki_intermediate_istio.csr \
+     use_csr_values=true \
      format=pem_bundle ttl="43800h" \
      | jq -r '.data.certificate' > /intermediate_istio.cert.pem
 
-vault write  pki_int_istio/intermediate/set-signed certificate=@/intermediate_istio.cert.pem
+cat /intermediate_istio.cert.pem /key.pem /relay-root-ca.crt > /bundle.pem
+
+vault write /pki_int_istio/config/ca pem_bundle=@/bundle.pem
 
 ## GLoo Intermediate
 vault secrets enable -path=pki_int_gloo pki
