@@ -54,13 +54,12 @@ Set these environment variables which will be used throughout the workshop.
 ```sh
 # Used to enable Gloo Mesh (please ask for a trail license key)
 export GLOO_MESH_LICENSE_KEY=<licence_key>
-export GLOO_MESH_VERSION=v2.1.0-rc2
+export GLOO_MESH_VERSION=v2.1.0-rc3
 
 # Istio version information
 export ISTIO_IMAGE_REPO=us-docker.pkg.dev/gloo-mesh/istio-workshops
-export ISTIO_IMAGE_TAG=1.13.8-solo
-export ISTIO_VERSION=1.13.8
-export ISTIO_REVISION=1-13
+export ISTIO_IMAGE_TAG=1.15.1-solo
+export ISTIO_VERSION=1.15.1
 ```
 
 ## Lab 1 - Configure/Deploy the Kubernetes clusters <a name="Lab-1"></a>
@@ -188,21 +187,20 @@ export PATH=$PWD/istio-${ISTIO_VERSION}/bin:$PATH
 istioctl version
 ```
 
-2. Install Istio to each of the remote clusters using the Gloo Mesh Istio Lifecycle Manager and Gateway Lifecycle Manager.
+2. Install Istio to each of the remote clusters using the Gloo Mesh `IstioLifecycleManager` and `GatewayLifecycleManager` CRDs .
 
 ```sh
-kubectl apply -f install/istio/gm-istiod.yaml --context $MGMT
-kubectl apply -f install/istio/gm-ingress-gateway.yaml --context $MGMT
+kubectl apply -f install/istio/gm-istio.yaml --context $MGMT
 ```
 
-Now see what's been deployed as a result
+Wait a min and see what's been deployed as a result
 ```sh
-kubectl get all -n gm-iop-$ISTIO_REVISION --context $CLUSTER1
+kubectl get all -n gm-iop-1-13 --context $CLUSTER1
 kubectl get all -n istio-system --context $CLUSTER1
 kubectl get all -n istio-gateways --context $CLUSTER1
 ```
 ```sh
-kubectl get all -n gm-iop-$ISTIO_REVISION --context $CLUSTER2
+kubectl get all -n gm-iop-1-13 --context $CLUSTER2
 kubectl get all -n istio-system --context $CLUSTER2
 kubectl get all -n istio-gateways --context $CLUSTER2
 ```
@@ -693,7 +691,7 @@ In order to use the various features of the Gloo Mesh gateway you will need to d
 
 ```sh
 kubectl --context ${CLUSTER1} create namespace gloo-mesh-addons
-kubectl --context ${CLUSTER1} label namespace gloo-mesh-addons istio.io/rev=1-13
+kubectl --context ${CLUSTER1} label namespace gloo-mesh-addons  istio-injection=enabled
 
 helm repo add gloo-mesh-agent https://storage.googleapis.com/gloo-mesh-enterprise/gloo-mesh-agent
 helm repo update

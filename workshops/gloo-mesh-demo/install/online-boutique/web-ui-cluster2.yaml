@@ -3,7 +3,7 @@ kind: Namespace
 metadata:
   name: web-ui
   labels:
-    istio.io/rev: 1-13
+    istio-injection: enabled
 ---
 apiVersion: v1
 kind: Service

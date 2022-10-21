@@ -4,7 +4,7 @@ metadata:
   name: http-client
   namespace: http-client
   labels:
-    istio.io/rev: 1-13
+    istio-injection: enabled
 ---
 apiVersion: v1
 kind: ServiceAccount

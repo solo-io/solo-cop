@@ -3,7 +3,7 @@ kind: Namespace
 metadata:
   name: backend-apis
   labels:
-    istio.io/rev: 1-13
+    istio-injection: enabled
 ---
 ###########################################################
 ## Services
