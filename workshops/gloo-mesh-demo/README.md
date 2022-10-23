@@ -195,12 +195,12 @@ kubectl apply -f install/istio/gm-istio.yaml --context $MGMT
 
 Wait a min and see what's been deployed as a result
 ```sh
-kubectl get all -n gm-iop-1-13 --context $CLUSTER1
+kubectl get all -n gm-iop-1-15 --context $CLUSTER1
 kubectl get all -n istio-system --context $CLUSTER1
 kubectl get all -n istio-gateways --context $CLUSTER1
 ```
 ```sh
-kubectl get all -n gm-iop-1-13 --context $CLUSTER2
+kubectl get all -n gm-iop-1-15 --context $CLUSTER2
 kubectl get all -n istio-system --context $CLUSTER2
 kubectl get all -n istio-gateways --context $CLUSTER2
 ```
