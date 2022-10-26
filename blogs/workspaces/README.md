@@ -263,7 +263,7 @@ metadata:
   namespace: gloo-mesh
 spec:
   workloadClusters:
-- name: '*'                   ## any cluster that has the namespace 'gloo-mesh-addons'
+  - name: '*'               ## any cluster that has the namespace 'gloo-mesh-addons'
     namespaces:
     - name: 'gloo-mesh-addons'
 ```
