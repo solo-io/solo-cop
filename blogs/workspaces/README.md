@@ -37,7 +37,7 @@ Some examples of Workspace relationships
 
 ![Gateway Import UI](./images/gateway-import.png)
 
-# Workspace Configuration
+# Workspace Configuration <a name="workspaces"></a>
 
 Here are some recommended example workspaces for users just getting started with Gloo Mesh.
 
