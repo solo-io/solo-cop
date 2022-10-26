@@ -4,7 +4,7 @@
   * [Gateways](#gateways)
   * [Gloo Mesh Addons](#gloo-mesh-addons)
 - [WorkspaceSettings](#workspacesettings)
-  * [Federation](#federation)
+  * [Federation (not recommended in most environments)](#federation)
   * [Eastwest Gateway Selection](#eastwest-gateway-selection)
   * [Import / Export](#import-export)
   * [Service Isolation (recommended)](#service-isolation)
