@@ -272,7 +272,7 @@ spec:
 
 The WorkspaceSettings API allows each Workspace administrator to decide which other workspaces it interacts with. There are a number of settings discussed below that allow Gloo Mesh users to tune their environment based on their use cases.
 
-## Federation (not recommended in most environments)
+## Federation (not recommended in most environments) <a name="federation"></a>
 
 Federation is a feature that allows individual kubernetes services to be available from any other cluster via a unique hostname in the format `<service_name>.<namespace>.svc.<cluster_name>` (See ServiceEntry below). This is useful in a select few use cases but can have performance impacts on Istio and Gloo Mesh if too many services are federated. 
 
