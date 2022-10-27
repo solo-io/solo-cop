@@ -716,7 +716,7 @@ apiVersion: admin.gloo.solo.io/v2
 kind: WorkspaceSettings
 metadata:
   name: backend-apis-team
-  namespace: backend-apis-team
+  namespace: backend-apis-team-config
 spec:
   exportTo:
   - workspaces:
