@@ -673,10 +673,8 @@ spec:
     - kind: VIRTUAL_DESTINATION
       namespace: gloo-mesh-addons
   options:
-    federation:                     # federate only the gloo-mesh-addons
-      enabled: true
-      serviceSelector:
-      - namespace: gloo-mesh-addons
+    federation:                      # no longer needed for multi-cluster routing
+      enabled: false
     eastWestGateways:               # default eastwest gateway routing
     - selector:
         labels:
@@ -704,10 +702,8 @@ spec:
     - selector:
         labels:
           istio: eastwestgateway
-    federation:                     # enable service federation of the web-ui namespace
-      enabled: true
-      serviceSelector:
-      - namespace: web-ui
+    federation:                      # no longer needed for multi-cluster routing
+      enabled: false
     serviceIsolation:               # enable service isolation and Istio Sidecar resource
       enabled: true
       trimProxyConfig: true
@@ -729,10 +725,8 @@ spec:
     - selector:
         labels:
           istio: eastwestgateway
-    federation:                      # enable federation of the services in the backend-apis namespace
-      enabled: true
-      serviceSelector:
-      - namespace: backend-apis
+    federation:                      # no longer needed for multi-cluster routing
+      enabled: false
     serviceIsolation:                # disable service isolation and instead use AccessPolicies to control fine grained access
       enabled: false
       trimProxyConfig: false
