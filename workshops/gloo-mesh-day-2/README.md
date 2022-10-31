@@ -829,10 +829,6 @@ spec:
     - kind: VIRTUAL_DESTINATION
       namespace: gloo-mesh-addons
   options:
-    federation:
-      enabled: true
-      serviceSelector:
-      - namespace: gloo-mesh-addons
     eastWestGateways:
     - selector:
         labels:
