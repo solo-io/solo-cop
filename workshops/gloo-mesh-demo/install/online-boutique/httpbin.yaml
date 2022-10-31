@@ -40,7 +40,6 @@ spec:
       labels:
         app: in-mesh
         version: v1
-        ./install/online-boutique/httpbin.yaml
     spec:
       serviceAccountName: in-mesh
       containers:
