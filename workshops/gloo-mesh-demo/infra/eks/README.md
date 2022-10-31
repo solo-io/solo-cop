@@ -109,8 +109,10 @@ helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
 # clean up load balancers
 kubectl delete service --all -n gloo-mesh --context mgmt
 kubectl delete service --all -n keycloak --context cluster1
-kubectl delete service --all -n istio-gateways --context cluster1
-kubectl delete service --all -n istio-gateways --context cluster2
+kubectl delete service --all -n istio-ingress --context cluster1
+kubectl delete service --all -n istio-ingress --context cluster2
+kubectl delete service --all -n istio-eastwest --context cluster1
+kubectl delete service --all -n istio-eastwest --context cluster2
 
 # delete pod disruption budget which prevent deletion of the nodes
 kubectl delete pdb -A --all --context cluster1

@@ -15,10 +15,6 @@ spec:
     - selector:
         labels:
           istio: eastwestgateway
-    federation:
-      enabled: true
-      serviceSelector:
-      - namespace: backend-apis
     # disabled to show how to use Auth Policies
     serviceIsolation:
       enabled: false

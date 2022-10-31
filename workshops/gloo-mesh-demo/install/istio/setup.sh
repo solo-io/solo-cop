@@ -21,5 +21,6 @@ if [[ $ARCH == 'arm64' ]]; then
   operator_file=istiooperator-arm-$CLUSTER_NAME.yaml
 fi
 
-kubectl create namespace istio-gateways --context $CLUSTER_NAME
+kubectl create namespace istio-ingress --context $CLUSTER_NAME
+kubectl create namespace istio-eastwest --context $CLUSTER_NAME
 istioctl install --set hub=$ISTIO_IMAGE_REPO --set tag=$ISTIO_IMAGE_TAG  -y --context $CLUSTER_NAME -f $LOCAL_DIR/$operator_file

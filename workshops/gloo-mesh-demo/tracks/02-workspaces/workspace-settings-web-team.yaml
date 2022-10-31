@@ -17,10 +17,6 @@ spec:
     - selector:
         labels:
           istio: eastwestgateway
-    federation:
-      enabled: true
-      serviceSelector:
-      - namespace: web-ui
     serviceIsolation:
       enabled: true
       trimProxyConfig: true

