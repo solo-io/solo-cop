@@ -391,7 +391,7 @@ echo "Online Boutique available at http://$GLOO_GATEWAY"
 
 The backend APIs team employs a "Zero Trust" networking approach by enforcing service isolation. With service isolation, all inbound traffic to their applications is denied by default, even within their own namespace.
 
-1. Add a default deny-all policy to the backend-apis namespace
+1. Add a default deny-all policy to the backend-apis-team workspace
 
 ```yaml
 cat << EOF | kubectl --context ${MGMT} apply -f -
