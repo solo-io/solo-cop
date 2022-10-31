@@ -16,7 +16,8 @@ spec:
     - name: ops-team
   - name: '*'
     namespaces:
-    - name: istio-gateways
+    - name: istio-ingress
+    - name: istio-eastwest
 ---
 apiVersion: admin.gloo.solo.io/v2
 kind: WorkspaceSettings
@@ -70,10 +71,6 @@ spec:
     - selector:
         labels:
           istio: eastwestgateway
-    federation:
-      enabled: true
-      serviceSelector:
-      - namespace: web-ui
 ---
 apiVersion: v1
 kind: Namespace
@@ -109,7 +106,3 @@ spec:
     - selector:
         labels:
           istio: eastwestgateway
-    federation:
-      enabled: true
-      serviceSelector:
-      - namespace: backend-apis

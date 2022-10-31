@@ -25,7 +25,8 @@ spec:
     - name: ops-team
   - name: '*'
     namespaces:
-    - name: istio-gateways
+    - name: istio-ingress
+    - name: istio-eastwest
     - name: gloo-mesh-addons
 ---
 apiVersion: admin.gloo.solo.io/v2

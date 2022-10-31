@@ -17,10 +17,6 @@ spec:
     - kind: VIRTUAL_DESTINATION
       namespace: gloo-mesh-addons
   options:
-    federation:
-      enabled: true
-      serviceSelector:
-      - namespace: gloo-mesh-addons
     eastWestGateways:
     - selector:
         labels:
@@ -48,10 +44,6 @@ spec:
     - selector:
         labels:
           istio: eastwestgateway
-    federation:
-      enabled: true
-      serviceSelector:
-      - namespace: web-ui
     serviceIsolation:
       enabled: true
       trimProxyConfig: true
@@ -73,10 +65,6 @@ spec:
     - selector:
         labels:
           istio: eastwestgateway
-    federation:
-      enabled: true
-      serviceSelector:
-      - namespace: backend-apis
     # disabled to show how to use Auth Policies
     serviceIsolation:
       enabled: false

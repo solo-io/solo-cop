@@ -9,7 +9,7 @@ spec:
         labels:
           istio: ingressgateway
         cluster: cluster1
-        namespace: istio-gateways
+        namespace: istio-ingress
   listeners: 
     - http: {}
       port:
