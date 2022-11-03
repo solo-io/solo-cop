@@ -76,6 +76,7 @@ kubectl patch -n istio-system deployment istiod-1-14-4 --patch-file istiod-patch
 ### Update Datadog
 
 1. Update the distributions for envoy to allow for percentiles.
+2. Create a new dashboard and import `istio-dashboard.json`
 
 ### What do you observe
 
