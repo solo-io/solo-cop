@@ -1,0 +1,5 @@
+datadog:
+  checksCardinality: "orchestrator"
+clusterAgent:
+  replicas: 2
+  createPodDisruptionBudget: "true"  
