@@ -1,5 +1,7 @@
 datadog:
   checksCardinality: "orchestrator"
+  ignoreAutoConfig:
+  - redisdb
 clusterAgent:
   replicas: 2
   createPodDisruptionBudget: "true"  
