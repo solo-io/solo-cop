@@ -1,0 +1,1470 @@
+{
+    "title": "Istio Dashboard",
+    "description": "",
+    "widgets": [
+        {
+            "id": 6469192075710796,
+            "definition": {
+                "title": "Δ VirtualServices",
+                "title_size": "16",
+                "title_align": "left",
+                "type": "query_value",
+                "requests": [
+                    {
+                        "formulas": [
+                            {
+                                "formula": "query1 - query2"
+                            }
+                        ],
+                        "response_format": "scalar",
+                        "queries": [
+                            {
+                                "query": "sum:istio_system.pilot_k8s_cfg_events.count{event:add,type:virtualservice}.as_count()",
+                                "data_source": "metrics",
+                                "name": "query1",
+                                "aggregator": "last"
+                            },
+                            {
+                                "query": "sum:istio_system.pilot_k8s_cfg_events.count{event:delete,type:virtualservice}.as_count()",
+                                "data_source": "metrics",
+                                "name": "query2",
+                                "aggregator": "last"
+                            }
+                        ]
+                    }
+                ],
+                "autoscale": true,
+                "precision": 2
+            },
+            "layout": {
+                "x": 0,
+                "y": 0,
+                "width": 2,
+                "height": 1
+            }
+        },
+        {
+            "id": 8660612766286716,
+            "definition": {
+                "title": "Δ EnvoyFilters",
+                "title_size": "16",
+                "title_align": "left",
+                "type": "query_value",
+                "requests": [
+                    {
+                        "formulas": [
+                            {
+                                "formula": "query1 - query2"
+                            }
+                        ],
+                        "response_format": "scalar",
+                        "queries": [
+                            {
+                                "query": "sum:istio_system.pilot_k8s_cfg_events.count{event:add,type:envoyfilter}.as_count()",
+                                "data_source": "metrics",
+                                "name": "query1",
+                                "aggregator": "max"
+                            },
+                            {
+                                "query": "sum:istio_system.pilot_k8s_cfg_events.count{event:delete,type:envoyfilter}.as_count()",
+                                "data_source": "metrics",
+                                "name": "query2",
+                                "aggregator": "max"
+                            }
+                        ]
+                    }
+                ],
+                "autoscale": true,
+                "precision": 2
+            },
+            "layout": {
+                "x": 2,
+                "y": 0,
+                "width": 2,
+                "height": 1
+            }
+        },
+        {
+            "id": 2667025488285692,
+            "definition": {
+                "title": "Δ Gateways",
+                "title_size": "16",
+                "title_align": "left",
+                "type": "query_value",
+                "requests": [
+                    {
+                        "formulas": [
+                            {
+                                "formula": "query1 - query2"
+                            }
+                        ],
+                        "response_format": "scalar",
+                        "queries": [
+                            {
+                                "query": "sum:istio_system.pilot_k8s_cfg_events.count{event:add,type:gateway}.as_count()",
+                                "data_source": "metrics",
+                                "name": "query1",
+                                "aggregator": "max"
+                            },
+                            {
+                                "query": "sum:istio_system.pilot_k8s_cfg_events.count{event:delete,type:gateway}.as_count()",
+                                "data_source": "metrics",
+                                "name": "query2",
+                                "aggregator": "max"
+                            }
+                        ]
+                    }
+                ],
+                "autoscale": true,
+                "precision": 2
+            },
+            "layout": {
+                "x": 4,
+                "y": 0,
+                "width": 2,
+                "height": 1
+            }
+        },
+        {
+            "id": 2961997465981748,
+            "definition": {
+                "title": "Δ DestinationRules",
+                "title_size": "16",
+                "title_align": "left",
+                "type": "query_value",
+                "requests": [
+                    {
+                        "formulas": [
+                            {
+                                "formula": "query1 - query2"
+                            }
+                        ],
+                        "response_format": "scalar",
+                        "queries": [
+                            {
+                                "query": "sum:istio_system.pilot_k8s_cfg_events.count{event:add,type:destinationrule}.as_count()",
+                                "data_source": "metrics",
+                                "name": "query1",
+                                "aggregator": "max"
+                            },
+                            {
+                                "query": "sum:istio_system.pilot_k8s_cfg_events.count{event:delete,type:destinationrule}.as_count()",
+                                "data_source": "metrics",
+                                "name": "query2",
+                                "aggregator": "max"
+                            }
+                        ]
+                    }
+                ],
+                "autoscale": true,
+                "precision": 2
+            },
+            "layout": {
+                "x": 6,
+                "y": 0,
+                "width": 2,
+                "height": 1
+            }
+        },
+        {
+            "id": 2545750403279692,
+            "definition": {
+                "title": "Δ WorkloadEntries",
+                "title_size": "16",
+                "title_align": "left",
+                "type": "query_value",
+                "requests": [
+                    {
+                        "formulas": [
+                            {
+                                "formula": "query1 - query2"
+                            }
+                        ],
+                        "response_format": "scalar",
+                        "queries": [
+                            {
+                                "query": "sum:istio_system.pilot_k8s_cfg_events.count{event:add,type:workloadentry}.as_count()",
+                                "data_source": "metrics",
+                                "name": "query1",
+                                "aggregator": "max"
+                            },
+                            {
+                                "query": "sum:istio_system.pilot_k8s_cfg_events.count{event:delete,type:workloadentry}.as_count()",
+                                "data_source": "metrics",
+                                "name": "query2",
+                                "aggregator": "max"
+                            }
+                        ]
+                    }
+                ],
+                "autoscale": true,
+                "precision": 2
+            },
+            "layout": {
+                "x": 8,
+                "y": 0,
+                "width": 2,
+                "height": 1
+            }
+        },
+        {
+            "id": 1418284546726810,
+            "definition": {
+                "title": "Δ ServiceEntries",
+                "title_size": "16",
+                "title_align": "left",
+                "type": "query_value",
+                "requests": [
+                    {
+                        "formulas": [
+                            {
+                                "formula": "query1 - query2"
+                            }
+                        ],
+                        "response_format": "scalar",
+                        "queries": [
+                            {
+                                "query": "sum:istio_system.pilot_k8s_cfg_events.count{event:add,type:serviceentry}.as_count()",
+                                "data_source": "metrics",
+                                "name": "query1",
+                                "aggregator": "max"
+                            },
+                            {
+                                "query": "sum:istio_system.pilot_k8s_cfg_events.count{event:delete,type:serviceentry}.as_count()",
+                                "data_source": "metrics",
+                                "name": "query2",
+                                "aggregator": "max"
+                            }
+                        ]
+                    }
+                ],
+                "autoscale": true,
+                "precision": 2
+            },
+            "layout": {
+                "x": 10,
+                "y": 0,
+                "width": 2,
+                "height": 1
+            }
+        },
+        {
+            "id": 5501452814004586,
+            "definition": {
+                "title": "Istio Requests Breakdown",
+                "title_size": "16",
+                "title_align": "left",
+                "requests": [
+                    {
+                        "formulas": [
+                            {
+                                "formula": "query1"
+                            }
+                        ],
+                        "response_format": "scalar",
+                        "queries": [
+                            {
+                                "query": "max:istio_requests.count{*} by {response_code}.as_count()",
+                                "data_source": "metrics",
+                                "name": "query1",
+                                "aggregator": "max"
+                            }
+                        ]
+                    }
+                ],
+                "type": "sunburst"
+            },
+            "layout": {
+                "x": 0,
+                "y": 1,
+                "width": 4,
+                "height": 3
+            }
+        },
+        {
+            "id": 2084079216079492,
+            "definition": {
+                "title": "Pilot Memory Usage",
+                "title_size": "16",
+                "title_align": "left",
+                "show_legend": true,
+                "legend_layout": "auto",
+                "legend_columns": [
+                    "avg",
+                    "min",
+                    "max",
+                    "value",
+                    "sum"
+                ],
+                "type": "timeseries",
+                "requests": [
+                    {
+                        "formulas": [
+                            {
+                                "formula": "query1"
+                            }
+                        ],
+                        "response_format": "timeseries",
+                        "queries": [
+                            {
+                                "query": "avg:kubernetes.memory.usage{kube_container_name:discovery} by {pod_name}",
+                                "data_source": "metrics",
+                                "name": "query1"
+                            }
+                        ],
+                        "style": {
+                            "palette": "dog_classic",
+                            "line_type": "solid",
+                            "line_width": "normal"
+                        },
+                        "display_type": "area"
+                    }
+                ]
+            },
+            "layout": {
+                "x": 4,
+                "y": 1,
+                "width": 8,
+                "height": 2
+            }
+        },
+        {
+            "id": 7871201085851666,
+            "definition": {
+                "title": "Pilot CPU Usage",
+                "title_size": "16",
+                "title_align": "left",
+                "show_legend": true,
+                "legend_layout": "auto",
+                "legend_columns": [
+                    "avg",
+                    "min",
+                    "max",
+                    "value",
+                    "sum"
+                ],
+                "type": "timeseries",
+                "requests": [
+                    {
+                        "formulas": [
+                            {
+                                "formula": "query1"
+                            }
+                        ],
+                        "response_format": "timeseries",
+                        "queries": [
+                            {
+                                "query": "avg:kubernetes.cpu.usage.total{kube_container_name:discovery} by {pod_name}",
+                                "data_source": "metrics",
+                                "name": "query1"
+                            }
+                        ],
+                        "style": {
+                            "palette": "dog_classic",
+                            "line_type": "solid",
+                            "line_width": "normal"
+                        },
+                        "display_type": "area"
+                    }
+                ]
+            },
+            "layout": {
+                "x": 4,
+                "y": 3,
+                "width": 8,
+                "height": 2
+            }
+        },
+        {
+            "id": 3197223444010130,
+            "definition": {
+                "title": "Istio Requests Totals",
+                "title_size": "16",
+                "title_align": "left",
+                "type": "query_table",
+                "requests": [
+                    {
+                        "formulas": [
+                            {
+                                "alias": "Number of Requests",
+                                "limit": {
+                                    "count": 500,
+                                    "order": "desc"
+                                },
+                                "formula": "query1"
+                            }
+                        ],
+                        "response_format": "scalar",
+                        "queries": [
+                            {
+                                "query": "max:istio_requests.count{*} by {response_code}.as_count()",
+                                "data_source": "metrics",
+                                "name": "query1",
+                                "aggregator": "max"
+                            }
+                        ]
+                    }
+                ]
+            },
+            "layout": {
+                "x": 0,
+                "y": 4,
+                "width": 4,
+                "height": 2
+            }
+        },
+        {
+            "id": 2303719487983448,
+            "definition": {
+                "title": "Istio Proxy Memory Usage",
+                "title_size": "16",
+                "title_align": "left",
+                "show_legend": true,
+                "legend_layout": "auto",
+                "legend_columns": [
+                    "avg",
+                    "min",
+                    "max",
+                    "value",
+                    "sum"
+                ],
+                "type": "timeseries",
+                "requests": [
+                    {
+                        "formulas": [
+                            {
+                                "formula": "query1"
+                            }
+                        ],
+                        "response_format": "timeseries",
+                        "queries": [
+                            {
+                                "query": "avg:kubernetes.memory.usage{kube_container_name:istio-proxy} by {pod_name}",
+                                "data_source": "metrics",
+                                "name": "query1"
+                            }
+                        ],
+                        "style": {
+                            "palette": "dog_classic",
+                            "line_type": "solid",
+                            "line_width": "normal"
+                        },
+                        "display_type": "area"
+                    }
+                ]
+            },
+            "layout": {
+                "x": 4,
+                "y": 5,
+                "width": 8,
+                "height": 2
+            }
+        },
+        {
+            "id": 4721814894224792,
+            "definition": {
+                "title": "RPS",
+                "title_size": "16",
+                "title_align": "left",
+                "type": "query_value",
+                "requests": [
+                    {
+                        "formulas": [
+                            {
+                                "formula": "query1"
+                            }
+                        ],
+                        "response_format": "scalar",
+                        "queries": [
+                            {
+                                "query": "sum:istio_requests.count{*}.as_rate()",
+                                "data_source": "metrics",
+                                "name": "query1",
+                                "aggregator": "avg"
+                            }
+                        ]
+                    }
+                ],
+                "autoscale": true,
+                "precision": 2
+            },
+            "layout": {
+                "x": 0,
+                "y": 6,
+                "width": 4,
+                "height": 2
+            }
+        },
+        {
+            "id": 1862862251457616,
+            "definition": {
+                "title": "Istio Proxy CPU Usage",
+                "title_size": "16",
+                "title_align": "left",
+                "show_legend": true,
+                "legend_layout": "auto",
+                "legend_columns": [
+                    "avg",
+                    "min",
+                    "max",
+                    "value",
+                    "sum"
+                ],
+                "type": "timeseries",
+                "requests": [
+                    {
+                        "formulas": [
+                            {
+                                "formula": "query1"
+                            }
+                        ],
+                        "response_format": "timeseries",
+                        "queries": [
+                            {
+                                "query": "avg:kubernetes.cpu.usage.total{kube_container_name:istio-proxy} by {pod_name}",
+                                "data_source": "metrics",
+                                "name": "query1"
+                            }
+                        ],
+                        "style": {
+                            "palette": "dog_classic",
+                            "line_type": "solid",
+                            "line_width": "normal"
+                        },
+                        "display_type": "area"
+                    }
+                ]
+            },
+            "layout": {
+                "x": 4,
+                "y": 7,
+                "width": 8,
+                "height": 2
+            }
+        },
+        {
+            "id": 6660690822260412,
+            "definition": {
+                "title": "Total Gateways",
+                "title_size": "16",
+                "title_align": "left",
+                "type": "query_value",
+                "requests": [
+                    {
+                        "formulas": [
+                            {
+                                "formula": "query2"
+                            }
+                        ],
+                        "response_format": "scalar",
+                        "queries": [
+                            {
+                                "query": "sum:kubernetes.pods.running{kube_deployment:istio-eastwestgateway}",
+                                "data_source": "metrics",
+                                "name": "query2",
+                                "aggregator": "last"
+                            }
+                        ]
+                    }
+                ],
+                "autoscale": true,
+                "custom_unit": "",
+                "precision": 0
+            },
+            "layout": {
+                "x": 0,
+                "y": 8,
+                "width": 2,
+                "height": 1
+            }
+        },
+        {
+            "id": 7961450979037476,
+            "definition": {
+                "title": "Total Sidecars",
+                "title_size": "16",
+                "title_align": "left",
+                "type": "query_value",
+                "requests": [
+                    {
+                        "formulas": [
+                            {
+                                "formula": "query1 - query2"
+                            }
+                        ],
+                        "response_format": "scalar",
+                        "queries": [
+                            {
+                                "query": "sum:istio_system.pilot_xds{*}",
+                                "data_source": "metrics",
+                                "name": "query1",
+                                "aggregator": "last"
+                            },
+                            {
+                                "query": "sum:kubernetes.pods.running{kube_deployment:istio-eastwestgateway}",
+                                "data_source": "metrics",
+                                "name": "query2",
+                                "aggregator": "last"
+                            }
+                        ]
+                    }
+                ],
+                "autoscale": true,
+                "custom_unit": "",
+                "precision": 0
+            },
+            "layout": {
+                "x": 2,
+                "y": 8,
+                "width": 2,
+                "height": 1
+            }
+        },
+        {
+            "id": 1257558212844022,
+            "definition": {
+                "title": "Total Virtual Services",
+                "title_size": "16",
+                "title_align": "left",
+                "type": "query_value",
+                "requests": [
+                    {
+                        "formulas": [
+                            {
+                                "formula": "query1"
+                            }
+                        ],
+                        "response_format": "scalar",
+                        "queries": [
+                            {
+                                "query": "avg:istio_system.pilot_virt_services{*}",
+                                "data_source": "metrics",
+                                "name": "query1",
+                                "aggregator": "last"
+                            }
+                        ]
+                    }
+                ],
+                "autoscale": true,
+                "precision": 2
+            },
+            "layout": {
+                "x": 0,
+                "y": 9,
+                "width": 2,
+                "height": 1
+            }
+        },
+        {
+            "id": 4262354660871160,
+            "definition": {
+                "title": "Total IstioD Pods",
+                "title_size": "16",
+                "title_align": "left",
+                "type": "query_value",
+                "requests": [
+                    {
+                        "formulas": [
+                            {
+                                "formula": "query1"
+                            }
+                        ],
+                        "response_format": "scalar",
+                        "queries": [
+                            {
+                                "query": "avg:kubernetes.pods.running{kube_deployment:istiod-1-14-4}",
+                                "data_source": "metrics",
+                                "name": "query1",
+                                "aggregator": "last"
+                            }
+                        ]
+                    }
+                ],
+                "autoscale": true,
+                "precision": 2
+            },
+            "layout": {
+                "x": 2,
+                "y": 9,
+                "width": 2,
+                "height": 1
+            }
+        },
+        {
+            "id": 6588192436637086,
+            "definition": {
+                "title": "Istio Managed Clusters",
+                "title_size": "16",
+                "title_align": "left",
+                "show_legend": true,
+                "legend_layout": "auto",
+                "legend_columns": [
+                    "avg",
+                    "min",
+                    "max",
+                    "value",
+                    "sum"
+                ],
+                "type": "timeseries",
+                "requests": [
+                    {
+                        "formulas": [
+                            {
+                                "formula": "query1"
+                            }
+                        ],
+                        "response_format": "timeseries",
+                        "queries": [
+                            {
+                                "query": "max:envoy_cluster_manager_active_clusters{*} by {kube_deployment,cluster_name}",
+                                "data_source": "metrics",
+                                "name": "query1"
+                            }
+                        ],
+                        "style": {
+                            "palette": "dog_classic",
+                            "line_type": "solid",
+                            "line_width": "normal"
+                        },
+                        "display_type": "line"
+                    }
+                ]
+            },
+            "layout": {
+                "x": 4,
+                "y": 9,
+                "width": 8,
+                "height": 2
+            }
+        },
+        {
+            "id": 6637334202039306,
+            "definition": {
+                "title": "Request Duration",
+                "title_size": "16",
+                "title_align": "left",
+                "show_legend": true,
+                "legend_layout": "vertical",
+                "legend_columns": [
+                    "avg",
+                    "min",
+                    "max",
+                    "value",
+                    "sum"
+                ],
+                "type": "timeseries",
+                "requests": [
+                    {
+                        "formulas": [
+                            {
+                                "formula": "query15"
+                            }
+                        ],
+                        "response_format": "timeseries",
+                        "queries": [
+                            {
+                                "query": "avg:istio_request_duration_milliseconds{*} by {pod_name}",
+                                "data_source": "metrics",
+                                "name": "query15"
+                            },
+                            {
+                                "query": "avg:istio_request_duration_milliseconds{lower_bound:0}",
+                                "data_source": "metrics",
+                                "name": "query1"
+                            },
+                            {
+                                "query": "avg:istio_request_duration_milliseconds{lower_bound:1.0}",
+                                "data_source": "metrics",
+                                "name": "query2"
+                            },
+                            {
+                                "query": "avg:istio_request_duration_milliseconds{lower_bound:5.0}",
+                                "data_source": "metrics",
+                                "name": "query3"
+                            },
+                            {
+                                "query": "avg:istio_request_duration_milliseconds{lower_bound:10.0}",
+                                "data_source": "metrics",
+                                "name": "query4"
+                            },
+                            {
+                                "query": "avg:istio_request_duration_milliseconds{lower_bound:25.0}",
+                                "data_source": "metrics",
+                                "name": "query5"
+                            },
+                            {
+                                "query": "avg:istio_request_duration_milliseconds{lower_bound:50.0}",
+                                "data_source": "metrics",
+                                "name": "query6"
+                            },
+                            {
+                                "query": "avg:istio_request_duration_milliseconds{lower_bound:100.0}",
+                                "data_source": "metrics",
+                                "name": "query7"
+                            },
+                            {
+                                "query": "avg:istio_request_duration_milliseconds{lower_bound:500.0}",
+                                "data_source": "metrics",
+                                "name": "query8"
+                            },
+                            {
+                                "query": "avg:istio_request_duration_milliseconds{lower_bound:1000.0}",
+                                "data_source": "metrics",
+                                "name": "query9"
+                            },
+                            {
+                                "query": "avg:istio_request_duration_milliseconds{lower_bound:2500.0}",
+                                "data_source": "metrics",
+                                "name": "query10"
+                            },
+                            {
+                                "query": "avg:istio_request_duration_milliseconds{lower_bound:5000.0}",
+                                "data_source": "metrics",
+                                "name": "query11"
+                            },
+                            {
+                                "query": "avg:istio_request_duration_milliseconds{lower_bound:5000.0}",
+                                "data_source": "metrics",
+                                "name": "query12"
+                            },
+                            {
+                                "query": "avg:istio_request_duration_milliseconds{lower_bound:10000.0}",
+                                "data_source": "metrics",
+                                "name": "query13"
+                            },
+                            {
+                                "query": "avg:istio_request_duration_milliseconds{lower_bound:30000.0}",
+                                "data_source": "metrics",
+                                "name": "query14"
+                            }
+                        ],
+                        "style": {
+                            "palette": "dog_classic",
+                            "line_type": "solid",
+                            "line_width": "normal"
+                        },
+                        "display_type": "area"
+                    }
+                ]
+            },
+            "layout": {
+                "x": 0,
+                "y": 11,
+                "width": 12,
+                "height": 5
+            }
+        },
+        {
+            "id": 6584708052901644,
+            "definition": {
+                "title": "Δ Sidecars",
+                "title_size": "16",
+                "title_align": "left",
+                "type": "query_value",
+                "requests": [
+                    {
+                        "formulas": [
+                            {
+                                "formula": "query1 - query2"
+                            }
+                        ],
+                        "response_format": "scalar",
+                        "queries": [
+                            {
+                                "query": "sum:istio_system.pilot_k8s_cfg_events.count{event:add,type:sidecar}.as_count()",
+                                "data_source": "metrics",
+                                "name": "query1",
+                                "aggregator": "max"
+                            },
+                            {
+                                "query": "sum:istio_system.pilot_k8s_cfg_events.count{event:delete,type:sidecar}.as_count()",
+                                "data_source": "metrics",
+                                "name": "query2",
+                                "aggregator": "max"
+                            }
+                        ]
+                    }
+                ],
+                "autoscale": true,
+                "precision": 2
+            },
+            "layout": {
+                "x": 0,
+                "y": 0,
+                "width": 2,
+                "height": 1,
+                "is_column_break": true
+            }
+        },
+        {
+            "id": 2051182284139804,
+            "definition": {
+                "title": "Δ PeerAuthentications",
+                "title_size": "16",
+                "title_align": "left",
+                "type": "query_value",
+                "requests": [
+                    {
+                        "formulas": [
+                            {
+                                "formula": "query1 - query2"
+                            }
+                        ],
+                        "response_format": "scalar",
+                        "queries": [
+                            {
+                                "query": "sum:istio_system.pilot_k8s_cfg_events.count{event:add,type:peerauthentication}.as_count()",
+                                "data_source": "metrics",
+                                "name": "query1",
+                                "aggregator": "max"
+                            },
+                            {
+                                "query": "sum:istio_system.pilot_k8s_cfg_events.count{event:delete,type:peerauthentication}.as_count()",
+                                "data_source": "metrics",
+                                "name": "query2",
+                                "aggregator": "max"
+                            }
+                        ]
+                    }
+                ],
+                "autoscale": true,
+                "precision": 2
+            },
+            "layout": {
+                "x": 2,
+                "y": 0,
+                "width": 2,
+                "height": 1
+            }
+        },
+        {
+            "id": 1015188037222686,
+            "definition": {
+                "title": "Δ AuthorizationPolicies",
+                "title_size": "16",
+                "title_align": "left",
+                "type": "query_value",
+                "requests": [
+                    {
+                        "formulas": [
+                            {
+                                "formula": "query1 - query2"
+                            }
+                        ],
+                        "response_format": "scalar",
+                        "queries": [
+                            {
+                                "query": "sum:istio_system.pilot_k8s_cfg_events.count{event:add,type:authorizationpolicy}.as_count()",
+                                "data_source": "metrics",
+                                "name": "query1",
+                                "aggregator": "max"
+                            },
+                            {
+                                "query": "sum:istio_system.pilot_k8s_cfg_events.count{event:delete,type:authorizationpolicy}.as_count()",
+                                "data_source": "metrics",
+                                "name": "query2",
+                                "aggregator": "max"
+                            }
+                        ]
+                    }
+                ],
+                "autoscale": true,
+                "precision": 2
+            },
+            "layout": {
+                "x": 4,
+                "y": 0,
+                "width": 2,
+                "height": 1
+            }
+        },
+        {
+            "id": 5165066267317722,
+            "definition": {
+                "title": "Pilot XDS Push Time",
+                "title_size": "16",
+                "title_align": "left",
+                "show_legend": true,
+                "legend_layout": "auto",
+                "legend_columns": [
+                    "avg",
+                    "min",
+                    "max",
+                    "value",
+                    "sum"
+                ],
+                "type": "timeseries",
+                "requests": [
+                    {
+                        "formulas": [
+                            {
+                                "formula": "query1"
+                            }
+                        ],
+                        "response_format": "timeseries",
+                        "queries": [
+                            {
+                                "query": "avg:istio_system.pilot_xds_push_time{*} by {type}",
+                                "data_source": "metrics",
+                                "name": "query1"
+                            }
+                        ],
+                        "style": {
+                            "palette": "dog_classic",
+                            "line_type": "solid",
+                            "line_width": "normal"
+                        },
+                        "display_type": "area"
+                    }
+                ]
+            },
+            "layout": {
+                "x": 0,
+                "y": 1,
+                "width": 12,
+                "height": 2
+            }
+        },
+        {
+            "id": 8518169334201546,
+            "definition": {
+                "title": "Pilot Convergence Time",
+                "title_size": "16",
+                "title_align": "left",
+                "show_legend": true,
+                "legend_layout": "auto",
+                "legend_columns": [
+                    "avg",
+                    "min",
+                    "max",
+                    "value",
+                    "sum"
+                ],
+                "type": "timeseries",
+                "requests": [
+                    {
+                        "formulas": [
+                            {
+                                "formula": "query1"
+                            },
+                            {
+                                "formula": "query2"
+                            },
+                            {
+                                "formula": "query3"
+                            },
+                            {
+                                "formula": "query4"
+                            },
+                            {
+                                "formula": "query5"
+                            },
+                            {
+                                "formula": "query6"
+                            },
+                            {
+                                "formula": "query7"
+                            },
+                            {
+                                "formula": "query8"
+                            }
+                        ],
+                        "response_format": "timeseries",
+                        "queries": [
+                            {
+                                "query": "avg:istio_system.pilot_proxy_convergence_time{lower_bound IN (0,0.1)}",
+                                "data_source": "metrics",
+                                "name": "query1"
+                            },
+                            {
+                                "query": "avg:istio_system.pilot_proxy_convergence_time{lower_bound:0.5}",
+                                "data_source": "metrics",
+                                "name": "query2"
+                            },
+                            {
+                                "query": "avg:istio_system.pilot_proxy_convergence_time{lower_bound:1.0}",
+                                "data_source": "metrics",
+                                "name": "query3"
+                            },
+                            {
+                                "query": "avg:istio_system.pilot_proxy_convergence_time{lower_bound:3.0}",
+                                "data_source": "metrics",
+                                "name": "query4"
+                            },
+                            {
+                                "query": "avg:istio_system.pilot_proxy_convergence_time{lower_bound:5.0}",
+                                "data_source": "metrics",
+                                "name": "query5"
+                            },
+                            {
+                                "query": "avg:istio_system.pilot_proxy_convergence_time{lower_bound:10.0}",
+                                "data_source": "metrics",
+                                "name": "query6"
+                            },
+                            {
+                                "query": "avg:istio_system.pilot_proxy_convergence_time{lower_bound:20.0}",
+                                "data_source": "metrics",
+                                "name": "query7"
+                            },
+                            {
+                                "query": "avg:istio_system.pilot_proxy_convergence_time{lower_bound:30.0}",
+                                "data_source": "metrics",
+                                "name": "query8"
+                            }
+                        ],
+                        "style": {
+                            "palette": "dog_classic",
+                            "line_type": "solid",
+                            "line_width": "normal"
+                        },
+                        "display_type": "area"
+                    }
+                ]
+            },
+            "layout": {
+                "x": 0,
+                "y": 3,
+                "width": 12,
+                "height": 2
+            }
+        },
+        {
+            "id": 1813346929332148,
+            "definition": {
+                "title": "Pilot XDS Send Time",
+                "title_size": "16",
+                "title_align": "left",
+                "show_legend": true,
+                "legend_layout": "auto",
+                "legend_columns": [
+                    "avg",
+                    "min",
+                    "max",
+                    "value",
+                    "sum"
+                ],
+                "type": "timeseries",
+                "requests": [
+                    {
+                        "formulas": [
+                            {
+                                "formula": "query1"
+                            },
+                            {
+                                "formula": "query2"
+                            },
+                            {
+                                "formula": "query3"
+                            },
+                            {
+                                "formula": "query4"
+                            },
+                            {
+                                "formula": "query5"
+                            },
+                            {
+                                "formula": "query6"
+                            },
+                            {
+                                "formula": "query7"
+                            },
+                            {
+                                "formula": "query8"
+                            }
+                        ],
+                        "response_format": "timeseries",
+                        "queries": [
+                            {
+                                "query": "max:istio_system.pilot_xds_send_time{lower_bound IN (0,0.01)}",
+                                "data_source": "metrics",
+                                "name": "query1"
+                            },
+                            {
+                                "query": "max:istio_system.pilot_xds_send_time{lower_bound:0.1}",
+                                "data_source": "metrics",
+                                "name": "query2"
+                            },
+                            {
+                                "query": "max:istio_system.pilot_xds_send_time{lower_bound:1.0}",
+                                "data_source": "metrics",
+                                "name": "query3"
+                            },
+                            {
+                                "query": "max:istio_system.pilot_xds_send_time{lower_bound:3.0}",
+                                "data_source": "metrics",
+                                "name": "query4"
+                            },
+                            {
+                                "query": "max:istio_system.pilot_xds_send_time{lower_bound:5.0}",
+                                "data_source": "metrics",
+                                "name": "query5"
+                            },
+                            {
+                                "query": "max:istio_system.pilot_xds_send_time{lower_bound:10.0}",
+                                "data_source": "metrics",
+                                "name": "query6"
+                            },
+                            {
+                                "query": "max:istio_system.pilot_xds_send_time{lower_bound:20.0}",
+                                "data_source": "metrics",
+                                "name": "query7"
+                            },
+                            {
+                                "query": "max:istio_system.pilot_xds_send_time{lower_bound:30.0}",
+                                "data_source": "metrics",
+                                "name": "query8"
+                            }
+                        ],
+                        "style": {
+                            "palette": "dog_classic",
+                            "line_type": "solid",
+                            "line_width": "normal"
+                        },
+                        "display_type": "area"
+                    }
+                ]
+            },
+            "layout": {
+                "x": 0,
+                "y": 5,
+                "width": 12,
+                "height": 2
+            }
+        },
+        {
+            "id": 3530238956029918,
+            "definition": {
+                "title": "Pilot Queue Time",
+                "title_size": "16",
+                "title_align": "left",
+                "show_legend": true,
+                "legend_layout": "auto",
+                "legend_columns": [
+                    "avg",
+                    "min",
+                    "max",
+                    "value",
+                    "sum"
+                ],
+                "type": "timeseries",
+                "requests": [
+                    {
+                        "formulas": [
+                            {
+                                "formula": "query1"
+                            },
+                            {
+                                "formula": "query2"
+                            },
+                            {
+                                "formula": "query3"
+                            },
+                            {
+                                "formula": "query4"
+                            },
+                            {
+                                "formula": "query5"
+                            },
+                            {
+                                "formula": "query6"
+                            },
+                            {
+                                "formula": "query7"
+                            },
+                            {
+                                "formula": "query8"
+                            }
+                        ],
+                        "response_format": "timeseries",
+                        "queries": [
+                            {
+                                "query": "avg:istio_system.pilot_proxy_queue_time{lower_bound IN (0,0.1)}",
+                                "data_source": "metrics",
+                                "name": "query1"
+                            },
+                            {
+                                "query": "avg:istio_system.pilot_proxy_queue_time{lower_bound:0.5}",
+                                "data_source": "metrics",
+                                "name": "query2"
+                            },
+                            {
+                                "query": "avg:istio_system.pilot_proxy_queue_time{lower_bound:1.0}",
+                                "data_source": "metrics",
+                                "name": "query3"
+                            },
+                            {
+                                "query": "avg:istio_system.pilot_proxy_queue_time{lower_bound:3.0}",
+                                "data_source": "metrics",
+                                "name": "query4"
+                            },
+                            {
+                                "query": "avg:istio_system.pilot_proxy_queue_time{lower_bound:5.0}",
+                                "data_source": "metrics",
+                                "name": "query5"
+                            },
+                            {
+                                "query": "avg:istio_system.pilot_proxy_queue_time{lower_bound:10.0}",
+                                "data_source": "metrics",
+                                "name": "query6"
+                            },
+                            {
+                                "query": "avg:istio_system.pilot_proxy_queue_time{lower_bound:20.0}",
+                                "data_source": "metrics",
+                                "name": "query7"
+                            },
+                            {
+                                "query": "avg:istio_system.pilot_proxy_queue_time{lower_bound:30.0}",
+                                "data_source": "metrics",
+                                "name": "query8"
+                            }
+                        ],
+                        "style": {
+                            "palette": "dog_classic",
+                            "line_type": "solid",
+                            "line_width": "normal"
+                        },
+                        "display_type": "area"
+                    }
+                ]
+            },
+            "layout": {
+                "x": 0,
+                "y": 7,
+                "width": 12,
+                "height": 2
+            }
+        },
+        {
+            "id": 2263611274802766,
+            "definition": {
+                "title": "Pilot Convergence Percentiles",
+                "title_size": "16",
+                "title_align": "left",
+                "show_legend": true,
+                "legend_layout": "auto",
+                "legend_columns": [
+                    "avg",
+                    "min",
+                    "max",
+                    "value",
+                    "sum"
+                ],
+                "type": "timeseries",
+                "requests": [
+                    {
+                        "formulas": [
+                            {
+                                "formula": "query1"
+                            },
+                            {
+                                "formula": "query2"
+                            },
+                            {
+                                "formula": "query3"
+                            }
+                        ],
+                        "response_format": "timeseries",
+                        "queries": [
+                            {
+                                "query": "p75:istio_system.pilot_proxy_convergence_time{cluster_name:worker-1}",
+                                "data_source": "metrics",
+                                "name": "query1"
+                            },
+                            {
+                                "query": "p90:istio_system.pilot_proxy_convergence_time{cluster_name:worker-1}",
+                                "data_source": "metrics",
+                                "name": "query2"
+                            },
+                            {
+                                "query": "p99:istio_system.pilot_proxy_convergence_time{cluster_name:worker-1}",
+                                "data_source": "metrics",
+                                "name": "query3"
+                            }
+                        ],
+                        "style": {
+                            "palette": "dog_classic",
+                            "line_type": "solid",
+                            "line_width": "normal"
+                        },
+                        "display_type": "line"
+                    }
+                ]
+            },
+            "layout": {
+                "x": 0,
+                "y": 9,
+                "width": 12,
+                "height": 2
+            }
+        },
+        {
+            "id": 7730221944052124,
+            "definition": {
+                "title": "Request Duration Percentiles",
+                "title_size": "16",
+                "title_align": "left",
+                "show_legend": true,
+                "legend_layout": "auto",
+                "legend_columns": [
+                    "avg",
+                    "min",
+                    "max",
+                    "value",
+                    "sum"
+                ],
+                "type": "timeseries",
+                "requests": [
+                    {
+                        "formulas": [
+                            {
+                                "formula": "query1"
+                            },
+                            {
+                                "formula": "query2"
+                            },
+                            {
+                                "formula": "query3"
+                            }
+                        ],
+                        "response_format": "timeseries",
+                        "queries": [
+                            {
+                                "query": "p75:istio_request_duration_milliseconds{*}",
+                                "data_source": "metrics",
+                                "name": "query1"
+                            },
+                            {
+                                "query": "p90:istio_request_duration_milliseconds{*}",
+                                "data_source": "metrics",
+                                "name": "query2"
+                            },
+                            {
+                                "query": "p99:istio_request_duration_milliseconds{*}",
+                                "data_source": "metrics",
+                                "name": "query3"
+                            }
+                        ],
+                        "style": {
+                            "palette": "dog_classic",
+                            "line_type": "solid",
+                            "line_width": "normal"
+                        },
+                        "display_type": "line"
+                    }
+                ]
+            },
+            "layout": {
+                "x": 0,
+                "y": 11,
+                "width": 12,
+                "height": 5
+            }
+        }
+    ],
+    "template_variables": [],
+    "layout_type": "ordered",
+    "is_read_only": false,
+    "notify_list": [],
+    "reflow_type": "fixed",
+    "id": "6nc-y6h-u84"
+}

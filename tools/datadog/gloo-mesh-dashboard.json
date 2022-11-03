@@ -1,0 +1,950 @@
+{
+    "title": "Gloo Management Dashboard",
+    "description": "",
+    "widgets": [
+        {
+            "id": 2944374110318980,
+            "definition": {
+                "title": "Total Translation Times",
+                "title_size": "16",
+                "title_align": "left",
+                "show_legend": true,
+                "legend_layout": "vertical",
+                "legend_columns": [
+                    "sum"
+                ],
+                "type": "timeseries",
+                "requests": [
+                    {
+                        "formulas": [
+                            {
+                                "formula": "query1",
+                                "style": {
+                                    "palette_index": 0,
+                                    "palette": "red"
+                                }
+                            },
+                            {
+                                "formula": "query6",
+                                "style": {
+                                    "palette_index": 1,
+                                    "palette": "red"
+                                }
+                            },
+                            {
+                                "formula": "query7",
+                                "style": {
+                                    "palette_index": 2,
+                                    "palette": "red"
+                                }
+                            },
+                            {
+                                "formula": "query8",
+                                "style": {
+                                    "palette_index": 3,
+                                    "palette": "red"
+                                }
+                            },
+                            {
+                                "formula": "query9",
+                                "style": {
+                                    "palette_index": 4,
+                                    "palette": "red"
+                                }
+                            },
+                            {
+                                "formula": "query10",
+                                "style": {
+                                    "palette_index": 5,
+                                    "palette": "red"
+                                }
+                            },
+                            {
+                                "formula": "query11",
+                                "style": {
+                                    "palette_index": 6,
+                                    "palette": "red"
+                                }
+                            },
+                            {
+                                "formula": "query12",
+                                "style": {
+                                    "palette_index": 7,
+                                    "palette": "red"
+                                }
+                            }
+                        ],
+                        "response_format": "timeseries",
+                        "queries": [
+                            {
+                                "query": "sum:gloo_mesh.gloo_mesh_translation_time_sec{lower_bound IN (0,0.25,0.5,0.75)} by {lower_bound,upper_bound}.as_rate()",
+                                "data_source": "metrics",
+                                "name": "query1"
+                            },
+                            {
+                                "query": "sum:gloo_mesh.gloo_mesh_translation_time_sec{lower_bound:1.0,upper_bound:2.5} by {lower_bound,upper_bound}.as_rate()",
+                                "data_source": "metrics",
+                                "name": "query6"
+                            },
+                            {
+                                "query": "sum:gloo_mesh.gloo_mesh_translation_time_sec{lower_bound:2.5,upper_bound:5.0} by {lower_bound,upper_bound}.as_rate()",
+                                "data_source": "metrics",
+                                "name": "query7"
+                            },
+                            {
+                                "query": "sum:gloo_mesh.gloo_mesh_translation_time_sec{lower_bound:5.0,upper_bound:10.0} by {lower_bound,upper_bound}.as_rate()",
+                                "data_source": "metrics",
+                                "name": "query8"
+                            },
+                            {
+                                "query": "sum:gloo_mesh.gloo_mesh_translation_time_sec{lower_bound:10.0,upper_bound:20.0} by {lower_bound,upper_bound}.as_rate()",
+                                "data_source": "metrics",
+                                "name": "query9"
+                            },
+                            {
+                                "query": "sum:gloo_mesh.gloo_mesh_translation_time_sec{lower_bound:20.0,upper_bound:30.0} by {lower_bound,upper_bound}.as_rate()",
+                                "data_source": "metrics",
+                                "name": "query10"
+                            },
+                            {
+                                "query": "sum:gloo_mesh.gloo_mesh_translation_time_sec{lower_bound:30.0,upper_bound:60.0} by {lower_bound,upper_bound}.as_rate()",
+                                "data_source": "metrics",
+                                "name": "query11"
+                            },
+                            {
+                                "query": "sum:gloo_mesh.gloo_mesh_translation_time_sec{lower_bound:60.0,upper_bound:inf} by {lower_bound,upper_bound}.as_rate()",
+                                "data_source": "metrics",
+                                "name": "query12"
+                            }
+                        ],
+                        "style": {
+                            "palette": "semantic"
+                        },
+                        "display_type": "area"
+                    }
+                ]
+            },
+            "layout": {
+                "x": 0,
+                "y": 0,
+                "width": 3,
+                "height": 4
+            }
+        },
+        {
+            "id": 887802917384174,
+            "definition": {
+                "title": "Total Reconciliation Times",
+                "title_size": "16",
+                "title_align": "left",
+                "show_legend": true,
+                "legend_layout": "vertical",
+                "legend_columns": [
+                    "sum"
+                ],
+                "type": "timeseries",
+                "requests": [
+                    {
+                        "formulas": [
+                            {
+                                "formula": "query5",
+                                "style": {
+                                    "palette_index": 0,
+                                    "palette": "red"
+                                }
+                            },
+                            {
+                                "formula": "query6",
+                                "style": {
+                                    "palette_index": 1,
+                                    "palette": "red"
+                                }
+                            },
+                            {
+                                "formula": "query7",
+                                "style": {
+                                    "palette_index": 2,
+                                    "palette": "red"
+                                }
+                            },
+                            {
+                                "formula": "query8",
+                                "style": {
+                                    "palette_index": 3,
+                                    "palette": "red"
+                                }
+                            },
+                            {
+                                "formula": "query9",
+                                "style": {
+                                    "palette_index": 4,
+                                    "palette": "red"
+                                }
+                            },
+                            {
+                                "formula": "query10",
+                                "style": {
+                                    "palette_index": 5,
+                                    "palette": "red"
+                                }
+                            },
+                            {
+                                "formula": "query11",
+                                "style": {
+                                    "palette_index": 6,
+                                    "palette": "red"
+                                }
+                            },
+                            {
+                                "formula": "query12",
+                                "style": {
+                                    "palette_index": 7,
+                                    "palette": "red"
+                                }
+                            }
+                        ],
+                        "response_format": "timeseries",
+                        "queries": [
+                            {
+                                "query": "sum:gloo_mesh.gloo_mesh_reconciler_time_sec{lower_bound IN (0,1.0,2.0,5.0)} by {lower_bound,upper_bound}.as_rate()",
+                                "data_source": "metrics",
+                                "name": "query5"
+                            },
+                            {
+                                "query": "sum:gloo_mesh.gloo_mesh_reconciler_time_sec{lower_bound:10.0,upper_bound:15.0} by {lower_bound,upper_bound}.as_rate()",
+                                "data_source": "metrics",
+                                "name": "query6"
+                            },
+                            {
+                                "query": "sum:gloo_mesh.gloo_mesh_reconciler_time_sec{lower_bound:15.0,upper_bound:30.0} by {lower_bound,upper_bound}.as_rate()",
+                                "data_source": "metrics",
+                                "name": "query7"
+                            },
+                            {
+                                "query": "sum:gloo_mesh.gloo_mesh_reconciler_time_sec{lower_bound:30.0,upper_bound:50.0} by {lower_bound,upper_bound}.as_rate()",
+                                "data_source": "metrics",
+                                "name": "query8"
+                            },
+                            {
+                                "query": "sum:gloo_mesh.gloo_mesh_reconciler_time_sec{lower_bound:50.0,upper_bound:80.0} by {lower_bound,upper_bound}.as_rate()",
+                                "data_source": "metrics",
+                                "name": "query9"
+                            },
+                            {
+                                "query": "sum:gloo_mesh.gloo_mesh_reconciler_time_sec{lower_bound:80.0,upper_bound:100.0} by {lower_bound,upper_bound}.as_rate()",
+                                "data_source": "metrics",
+                                "name": "query10"
+                            },
+                            {
+                                "query": "sum:gloo_mesh.gloo_mesh_reconciler_time_sec{lower_bound:100.0,upper_bound:200.0} by {lower_bound,upper_bound}.as_rate()",
+                                "data_source": "metrics",
+                                "name": "query11"
+                            },
+                            {
+                                "query": "sum:gloo_mesh.gloo_mesh_reconciler_time_sec{lower_bound:200.0,upper_bound:inf} by {lower_bound,upper_bound}.as_rate()",
+                                "data_source": "metrics",
+                                "name": "query12"
+                            }
+                        ],
+                        "style": {
+                            "palette": "semantic",
+                            "line_type": "solid",
+                            "line_width": "normal"
+                        },
+                        "display_type": "area"
+                    }
+                ]
+            },
+            "layout": {
+                "x": 3,
+                "y": 0,
+                "width": 3,
+                "height": 4
+            }
+        },
+        {
+            "id": 1685778340809648,
+            "definition": {
+                "title": "Translation Warnings",
+                "title_size": "16",
+                "title_align": "left",
+                "type": "query_table",
+                "requests": [
+                    {
+                        "formulas": [
+                            {
+                                "formula": "query1",
+                                "limit": {
+                                    "count": 500,
+                                    "order": "desc"
+                                }
+                            }
+                        ],
+                        "response_format": "scalar",
+                        "queries": [
+                            {
+                                "query": "sum:gloo_mesh.translation_warning{*} by {workspace,namespace,gvk}.as_count()",
+                                "data_source": "metrics",
+                                "name": "query1",
+                                "aggregator": "last"
+                            }
+                        ]
+                    }
+                ]
+            },
+            "layout": {
+                "x": 6,
+                "y": 0,
+                "width": 6,
+                "height": 2
+            }
+        },
+        {
+            "id": 6180160719535952,
+            "definition": {
+                "title": "Translation Errors",
+                "title_size": "16",
+                "title_align": "left",
+                "type": "query_table",
+                "requests": [
+                    {
+                        "formulas": [
+                            {
+                                "formula": "query1",
+                                "limit": {
+                                    "count": 500,
+                                    "order": "desc"
+                                }
+                            }
+                        ],
+                        "response_format": "scalar",
+                        "queries": [
+                            {
+                                "query": "sum:gloo_mesh.translation_error{*} by {workspace,namespace,gvk}",
+                                "data_source": "metrics",
+                                "name": "query1",
+                                "aggregator": "last"
+                            }
+                        ]
+                    }
+                ]
+            },
+            "layout": {
+                "x": 6,
+                "y": 2,
+                "width": 6,
+                "height": 2
+            }
+        },
+        {
+            "id": 8551494121204684,
+            "definition": {
+                "title": "Translation Time Percentiles",
+                "title_size": "16",
+                "title_align": "left",
+                "show_legend": true,
+                "legend_layout": "horizontal",
+                "legend_columns": [
+                    "avg",
+                    "min",
+                    "max",
+                    "value",
+                    "sum"
+                ],
+                "type": "timeseries",
+                "requests": [
+                    {
+                        "formulas": [
+                            {
+                                "formula": "query1"
+                            },
+                            {
+                                "formula": "query2"
+                            },
+                            {
+                                "formula": "query3"
+                            }
+                        ],
+                        "response_format": "timeseries",
+                        "queries": [
+                            {
+                                "query": "p75:gloo_mesh.gloo_mesh_translation_time_sec{*}",
+                                "data_source": "metrics",
+                                "name": "query1"
+                            },
+                            {
+                                "query": "p90:gloo_mesh.gloo_mesh_translation_time_sec{*}",
+                                "data_source": "metrics",
+                                "name": "query2"
+                            },
+                            {
+                                "query": "p99:gloo_mesh.gloo_mesh_translation_time_sec{*}",
+                                "data_source": "metrics",
+                                "name": "query3"
+                            }
+                        ],
+                        "style": {
+                            "palette": "dog_classic",
+                            "line_type": "solid",
+                            "line_width": "normal"
+                        },
+                        "display_type": "line"
+                    }
+                ]
+            },
+            "layout": {
+                "x": 0,
+                "y": 4,
+                "width": 3,
+                "height": 2
+            }
+        },
+        {
+            "id": 5658397557942568,
+            "definition": {
+                "title": "ReconcileTime Percentiles",
+                "title_size": "16",
+                "title_align": "left",
+                "show_legend": true,
+                "legend_layout": "horizontal",
+                "legend_columns": [
+                    "avg",
+                    "min",
+                    "max",
+                    "value",
+                    "sum"
+                ],
+                "type": "timeseries",
+                "requests": [
+                    {
+                        "formulas": [
+                            {
+                                "formula": "query1"
+                            },
+                            {
+                                "formula": "query2"
+                            },
+                            {
+                                "formula": "query3"
+                            }
+                        ],
+                        "response_format": "timeseries",
+                        "queries": [
+                            {
+                                "query": "p75:gloo_mesh.gloo_mesh_reconciler_time_sec{*}",
+                                "data_source": "metrics",
+                                "name": "query1"
+                            },
+                            {
+                                "query": "p90:gloo_mesh.gloo_mesh_reconciler_time_sec{*}",
+                                "data_source": "metrics",
+                                "name": "query2"
+                            },
+                            {
+                                "query": "p99:gloo_mesh.gloo_mesh_reconciler_time_sec{*}",
+                                "data_source": "metrics",
+                                "name": "query3"
+                            }
+                        ],
+                        "style": {
+                            "palette": "dog_classic",
+                            "line_type": "solid",
+                            "line_width": "normal"
+                        },
+                        "display_type": "line"
+                    }
+                ]
+            },
+            "layout": {
+                "x": 3,
+                "y": 4,
+                "width": 3,
+                "height": 2
+            }
+        },
+        {
+            "id": 8766441322258014,
+            "definition": {
+                "title": "Translator Concurrency",
+                "title_size": "16",
+                "title_align": "left",
+                "type": "query_value",
+                "requests": [
+                    {
+                        "formulas": [
+                            {
+                                "formula": "query1"
+                            }
+                        ],
+                        "response_format": "scalar",
+                        "queries": [
+                            {
+                                "query": "avg:gloo_mesh.gloo_mesh_translator_concurrency{*}",
+                                "data_source": "metrics",
+                                "name": "query1",
+                                "aggregator": "last"
+                            }
+                        ]
+                    }
+                ],
+                "autoscale": true,
+                "precision": 0,
+                "timeseries_background": {
+                    "type": "area",
+                    "yaxis": {
+                        "include_zero": false
+                    }
+                }
+            },
+            "layout": {
+                "x": 6,
+                "y": 4,
+                "width": 2,
+                "height": 2
+            }
+        },
+        {
+            "id": 2287913442568556,
+            "definition": {
+                "title": "Redis Sync Errors",
+                "title_size": "16",
+                "title_align": "left",
+                "type": "query_value",
+                "requests": [
+                    {
+                        "formulas": [
+                            {
+                                "formula": "query1"
+                            }
+                        ],
+                        "response_format": "scalar",
+                        "queries": [
+                            {
+                                "query": "sum:gloo_mesh.gloo_mesh_redis_sync_err.count{*}.as_count()",
+                                "data_source": "metrics",
+                                "name": "query1",
+                                "aggregator": "last"
+                            }
+                        ]
+                    }
+                ],
+                "autoscale": true,
+                "precision": 0,
+                "timeseries_background": {
+                    "type": "area",
+                    "yaxis": {
+                        "include_zero": false
+                    }
+                }
+            },
+            "layout": {
+                "x": 8,
+                "y": 4,
+                "width": 2,
+                "height": 2
+            }
+        },
+        {
+            "id": 1445503824234026,
+            "definition": {
+                "title": "License Time Remaining",
+                "title_size": "16",
+                "title_align": "left",
+                "time": {},
+                "type": "query_value",
+                "requests": [
+                    {
+                        "formulas": [
+                            {
+                                "formula": "query1"
+                            }
+                        ],
+                        "response_format": "scalar",
+                        "queries": [
+                            {
+                                "query": "sum:gloo_mesh.solo_io_gloo_trial_license{*}",
+                                "data_source": "metrics",
+                                "name": "query1",
+                                "aggregator": "last"
+                            }
+                        ]
+                    }
+                ],
+                "autoscale": true,
+                "precision": 0
+            },
+            "layout": {
+                "x": 10,
+                "y": 4,
+                "width": 2,
+                "height": 2
+            }
+        },
+        {
+            "id": 3009065375785356,
+            "definition": {
+                "title": "Percent Agents Connected",
+                "title_size": "16",
+                "title_align": "left",
+                "type": "query_value",
+                "requests": [
+                    {
+                        "formulas": [
+                            {
+                                "formula": "(clamp_max(query1, 1) + clamp_max(query2, 1) + clamp_max(query3, 1) + clamp_max(query4, 1)) / 4 * 100"
+                            }
+                        ],
+                        "conditional_formats": [
+                            {
+                                "comparator": ">=",
+                                "palette": "white_on_green",
+                                "value": 100
+                            },
+                            {
+                                "comparator": ">",
+                                "palette": "white_on_yellow",
+                                "value": 0
+                            },
+                            {
+                                "comparator": "<=",
+                                "palette": "white_on_red",
+                                "value": 0
+                            }
+                        ],
+                        "response_format": "scalar",
+                        "queries": [
+                            {
+                                "query": "sum:gloo_mesh.relay_push_clients_connected{cluster:alvin}",
+                                "data_source": "metrics",
+                                "name": "query1",
+                                "aggregator": "last"
+                            },
+                            {
+                                "query": "sum:gloo_mesh.relay_push_clients_connected{cluster:dave}",
+                                "data_source": "metrics",
+                                "name": "query2",
+                                "aggregator": "last"
+                            },
+                            {
+                                "query": "sum:gloo_mesh.relay_push_clients_connected{cluster:simon}",
+                                "data_source": "metrics",
+                                "name": "query3",
+                                "aggregator": "last"
+                            },
+                            {
+                                "query": "sum:gloo_mesh.relay_push_clients_connected{cluster:theodore}",
+                                "data_source": "metrics",
+                                "name": "query4",
+                                "aggregator": "last"
+                            }
+                        ]
+                    }
+                ],
+                "autoscale": true,
+                "precision": 2
+            },
+            "layout": {
+                "x": 0,
+                "y": 6,
+                "width": 1,
+                "height": 1
+            }
+        },
+        {
+            "id": 5621358482695770,
+            "definition": {
+                "title": "Agents Connected Details",
+                "title_size": "16",
+                "title_align": "left",
+                "type": "query_table",
+                "requests": [
+                    {
+                        "formulas": [
+                            {
+                                "formula": "query1",
+                                "conditional_formats": [],
+                                "limit": {
+                                    "count": 500,
+                                    "order": "desc"
+                                },
+                                "cell_display_mode": "bar"
+                            }
+                        ],
+                        "response_format": "scalar",
+                        "queries": [
+                            {
+                                "query": "sum:gloo_mesh.relay_push_clients_connected{*} by {cluster,pod_name}",
+                                "data_source": "metrics",
+                                "name": "query1",
+                                "aggregator": "last"
+                            }
+                        ]
+                    }
+                ],
+                "has_search_bar": "auto"
+            },
+            "layout": {
+                "x": 1,
+                "y": 6,
+                "width": 5,
+                "height": 2
+            }
+        },
+        {
+            "id": 6626342981156652,
+            "definition": {
+                "title": "Agents Connection Distribution Details",
+                "title_size": "16",
+                "title_align": "left",
+                "show_legend": true,
+                "legend_layout": "auto",
+                "legend_columns": [
+                    "avg",
+                    "min",
+                    "max",
+                    "value",
+                    "sum"
+                ],
+                "type": "timeseries",
+                "requests": [
+                    {
+                        "formulas": [
+                            {
+                                "formula": "query1"
+                            }
+                        ],
+                        "response_format": "timeseries",
+                        "queries": [
+                            {
+                                "query": "sum:gloo_mesh.relay_push_clients_connected{cluster:*} by {pod_name}",
+                                "data_source": "metrics",
+                                "name": "query1"
+                            }
+                        ],
+                        "style": {
+                            "palette": "dog_classic",
+                            "line_type": "solid",
+                            "line_width": "normal"
+                        },
+                        "display_type": "line"
+                    }
+                ]
+            },
+            "layout": {
+                "x": 6,
+                "y": 6,
+                "width": 6,
+                "height": 2
+            }
+        },
+        {
+            "id": 4178715830598064,
+            "definition": {
+                "title": "Agents Connected",
+                "title_size": "16",
+                "title_align": "left",
+                "type": "query_value",
+                "requests": [
+                    {
+                        "formulas": [
+                            {
+                                "formula": "query1"
+                            }
+                        ],
+                        "response_format": "scalar",
+                        "queries": [
+                            {
+                                "query": "sum:gloo_mesh.relay_push_clients_warmed{*}",
+                                "data_source": "metrics",
+                                "name": "query1",
+                                "aggregator": "last"
+                            }
+                        ]
+                    }
+                ],
+                "autoscale": true,
+                "precision": 2
+            },
+            "layout": {
+                "x": 0,
+                "y": 7,
+                "width": 1,
+                "height": 1
+            }
+        },
+        {
+            "id": 69342679075950,
+            "definition": {
+                "title": "Gloo Mesh vCPU Usage",
+                "title_size": "16",
+                "title_align": "left",
+                "show_legend": true,
+                "legend_layout": "auto",
+                "legend_columns": [
+                    "avg",
+                    "min",
+                    "max",
+                    "value",
+                    "sum"
+                ],
+                "type": "timeseries",
+                "requests": [
+                    {
+                        "formulas": [
+                            {
+                                "alias": "Management Server",
+                                "formula": "query1"
+                            }
+                        ],
+                        "response_format": "timeseries",
+                        "queries": [
+                            {
+                                "query": "avg:kubernetes.cpu.usage.total{pod_name:gloo-mesh-mgmt-server-*}",
+                                "data_source": "metrics",
+                                "name": "query1"
+                            },
+                            {
+                                "query": "avg:kubernetes.cpu.usage.total{cluster_name:worker-1,pod_name:gloo-mesh-agent-*}",
+                                "data_source": "metrics",
+                                "name": "query2"
+                            },
+                            {
+                                "query": "avg:kubernetes.cpu.usage.total{cluster_name:worker-2,pod_name:gloo-mesh-agent-*}",
+                                "data_source": "metrics",
+                                "name": "query3"
+                            }
+                        ],
+                        "style": {
+                            "palette": "dog_classic",
+                            "line_type": "solid",
+                            "line_width": "normal"
+                        },
+                        "display_type": "area"
+                    }
+                ]
+            },
+            "layout": {
+                "x": 0,
+                "y": 8,
+                "width": 6,
+                "height": 2
+            }
+        },
+        {
+            "id": 7998406018785362,
+            "definition": {
+                "title": "Gloo Mesh Memory Usage",
+                "title_size": "16",
+                "title_align": "left",
+                "show_legend": true,
+                "legend_layout": "auto",
+                "legend_columns": [
+                    "avg",
+                    "min",
+                    "max",
+                    "value",
+                    "sum"
+                ],
+                "type": "timeseries",
+                "requests": [
+                    {
+                        "formulas": [
+                            {
+                                "alias": "Management",
+                                "formula": "query1"
+                            }
+                        ],
+                        "response_format": "timeseries",
+                        "queries": [
+                            {
+                                "query": "avg:kubernetes.memory.usage{pod_name:gloo-mesh-mgmt-server-*}",
+                                "data_source": "metrics",
+                                "name": "query1"
+                            },
+                            {
+                                "query": "avg:kubernetes.memory.usage{cluster_name:worker-1,pod_name:gloo-mesh-agent-*}",
+                                "data_source": "metrics",
+                                "name": "query2"
+                            },
+                            {
+                                "query": "avg:kubernetes.memory.usage{cluster_name:worker-2,pod_name:gloo-mesh-agent-*}",
+                                "data_source": "metrics",
+                                "name": "query3"
+                            },
+                            {
+                                "query": "avg:kubernetes.memory.usage{*}",
+                                "data_source": "metrics",
+                                "name": "query4"
+                            }
+                        ],
+                        "style": {
+                            "palette": "dog_classic",
+                            "line_type": "solid",
+                            "line_width": "normal"
+                        },
+                        "display_type": "area"
+                    }
+                ]
+            },
+            "layout": {
+                "x": 6,
+                "y": 8,
+                "width": 6,
+                "height": 2
+            }
+        },
+        {
+            "id": 409255082407662,
+            "definition": {
+                "title": "",
+                "title_size": "16",
+                "title_align": "left",
+                "show_legend": true,
+                "legend_layout": "vertical",
+                "legend_columns": [
+                    "avg",
+                    "min",
+                    "max",
+                    "value",
+                    "sum"
+                ],
+                "type": "timeseries",
+                "requests": [
+                    {
+                        "formulas": [
+                            {
+                                "formula": "query1"
+                            }
+                        ],
+                        "response_format": "timeseries",
+                        "queries": [
+                            {
+                                "query": "avg:kubernetes.cpu.cfs.throttled.seconds{pod_name:gloo-mesh-*} by {pod_name}",
+                                "data_source": "metrics",
+                                "name": "query1"
+                            }
+                        ],
+                        "style": {
+                            "palette": "dog_classic",
+                            "line_type": "solid",
+                            "line_width": "normal"
+                        },
+                        "display_type": "line"
+                    }
+                ]
+            },
+            "layout": {
+                "x": 0,
+                "y": 10,
+                "width": 12,
+                "height": 3
+            }
+        }
+    ],
+    "template_variables": [],
+    "layout_type": "ordered",
+    "is_read_only": false,
+    "notify_list": [],
+    "reflow_type": "fixed",
+    "id": "v4i-r7e-ctg"
+}

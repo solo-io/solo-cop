@@ -1,0 +1,8 @@
+datadog:
+  checksCardinality: "orchestrator"
+  ignoreAutoConfig:
+  - redisdb
+  - istio
+clusterAgent:
+  replicas: 2
+  createPodDisruptionBudget: "true"  
