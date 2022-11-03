@@ -2,7 +2,9 @@
 
 > There are many different ways to operate datadog. This is just an illustrative example.
 
-# Basic Install
+## Gloo Mesh
+
+### Basic Install
 
 If you are already familiar with the Datadog install process you may skip this section.
 
@@ -23,11 +25,11 @@ helm repo update
 helm upgrade --install datadog --create-namespace -n datadog  -f datadog-values.yaml --set datadog.site='datadoghq.com' --set datadog.apiKey='{{GENERATED_API_KEY}}' datadog/datadog
 ```
 
-# Add OpenMetrics annotations to Gloo Mesh Resources
+### Add OpenMetrics annotations to Gloo Mesh Resources
 
 1. Patch Gloo Mesh Mgmt
 ```
-kubectl patch -n gloo-mesh deployment gloo-mesh-mgmt-server --patch-file 
+kubectl patch -n gloo-mesh deployment gloo-mesh-mgmt-server --patch-file gloo-mesh-patch-file.yaml 
 ```
 2. Create a new dashboard.
 3. Import `gloo-mesh-dashboard.json` into the new dashboard.
@@ -43,7 +45,7 @@ kubectl patch -n gloo-mesh deployment gloo-mesh-mgmt-server --patch-file
   - Locate `gloo_mesh.solo_io_gloo_trial_license` guage.
   - Set `Unit` dropdown to minutes.
 
-# What is being presented
+### What is being presented
 
 * The `Times` charts on the top left represent system load. Darker colors represent slower translation and reconcile times.
 * The `Warnings` and `Errors` charts on the top right will list warnings and errors in Solo CRD translations to Istio resources.
@@ -53,5 +55,33 @@ kubectl patch -n gloo-mesh deployment gloo-mesh-mgmt-server --patch-file
 * The fourth and fifth row represent resource usage and cpu throttling for mesh components.
 
 ![Gloo Mesh Datadog Screenshot](./assets/gloo-mesh.png)
+
+## Istio
+
+> The following example assumes you are running within the `istio-system` namespace, you are leveraging gateway injection, and you have installed istio 1-14-4.
+
+### Add controlplane and dataplane annotations.
+
+1. Patch Istiod
+```
+kubectl patch -n istio-system deployment istiod-1-14-4 --patch-file istiod-patch-file.yaml
+```
+2. Update the sidecar configuration to inject datadog annotations.
+> For production update with helm.
+  - Find the injector config map ~ `istio-sidecar-injector-1-14-4`
+  - Add the three fields in `istio-proxy-annotations.yaml` underneath `data.config.injectedAnnotations`
+3. Redeploy workloads.
+4. Repeat per cluster.
+
+### Update Datadog
+
+1. Update the distributions for envoy to allow for percentiles.
+
+### What do you observe
+
+1. Change in resources
+2. Request Information
+3. Pilot XDS times.
+4. Total number of specified resources.
 
 ![Istio Datadog Screenshot](./assets/istio.png)
