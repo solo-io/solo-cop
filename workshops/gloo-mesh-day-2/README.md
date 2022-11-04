@@ -895,4 +895,7 @@ helm upgrade --install --create-namespace prom prometheus-community/prometheus -
 ```
 kubectl apply -f install/grafana/grafana.yaml --context ${MGMT}
 ```
+### Optional
+
+* In lieu of Grafana some users prefer a software as a service model such as [Datadog](https://www.datadoghq.com/). If you'd like to monitor Gloo Mesh or Istio using Datadog, then you can follow instructions posted [here](https://github.com/solo-io/solo-cop/tree/main/tools/datadog) as a starting point.
 
