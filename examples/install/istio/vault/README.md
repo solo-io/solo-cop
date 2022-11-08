@@ -1,1 +1,1 @@
-#Hashicorp Vault with Istio Service Mesh for Certificate Management
+# Hashicorp Vault with Istio Service Mesh for Certificate Management
