@@ -26,7 +26,7 @@ kubectl apply --context $MGMT_CONTEXT -f gloo-mesh-config/workspaces.yaml
 ## install apps
 ```sh
 kubectl apply -n web-ui -f cluster1/web-ui.yaml --context $REMOTE_CONTEXT1
-kubectl apply -n backend-apis -f cluster1/backend-apis-cluster1.yaml --context $REMOTE_CONTEXT1
+kubectl apply -n backend-apis -f cluster1/backend-apis.yaml --context $REMOTE_CONTEXT1
 ```
 
 ## expose frontend
