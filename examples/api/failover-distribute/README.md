@@ -220,52 +220,6 @@ spec:
 EOF
 ```
 
-
-```sh
-kubectl --context ${MGMT} apply -f - <<EOF
-apiVersion: resilience.policy.gloo.solo.io/v2
-kind: OutlierDetectionPolicy
-metadata:
-  name: outlier-detection
-  namespace: web-team
-spec:
-  applyToDestinations:
-  - kind: VIRTUAL_DESTINATION
-    selector:
-      namespace: web-team
-  config:
-    consecutiveErrors: 2
-    interval: 5s
-    baseEjectionTime: 15s
-    maxEjectionPercent: 100
-EOF
-
-kubectl --context ${MGMT} apply -f - <<EOF
-apiVersion: resilience.policy.gloo.solo.io/v2
-kind: FailoverPolicy
-metadata:
-  name: failover
-  namespace: web-team
-spec:
-  applyToDestinations:
-  - kind: VIRTUAL_DESTINATION
-    selector:
-      namespace: web-team
-  config:
-    # enable default locality based load balancing
-    localityMappings:
-    - from:
-        region: us-east-1
-      to:
-      - region: us-west-2
-        weight: 100
-      # Omitted because Istio doesnt honor 0 weight, just dont specify it
-      #- region: us-east-1
-      #  weight: 0
-EOF
-```
-
-
 ## Test Routing
 ```sh
 for i in {1..6}; do curl -sSk http://localhost:8080 | grep "Cluster="; done
