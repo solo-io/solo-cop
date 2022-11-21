@@ -1,0 +1,98 @@
+apiVersion: admin.gloo.solo.io/v2
+kind: Workspace
+metadata:
+  name: ops-team
+  namespace: gloo-mesh
+spec:
+  workloadClusters:
+  - name: 'mgmt'
+    namespaces:
+    - name: ops-team
+  - name: '*'
+    namespaces:
+    - name: istio-ingress
+    - name: istio-eastwest
+---
+apiVersion: admin.gloo.solo.io/v2
+kind: Workspace
+metadata:
+  name: web-team
+  namespace: gloo-mesh
+spec:
+  workloadClusters:
+  - name: 'mgmt'
+    namespaces:
+    - name: web-team
+  - name: '*'
+    namespaces:
+    - name: web-ui
+---
+apiVersion: admin.gloo.solo.io/v2
+kind: Workspace
+metadata:
+  name: backend-apis-team
+  namespace: gloo-mesh
+spec:
+  workloadClusters:
+  - name: 'mgmt'
+    namespaces:
+    - name: backend-apis-team
+  - name: '*'
+    namespaces:
+    - name: backend-apis
+---
+apiVersion: admin.gloo.solo.io/v2
+kind: WorkspaceSettings
+metadata:
+  name: ops-team
+  namespace: ops-team
+spec:
+  importFrom:
+  - workspaces:
+    - name: web-team
+  exportTo:
+  - workspaces:
+    - name: "*"
+  options:
+    eastWestGateways:
+    - selector:
+        labels:
+          istio: eastwestgateway
+---
+apiVersion: admin.gloo.solo.io/v2
+kind: WorkspaceSettings
+metadata:
+  name: web-team
+  namespace: web-team
+spec:
+  importFrom:
+  - workspaces:
+    - name: backend-apis-team
+  - workspaces:
+    - name: ops-team
+  exportTo:
+  - workspaces:
+    - name: ops-team
+  options:
+    eastWestGateways:
+    - selector:
+        labels:
+          istio: eastwestgateway
+---
+apiVersion: admin.gloo.solo.io/v2
+kind: WorkspaceSettings
+metadata:
+  name: backend-apis-team
+  namespace: backend-apis-team
+spec:
+  exportTo:
+  - workspaces:
+    - name: web-team
+  importFrom:
+  - workspaces:
+    - name: ops-team
+  options:
+    eastWestGateways:
+    - selector:
+        labels:
+          istio: eastwestgateway
