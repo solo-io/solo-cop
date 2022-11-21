@@ -1,4 +1,28 @@
+# Weighted Routing using locality
 
+This example shows you how you can manually forward traffic to different localities using the FailoverPolicy
+
+```yaml
+apiVersion: resilience.policy.gloo.solo.io/v2
+kind: FailoverPolicy
+metadata:
+  name: failover
+  namespace: web-team
+spec:
+  applyToDestinations:
+  - kind: VIRTUAL_DESTINATION
+    selector:
+      namespace: web-team
+  config:
+    localityMappings:
+    - from:
+        region: us-east-1
+      to:
+      - region: us-west-2
+        weight: 75
+      - region: us-east-1
+        weight: 25
+```
 
 ## Install Gloo Mesh
 
@@ -141,6 +165,18 @@ spec:
 EOF
 ```
 
+* Test Routing
+```
+for i in {1..6}; do curl -sSk http://localhost:8080 | grep "Cluster="; done
+Cluster=cluster-2
+Cluster=cluster-1
+Cluster=cluster-1
+Cluster=cluster-2
+Cluster=cluster-1
+Cluster=cluster-2
+```
+
+
 3. FailoverPolicy / Outlier Detection
 
 ```yaml
@@ -233,4 +269,14 @@ EOF
 ## Test Routing
 ```sh
 for i in {1..6}; do curl -sSk http://localhost:8080 | grep "Cluster="; done
+```
+
+```
+for i in {1..6}; do curl -sSk http://localhost:8080 | grep "Cluster="; done
+Cluster=cluster-2
+Cluster=cluster-2
+Cluster=cluster-2
+Cluster=cluster-2
+Cluster=cluster-2
+Cluster=cluster-2
 ```
