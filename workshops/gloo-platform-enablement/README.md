@@ -26,9 +26,17 @@ Gloo Mesh also has features around multi-tenancy, global failover and routing, I
 
 ![Gloo Mesh Value](images/gloo-mesh-value.png)
 
+![Gloo Gateway](images/Solo_GlooGateway_Horizontal_logo.svg)
+
+[Gloo Gateway](https://solo.io/products/gloo-gateway) brings powerful API gateway support into the Istio ingress gateway.  With Gloo Gateway you will get lots of extra features directly in Istio such as request and response transformations, advanced rate limiting, security with web application firewall (WAF) and data loss prevention (DLP), advanced traffic routing and shaping through direct response and route delegation, external authn/authz, JWT filtering along with all of the security and load balancing features built into Envoy and Istio.
+
+![Gloo Network](images/network-full.svg)
+
+Finally, [Gloo Network](https://solo.io/products/gloo-network) brings first-class Cillium CNI support into the platform to control and monitor the network and provide a defense-in-depth posture through simple APIs.
+
 ###  Dashboard & Observability
 
-When you install Gloo Mesh Enterprise, you get the Gloo Mesh Dashboard which allows you to review the health and configuration of Gloo Mesh custom resources, including registered clusters, workspaces, networking, policies, and more.
+When you install Gloo Platform, you get the Gloo Dashboard which allows you to review the health and configuration of Gloo custom resources, including registered clusters, workspaces, networking, policies, and more.
 
 ![Gloo Mesh graph](images/gloo-mesh-ui.png)
 
@@ -36,11 +44,13 @@ Gloo Mesh uses agents to consolidate all the metrics and access logs from the di
 
 ![Gloo Mesh graph](images/gloo-mesh-graph.png)
 
-### Want to learn more about Gloo Mesh?
+### Want to learn more about Gloo Platform?
 
-You can find more information about Gloo Mesh in the official documentation:
+You can find more information about Gloo Platform in the official documentation:
 
-[https://docs.solo.io/gloo-mesh/latest/](https://docs.solo.io/gloo-mesh/latest/)
+[Gloo Mesh Documentation](https://docs.solo.io/gloo-mesh/latest/)
+[Gloo Gateway Documentation](https://docs.solo.io/gloo-gateway/latest)
+[Gloo Network Documentation](https://docs.solo.io/gloo-network/latest)
 
 ## Begin
 
