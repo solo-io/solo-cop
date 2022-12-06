@@ -16,3 +16,11 @@ Additionally, there is a tools directory here where you can find the following u
 
 - [Image List for Air-gap Install of Gloo Mesh Enterprise](tools/airgap-install/README.md)
 - [Istio Bug-report CRD Parser](tools/crd_parser/README.md)
+
+## Workshops
+Gloo Platform workshops include:
+
+- [Gloo Gateway Workshop](workshops/gloo-gateway/README.md)
+- [Gloo Mesh Demo](workshops/gloo-mesh-demo/README.md)
+- [Gloo Mesh Day 2 Workshop](workshops/gloo-mesh-day-2/README.md)
+- [Gloo Platform Enablement](workshops/gloo-platform-enablement/README.md)
