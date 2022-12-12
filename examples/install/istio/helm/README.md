@@ -14,7 +14,7 @@ helm repo update
 
 ## Environment Variables
 ```sh
-ISTIO_VERSION=1.12.6
+ISTIO_VERSION=1.16.0
 REMOTE_CLUSTER1=cluster-1
 REMOTE_CLUSTER2=cluster-2
 ```
@@ -65,7 +65,7 @@ helm install istiod istio/istiod \
 # Install Istio Ingress Gateway Cluster 1
 helm install istio-ingressgateway istio/gateway \
   -f cluster1-ingress-values.yaml \
-  --namespace istio-gateways \
+  --namespace istio-ingress \
   --version $ISTIO_VERSION \
   --kube-context $REMOTE_CLUSTER1 \
   --create-namespace
@@ -73,7 +73,7 @@ helm install istio-ingressgateway istio/gateway \
 # Install Istio Ingress Gateway Cluster 2
 helm install istio-ingressgateway istio/gateway \
   -f cluster2-ingress-values.yaml \
-  --namespace istio-gateways \
+  --namespace istio-ingress \
   --version $ISTIO_VERSION \
   --kube-context $REMOTE_CLUSTER2 \
   --create-namespace
@@ -87,14 +87,16 @@ helm install istio-ingressgateway istio/gateway \
 # Install Istio Eastwest Gateway Cluster 1
 helm install istio-eastwestgateway istio/gateway \
   -f cluster1-eastwest-values.yaml \
-  --namespace istio-gateways \
+  --namespace istio-eastwest \
   --version $ISTIO_VERSION \
-  --kube-context $REMOTE_CLUSTER1
+  --kube-context $REMOTE_CLUSTER1 \
+  --create-namespace
 
 # Install Istio Eastwest Gateway Cluster 2
 helm install istio-eastwestgateway istio/gateway \
   -f cluster2-eastwest-values.yaml \
-  --namespace istio-gateways \
+  --namespace istio-eastwest \
   --version $ISTIO_VERSION \
-  --kube-context $REMOTE_CLUSTER2
+  --kube-context $REMOTE_CLUSTER2 \
+  --create-namespace
 ```
