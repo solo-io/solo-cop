@@ -9,4 +9,4 @@ if [[ $ARCH == 'arm64' ]]; then
   operator_file=istiooperator-mgmt-arm.yaml
 fi
 
-cat $LOCAL_DIR/$operator_file | envsubst | istioctl install -y --context $MGMT -f -
+istioctl install --set hub=$ISTIO_IMAGE_REPO --set tag=$ISTIO_IMAGE_TAG -y --context $MGMT -f $LOCAL_DIR/$operator_file
