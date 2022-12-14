@@ -14,9 +14,7 @@ spec:
     defaultConfig:
       # wait for the istio-proxy to start before application pods
       holdApplicationUntilProxyStarts: true
-    # Specify if http1.1 connections should be upgraded to http2 by default. 
-    # Can be overridden using DestinationRule
-    h2UpgradePolicy: UPGRADE
+
   components:
     ingressGateways:
     # enable the default ingress gateway
