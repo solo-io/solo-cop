@@ -10,3 +10,11 @@ if [[ $ARCH == 'arm64' ]]; then
 fi
 
 istioctl install --set hub=$ISTIO_IMAGE_REPO --set tag=$ISTIO_IMAGE_TAG -y --context $MGMT -f $LOCAL_DIR/$operator_file
+
+kubectl get pods -A
+
+kubectl get services -A
+
+kubectl describe pods -n istio-system 
+
+kubectl describe services -n istio-system 
