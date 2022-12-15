@@ -1,0 +1,14 @@
+url: https://www.google.com
+name_suffix: loadgenerator
+namespace: default
+
+bombardier:
+  loops: 100
+  connections: 1
+  duration_seconds: 30s
+  rate: 1
+
+resources:
+  requests: 
+    cpu: 20m
+    memory: 60Mi

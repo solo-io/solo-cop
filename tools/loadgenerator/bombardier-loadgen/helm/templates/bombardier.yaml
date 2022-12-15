@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: bombardier-{{ .Values.name_suffix }}
+  name: bombardier
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bombardier
+  template:
+    metadata:
+      labels:
+        app: bombardier
+    spec:
+      containers:
+      - args:
+        - -c
+        - for run in $(seq 1 {{ .Values.loops }}); do bombardier -c {{ .Values.connections }} -d {{ .Values.duration_seconds }} -r {{ .Values.rate }} -p i,p,r {{ .Values.url }} -l;
+          done
+        command:
+        - /bin/sh
+        image: alpine/bombardier:v1.2.5
+        resources:
+          requests:
+            memory: {{ .Values.resources.requests.memory }}
+            cpu: {{ .Values.resources.requests.cpu }}
+        imagePullPolicy: IfNotPresent
+        name: bombardier
