@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  finalizers:
+  - resources-finalizer.argocd.argoproj.io
+  name: flagger-podinfo-demo
+  namespace: argocd
+spec:
+  destination:
+    server: https://kubernetes.default.svc
+  #ignoreDifferences:
+  #- group: '*'
+  #  kind: '*'
+  #  managedFieldsManagers:
+  #  - flagger
+  project: default
+  source:
+    path: base/active/
+    repoURL: https://github.com/ably77/canary-flagger-demo/
+    targetRevision: oss
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+  #  syncOptions:
+  #  - RespectIgnoreDifferences=true
