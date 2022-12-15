@@ -1,5 +1,7 @@
 # argocd + gloo edge + flagger canary demo
 
+This repo takes configs from the [Flagger - Gloo Canary Deployments](https://docs.flagger.app/tutorials/gloo-progressive-delivery) documentation and demonstrates how to integrate these components with ArgoCD. Please review the Flagger documentation for more detail on progressive delivery using Flagger.
+
 ## Prerequisites
 - ArgoCD installed on a Kubernetes cluster
 - Gloo Edge installed on a Kubernetes cluster
