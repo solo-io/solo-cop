@@ -23,3 +23,5 @@ Each section below contains it's own README and associated links, please feel fr
     - [Istio Bug-report CRD Parser](tools/crd_parser/README.md)
     - [Datadog Integration](tools/datadog/README.md)
     - [Istio Performance Grafana Dashboard Example](tools/grafana/README.md)
+    - [Bombardier Load Generator](tools/loadgenerator/bombardier/README.md)
+    - [Plow Load Generator](tools/loadgenerator/plow/README.md)
