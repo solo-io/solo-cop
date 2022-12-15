@@ -3,7 +3,7 @@ relay:
   serverAddress: gloo-mesh-mgmt-server.gloo-mesh.svc.cluster.local:9900
   authority: gloo-mesh-mgmt-server.gloo-mesh
   clientTlsSecret:
-    name: gloo-agent-tls-cert
+    name: gloo-agent-tls-cert   # cert-manager created this secret
 ext-auth-service:
   enabled: false
 rate-limiter:
