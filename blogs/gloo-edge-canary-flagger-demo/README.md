@@ -13,6 +13,10 @@ For more detail on installing Gloo Edge, refer to the ArgoCD or Helm deployments
 
 For more detail on installing Flagger, refer to the ArgoCD or Helm deployments [here](https://github.com/solo-io/gitops-library/tree/main/flagger/deploy)
 
+### Youtube Demonstration
+Watch the process here:
+[![Watch the video](images/flagger1.png)](https://youtu.be/fPQT2WuugKw)
+
 ## Usage
 If the prerequisites above are met, you can just deploy the base overlay argo app-of-app. This will deploy the podinfo application v6.0.0
 ```
