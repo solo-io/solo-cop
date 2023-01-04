@@ -176,7 +176,7 @@ export PATH=$PWD/istio-${ISTIO_VERSION}/bin:$PATH
 istioctl version
 ```
 
-2. Install Istio to each of the remote clusters using Gloo Mesh IstioLifcycleManager and GatewayLifcycleManager.
+2. Install Istio to each of the remote clusters using Gloo Mesh IstioLifecycleManager and GatewayLifecycleManager.
 
 ```sh
 kubectl apply -f install/istio/gm-istio.yaml --context $MGMT
