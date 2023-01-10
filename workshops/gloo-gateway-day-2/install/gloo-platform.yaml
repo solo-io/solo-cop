@@ -1,0 +1,428 @@
+######################################################################################
+# This is an example Helm values file for PRODUCTION-LEVEL installations.            #
+# You MUST edit some settings in this file to provide your own details.              #
+# To see the default settings instead, run                                           #
+# helm show values gloo-mesh-enterprise/gloo-mesh-enterprise #
+######################################################################################
+
+# Global settings for management plane configuration
+# Namespace to install Gloo Platform components
+adminNamespace: gloo-mesh
+# Set the logger to development mode, which can cause panics. Do not use in production.
+devMode: false
+# Name of the cluster
+global:
+  cluster: mgmt-cluster
+# Set to true to permit unencrypted and unauthenticated communication between management plane and data planes. Do not use in production.
+insecure: false
+# Enable leader election for the HA deployment
+leaderElection: true
+# Name of the cluster
+mgmtClusterName: mgmt-cluster
+verbose: false
+
+# License settings
+# Your Gloo Gateway license that you got from your Solo account representative
+glooGatewayLicenseKey: ""
+# Provide your $ GLOO_MESH_LICENSE_KEY to also install Gloo Mesh Enterprise
+glooMeshLicenseKey: ""
+# Provide your $ GLOO_NETWORK_LICENSE_KEY to also install Gloo Network
+glooNetworkLicenseKey: ""
+# Provide your $ GLOO_TRIAL_LICENSE_KEY for a trial installation of all products
+glooTrialLicenseKey: ""
+# To instead provide license keys in a secret in the gloo-mesh namespace of the management cluster, specify the secret name.
+licenseSecretName: ""
+
+# Enable the default Prometheus server, and deploy a production-level server to scrape
+# metrics from this server. If needed, disable this default Prometheus instance
+# to provide your own.
+prometheus:
+  alertmanager:
+    enabled: false
+  enabled: true
+  kubeStateMetrics:
+    enabled: false
+  nodeExporter:
+    enabled: false
+  podSecurityPolicy:
+    enabled: false
+  pushgateway:
+    enabled: false
+  rbac:
+    create: true
+  server:
+    fullnameOverride: prometheus-server
+    persistentVolume:
+      enabled: false
+  serverFiles:
+    alerting_rules.yml:
+      groups:
+      - name: GlooPlatformAlerts
+        rules:
+        - alert: GlooPlatformTranslationLatencyIsHigh
+          annotations:
+            runbook: "https://docs.solo.io/gloo-mesh-enterprise/latest/troubleshooting/gloo/"
+            summary: "The translation time has increased above 5 sec. It's currently {{ $value | humanize }}."
+          expr: histogram_quantile(0.99, sum(rate(gloo_mesh_translation_time_sec_bucket[5m])) by(le)) > 5
+          for: 15m
+          labels:
+            severity: warning
+        - alert: GlooPlatformReconscilerLatencyIsHigh
+          annotations:
+            runbook: "https://docs.solo.io/gloo-mesh-enterprise/latest/troubleshooting/gloo/"
+            summary: "The reconciliation time has increased above 3 sec. It's currently {{ $value | humanize }}."
+          expr: histogram_quantile(0.99, sum(rate(gloo_mesh_reconciler_time_sec_bucket[5m])) by(le)) > 3
+          for: 15m
+          labels:
+            severity: warning
+        - alert: GlooPlatformAgentsAreDisconnected
+          annotations:
+            runbook: "https://docs.solo.io/gloo-mesh-enterprise/latest/troubleshooting/gloo/"
+            summary: "The following cluster is disconnected: {{ $labels.cluster }}. Check the Gloo Platform Agent pod in the cluster!"
+          expr: count by(cluster) (sum by(cluster) (relay_push_clients_warmed == 0)) > 0
+          for: 5m
+          labels:
+            severity: warning
+        - alert: GlooPlatformTranslationWarnings
+          annotations:
+            runbook: "https://docs.solo.io/gloo-mesh-enterprise/latest/troubleshooting/gloo/"
+            summary: "Gloo Platform has detected {{$value | humanize}} translation warnings in the last 5m. Check your {{ $labels.gvk }} resources!"
+          expr: increase(translation_warning[5m]) > 0
+          labels:
+            severity: warning
+        - alert: GlooPlatformTranslationErrors
+          annotations:
+            runbook: "https://docs.solo.io/gloo-mesh-enterprise/latest/troubleshooting/gloo/"
+            summary: "Gloo Platform has detected {{$value | humanize}} translation errors in the last 5m. Check your {{ $labels.gvk }} resources!"
+          expr: increase(translation_error[5m]) > 0
+          labels:
+            severity: warning
+        - alert: GlooPlatformRedisErrors
+          annotations:
+            runbook: "https://docs.solo.io/gloo-mesh-enterprise/latest/troubleshooting/gloo/"
+            summary: "Gloo Platform has detected {{$value | humanize}} Redis sync errors in the last 5m."
+          expr: increase(gloo_mesh_redis_sync_err[5m]) > 0
+          labels:
+            severity: warning
+    prometheus.yml:
+      scrape_configs:
+      - job_name: gloo-platform-pods
+        kubernetes_sd_configs:
+        - namespaces:
+            names:
+            - gloo-mesh
+          role: pod
+        relabel_configs:
+        - action: keep
+          regex: true
+          source_labels:
+          - __meta_kubernetes_pod_annotation_prometheus_io_scrape
+        - action: replace
+          regex: (.+)
+          source_labels:
+          - __meta_kubernetes_pod_annotation_prometheus_io_path
+          target_label: __metrics_path__
+        - action: replace
+          regex: ([^:]+)(?::\d+)?;(\d+)
+          replacement: $1:$2
+          source_labels:
+          - __address__
+          - __meta_kubernetes_pod_annotation_prometheus_io_port
+          target_label: __address__
+        - action: labelmap
+          regex: __meta_kubernetes_pod_label_(.+)
+        - action: replace
+          source_labels:
+          - __meta_kubernetes_namespace
+          target_label: namespace
+        - action: replace
+          source_labels:
+          - __meta_kubernetes_pod_name
+          target_label: pod
+        - action: keep
+          regex: gloo-mesh-mgmt-server
+          source_labels:
+          - __meta_kubernetes_pod_label_app
+        scrape_interval: 15s
+        scrape_timeout: 10s
+  serviceAccounts:
+    alertmanager:
+      create: false
+    nodeExporter:
+      create: false
+    pushgateway:
+      create: false
+    server:
+      create: true
+# Default Prometheus server address. Replace with your own as needed.
+prometheusUrl: http://prometheus-server
+
+# Configuration for the gloo-mesh-mgmt-server deployment
+glooMeshMgmtServer:
+  enabled: true
+  env:
+  - name: POD_NAMESPACE
+    valueFrom:
+      fieldRef:
+        fieldPath: metadata.namespace
+  - name: LICENSE_KEY
+    valueFrom:
+      secretKeyRef:
+        key: key
+        name: gloo-mesh-enterprise-license
+        optional: true
+  # Required for OpenShift installations: Allow the pod to be assigned a dynamic user ID.
+  floatingUserId: false
+  image:
+    pullPolicy: IfNotPresent
+    registry: gcr.io/gloo-mesh
+    repository: gloo-mesh-mgmt-server
+    # Gloo Gateway patch version. For a list of patch versions,
+    # see https://docs.solo.io/gloo-mesh-enterprise/main/reference/changelog/
+    # If pulling from a private registry
+    #pullSecret:
+  ports:
+    # gloo-mesh-mgmt-server service port for Gloo agents to connect to
+    grpc: 9900
+    healthcheck: 8090
+  # gloo-mesh-mgmt-server pod resources
+  resources:
+    requests:
+      cpu: 125m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+  # Static user ID to run the containers as. Unused if floatingUserId is 'true'
+  runAsUser: 10101
+  # Additional settings to add to the load balancer service
+  # serviceOverrides:
+  #   metadata:
+      # annotations:
+      #   # AWS-specific annotations
+      #   service.beta.kubernetes.io/aws-load-balancer-healthcheck-healthy-threshold: "2"
+      #   service.beta.kubernetes.io/aws-load-balancer-healthcheck-unhealthy-threshold: "2"
+      #   service.beta.kubernetes.io/aws-load-balancer-healthcheck-interval: "10"
+      #   service.beta.kubernetes.io/aws-load-balancer-healthcheck-port: "9900"
+      #   service.beta.kubernetes.io/aws-load-balancer-healthcheck-protocol: "tcp"
+
+      #   service.beta.kubernetes.io/aws-load-balancer-type: external
+      #   service.beta.kubernetes.io/aws-load-balancer-scheme: internal
+      #   service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: ip
+      #   service.beta.kubernetes.io/aws-load-balancer-backend-protocol: TCP
+      #   service.beta.kubernetes.io/aws-load-balancer-private-ipv4-addresses: 10.0.50.50, 10.0.64.50
+      #   service.beta.kubernetes.io/aws-load-balancer-subnets: subnet-0478784f04c486de5, subnet-09d0cf74c0117fcf3
+      #   service.beta.kubernetes.io/aws-load-balancer-target-group-attributes: deregistration_delay.connection_termination.enabled=true,deregistration_delay.timeout_seconds=1
+  # Kubernetes load balancer service type
+  serviceType: LoadBalancer
+  # Optional configuration for the deployed containers
+  sidecars: {}
+  # Concurrency to use for translation operations
+  concurrency: 10
+  # Allows mgmt-server replicas to auto-balance the number of connected clusters based on the number of replicas and total clusters.
+  # Experimental; do not use in production.
+  enableClusterLoadBalancing: false
+  # Port on which to serve internal Prometheus metrics for the management server app
+  statsPort: 9091
+  # Maximum message size for gRPC messages sent and received by the management server
+  maxGrpcMessageSize: "4294967295"
+  # Configuration for certificates to secure server-agent relay communication. Required only for multicluster setups.
+  relay:
+    disableCa: false
+    disableCaCertGeneration: false
+    disableTokenGeneration: false
+    pushRbac: true
+    signingTlsSecret:
+      name: relay-tls-signing-secret
+    tlsSecret:
+      name: relay-server-tls-secret
+    tokenSecret:
+      key: token
+      name: relay-identity-token-secret
+      namespace: ""
+
+# Configuration for the Gloo UI
+glooMeshUi:
+  enabled: true
+  env:
+  - name: POD_NAMESPACE
+    valueFrom:
+      fieldRef:
+        fieldPath: metadata.namespace
+  - name: LICENSE_KEY
+    valueFrom:
+      secretKeyRef:
+        key: key
+        name: gloo-mesh-enterprise-license
+        optional: true
+  # Required for OpenShift installations: Allow the pod to be assigned a dynamic user ID.
+  floatingUserId: false
+  image:
+    pullPolicy: IfNotPresent
+    registry: gcr.io/gloo-mesh
+    repository: gloo-mesh-apiserver
+    # If pulling from a private registry
+    #pullSecret:
+  # Ports for UI service
+  ports:
+    console: 8090
+    grpc: 10101
+    healthcheck: 8081
+  # UI pod resources
+  resources:
+    requests:
+      cpu: 125m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Gi
+  # Static user ID to run the containers as. Unused if floatingUserId is 'true'
+  runAsUser: 10101
+  # Additional settings to add to Kubernetes service
+  #serviceOverrides:
+  # Kubernetes service type
+  serviceType: ClusterIP
+  # Configuration for the console and envoy containers
+  sidecars:
+    console:
+      env: null
+      image:
+        pullPolicy: IfNotPresent
+        registry: gcr.io/gloo-mesh
+        repository: gloo-mesh-ui
+        # If pulling from a private registry
+        #pullSecret:
+      resources:
+        requests:
+          cpu: 125m
+          memory: 256Mi
+    envoy:
+      env:
+      - name: ENVOY_UID
+        value: "0"
+      image:
+        pullPolicy: IfNotPresent
+        registry: gcr.io/gloo-mesh
+        repository: gloo-mesh-envoy
+        # If pulling from a private registry
+        #pullSecret:
+      resources:
+        requests:
+          cpu: 500m
+          memory: 256Mi
+  # Configure OIDC authentication for the UI
+  auth:
+    backend: oidc
+    # Disabled by default. Enable to provide your OIDC auth details
+    enabled: false
+    oidc:
+      # URL that UI for OIDC app is available at, from the DNS and other ingress settings that expose OIDC app UI service
+      appUrl: ""
+      # From the OIDC provider
+      clientId: ""
+      # From the OIDC provider, stored in a secret
+      clientSecret: ""
+      clientSecretName: dashboard
+      # Issuer URL from the OIDC provider, such as https://<domain>.<provider_url>/
+      issuerUrl: ""
+      # Redis instance configuration, optionally used for auth session storage
+      session:
+        backend: redis
+        redis:
+          # Point to your own Redis instance as needed
+          host: ""
+  # To use the license keys in your provided secret instead of referencing the
+  # secret generated by this Helm chart, specify the secret name.
+  licenseSecretName: ""
+  # Name of the dashboard settings object to use
+  settingsName: settings
+
+# Configuration for an optional Redis instance to store ID tokens for UI auth
+glooMeshRedis:
+  # As needed, disable default instance to provide your own Redis instance
+  enabled: true
+  env:
+  - name: MASTER
+    value: "true"
+  # Required for OpenShift installations: Allow the pod to be assigned a dynamic user ID.
+  floatingUserId: false
+  image:
+    pullPolicy: IfNotPresent
+    registry: docker.io
+    repository: redis
+    tag: 7.0.4
+  ports:
+    redis: 6379
+  resources:
+    requests:
+      cpu: 125m
+      memory: 256Mi
+  # Static user ID to run the containers as. Unused if floatingUserId is 'true'
+  runAsUser: 10101
+  serviceType: ClusterIP
+  sidecars: {}
+  addr: ""
+
+# Install the Gloo agent alongside the management server,
+# such as to run the management cluster also as a workload cluster in a single-cluster setup.
+registerMgmtPlane:
+  # Number of access logs to buffer per Envoy proxy
+  accessLogsBufferSize: 50
+  # Name of the workload cluster by which cluster is referenced in all Gloo configurations
+  cluster: mgmt-cluster
+  # Set the logger to development mode, which can cause panics. Do not use in production.
+  devMode: false
+  # Deploy the agent alongside the mgmt-server
+  enabled: true
+  # Install external authentication service in the gloo-mesh namespace.
+  # Do not use in production; install in gloo-mesh-addons namespace after registration time.
+  ext-auth-service:
+    enabled: false
+    extraTemplateAnnotations:
+      proxy.istio.io/config: '{ "holdApplicationUntilProxyStarts": true }'
+  # Install the Gloo Network-specific agent functionality only if you installed Gloo Network.
+  gloo-network-agent:
+    enabled: false
+  # Set to true to permit unencrypted and unauthenticated communication between management plane and data planes. Do not use in production.
+  insecure: false
+  # Configuration for the istiod sidecar deployment
+  istiodSidecar:
+    # Create the cluster role binding needed by the istiod sidecar
+    createRoleBinding: false
+    # Object reference to istiod service account
+    istiodServiceAccount:
+      name: istiod
+      namespace: istio-system
+  # Enable leader election for the HA deployment
+  leaderElection: true
+  # Configuration for managed Istio control plane and gateway installations by using the Istio lifecycle manager
+  # Do not use in production. Instead, install Istio manually, or configure settings in an IstioLifecycleManager CR
+  # after installation.
+  managedInstallations:
+    enabled: false
+  # Maximum message size for gRPC messages sent and received by the management server
+  maxGrpcMessageSize: "4294967295"
+  # Number of metrics messages to buffer per Envoy proxy
+  metricsBufferSize: 50
+  # Install rate limiting service in the gloo-mesh namespace.
+  # Do not use in production; install in gloo-mesh-addons namespace after registration time.
+  rate-limiter:
+    enabled: false
+    extraTemplateAnnotations:
+      proxy.istio.io/config: '{ "holdApplicationUntilProxyStarts": true }'
+  relay:
+    authority: gloo-mesh-mgmt-server.gloo-mesh
+    clientTlsSecret:
+      name: relay-client-tls-secret
+    rootTlsSecret:
+      name: relay-root-tls-secret
+    serverAddress: gloo-mesh-mgmt-server:9900
+    tokenSecret:
+      key: token
+      name: relay-identity-token-secret
+      namespace: ""
+  # Enable eBPF sidecar acceleration to reduce network latency in your service mesh. Do not use in production.
+  sidecar-accel:
+    enabled: false
+  # Enable verbose/debug logging
+  verbose: false
