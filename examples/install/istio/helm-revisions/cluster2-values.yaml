@@ -1,0 +1,23 @@
+meshConfig:
+  # The trust domain corresponds to the trust root of a system. 
+  # For Gloo Mesh this should be the name of the cluster that cooresponds with the CA certificate CommonName identity
+  trustDomain: cluster2
+  # enable access logging to standard output
+  accessLogFile: /dev/stdout
+  defaultConfig:
+    # wait for the istio-proxy to start before application pods
+    holdApplicationUntilProxyStarts: true
+    # enable Gloo Mesh metrics service (required for Gloo Mesh UI)
+    envoyMetricsService:
+      address: gloo-mesh-agent.gloo-mesh:9977
+    proxyMetadata:
+      # Enable Istio agent to handle DNS requests for known hosts
+      # Unknown hosts will automatically be resolved using upstream dns servers in resolv.conf
+      # (for proxy-dns)
+      ISTIO_META_DNS_CAPTURE: "true"
+      # Enable automatic address allocation (for proxy-dns)
+      ISTIO_META_DNS_AUTO_ALLOCATE: "true"
+pilot:
+  env:
+    # Allow multiple trust domains (Required for Gloo Mesh east/west routing)
+    PILOT_SKIP_VALIDATE_TRUST_DOMAIN: "true"

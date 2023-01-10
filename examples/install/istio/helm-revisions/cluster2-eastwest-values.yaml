@@ -1,0 +1,14 @@
+name: istio-eastwestgateway
+labels:
+  istio: eastwestgateway
+service:
+  type: LoadBalancer
+  ports:
+  - name: tcp-status-port
+    port: 15021
+    targetPort: 15021
+  - name: tls
+    port: 15443
+    targetPort: 15443
+env:
+  ISTIO_META_ROUTER_MODE: "sni-dnat"
