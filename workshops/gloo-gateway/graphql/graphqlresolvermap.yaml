@@ -1,0 +1,92 @@
+apiVersion: apimanagement.gloo.solo.io/v2
+kind: GraphQLResolverMap
+metadata:
+  name: resolvers
+  namespace: dev-team
+spec:
+  extensions:
+    grpcSchemaSelector:
+      name: hipster-schema
+      namespace: dev-team
+      cluster: mgmt-cluster
+  types:
+    Query:
+      fields:
+        ListProducts:
+          resolvers:
+          - grpcResolver:
+              destinations:
+              - port:
+                  number: 3550
+                ref:
+                  cluster: mgmt-cluster
+                  name: productcatalogservice
+                  namespace: backend-apis
+              request:
+                service: hipstershop.ProductCatalogService
+                method: ListProducts
+                outgoingMessage:
+                  json: {}
+---
+apiVersion: apimanagement.gloo.solo.io/v2
+kind: GraphQLResolverMap
+metadata:
+  name: adservice
+  namespace: dev-team
+spec:
+  extensions:
+    grpcSchemaSelector:
+      name: hipster-schema
+      namespace: dev-team
+      cluster: mgmt-cluster
+  types:
+    Query:
+      fields:
+        GetAds:
+          resolvers:
+          - grpcResolver:
+              destinations:
+              - port:
+                  number: 9555
+                ref:
+                  cluster: mgmt-cluster
+                  name: adservice
+                  namespace: backend-apis
+              request:
+                service: hipstershop.AdService
+                method: GetAds
+                outgoingMessage:
+                  json: {}
+---
+apiVersion: apimanagement.gloo.solo.io/v2
+kind: GraphQLResolverMap
+metadata:
+  name: cartservice
+  namespace: dev-team
+spec:
+  extensions:
+    grpcSchemaSelector:
+      name: hipster-schema
+      namespace: dev-team
+      cluster: mgmt-cluster
+  types:
+    Query:
+      fields:
+        GetCart:
+          variables:
+            user_id:
+              graphqlArg: user_id
+          resolvers:
+          - grpcResolver:
+              destinations:
+              - port:
+                  number: 7070
+                ref:
+                  cluster: mgmt-cluster
+                  name: cartservice
+                  namespace: backend-apis
+              request:
+                service: hipstershop.CartService
+                method: GetCart
+                outgoingMessage:
+                  jq: '{user_id: .user_id}'

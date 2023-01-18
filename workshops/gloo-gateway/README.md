@@ -48,12 +48,12 @@ Set these environment variables which will be used throughout the workshop.
 ```sh
 # Used to enable Gloo Gateway (please ask for a trail license key)
 export GLOO_GATEWAY_LICENSE_KEY=<licence_key>
-export GLOO_PLATFORM_VERSION=v2.1.0
+export GLOO_PLATFORM_VERSION=v2.2.0-rc2
 
 # Istio version information
 export ISTIO_IMAGE_REPO=us-docker.pkg.dev/gloo-mesh/istio-workshops
-export ISTIO_IMAGE_TAG=1.15.1-solo
-export ISTIO_VERSION=1.15.1
+export ISTIO_IMAGE_TAG=1.15.4-solo
+export ISTIO_VERSION=1.15.4
 ```
 
 ## Lab 1 - Configure/Deploy a Kubernetes cluster <a name="Lab-1"></a>
@@ -360,7 +360,7 @@ spec:
   http:
     - matchers:
       - uri:
-          prefix: /hipstershop.CurrencyService/Convert
+          prefix: /hipstershop.CurrencyService
       name: currency
       labels:
         route: currency
@@ -371,13 +371,167 @@ spec:
               namespace: backend-apis
             port:
               number: 7000
+---
+apiVersion: networking.gloo.solo.io/v2
+kind: RouteTable
+metadata:
+  name: schema
+  namespace: dev-team
+spec:
+  weight: 100
+  workloadSelectors: []
+  http:
+    - matchers:
+      - uri:
+          prefix: /grpc.reflection.v1alpha.ServerReflection
+      name: reflection
+      labels:
+        route: reflection
+      forwardTo:
+        destinations:
+          - ref:
+              name: productcatalogservice
+              namespace: backend-apis
+            port:
+              number: 3550
+---
+apiVersion: networking.gloo.solo.io/v2
+kind: RouteTable
+metadata:
+  name: shipping
+  namespace: dev-team
+spec:
+  weight: 100
+  workloadSelectors: []
+  http:
+    - matchers:
+      - uri:
+          prefix: /hipstershop.ShippingService
+      name: shipping
+      labels:
+        route: shipping
+      forwardTo:
+        destinations:
+          - ref:
+              name: shippingservice
+              namespace: backend-apis
+            port:
+              number: 50051
+---
+apiVersion: networking.gloo.solo.io/v2
+kind: RouteTable
+metadata:
+  name: productcatalog
+  namespace: dev-team
+spec:
+  weight: 100
+  workloadSelectors: []
+  http:
+    - matchers:
+      - uri:
+          prefix: /hipstershop.ProductCatalogService
+      name: productcatalog
+      labels:
+        route: productcatalog
+      forwardTo:
+        destinations:
+          - ref:
+              name: productcatalogservice
+              namespace: backend-apis
+            port:
+              number: 3550
+---
+apiVersion: networking.gloo.solo.io/v2
+kind: RouteTable
+metadata:
+  name: adservice
+  namespace: dev-team
+spec:
+  weight: 100
+  workloadSelectors: []
+  http:
+    - matchers:
+      - uri:
+          prefix: /hipstershop.AdService
+      name: adservice
+      labels:
+        route: adservice
+      forwardTo:
+        destinations:
+          - ref:
+              name: adservice
+              namespace: backend-apis
+            port:
+              number: 9555
+---
+apiVersion: networking.gloo.solo.io/v2
+kind: RouteTable
+metadata:
+  name: cartservice
+  namespace: dev-team
+spec:
+  weight: 100
+  workloadSelectors: []
+  http:
+    - matchers:
+      - uri:
+          prefix: /hipstershop.CartService
+      name: cartservice
+      labels:
+        route: cartservice
+      forwardTo:
+        destinations:
+          - ref:
+              name: cartservice
+              namespace: backend-apis
+            port:
+              number: 7070
+---
+apiVersion: networking.gloo.solo.io/v2
+kind: RouteTable
+metadata:
+  name: paymentservice
+  namespace: dev-team
+spec:
+  weight: 100
+  workloadSelectors: []
+  http:
+    - matchers:
+      - uri:
+          prefix: /hipstershop.PaymentService
+      name: paymentservice
+      labels:
+        route: paymentservice
+      forwardTo:
+        destinations:
+          - ref:
+              name: paymentservice
+              namespace: backend-apis
+            port:
+              number: 50051
 EOF
 ```
 
 The currencyservice converts units from one currency to another. Test the currencyservice by using the [`grpcurl`](https://github.com/fullstorydev/grpcurl/releases) utility to send traffic:
 
 ```sh
+#currency service convert
 grpcurl --plaintext --proto ./install/online-boutique/online-boutique.proto -d '{ "from": { "currency_code": "USD", "nanos": 44637071, "units": "31" }, "to_code": "JPY" }' $GLOO_GATEWAY:80 hipstershop.CurrencyService/Convert
+
+# Product Catalog List Products
+grpcurl --plaintext --proto ./install/online-boutique/online-boutique.proto $GLOO_GATEWAY:8080 hipstershop.ProductCatalogService/ListProducts
+
+# Ad Service
+grpcurl --plaintext --proto ./install/online-boutique/online-boutique.proto -d '{ "context_keys": [ "OLJCESPC7Z" ] }' $GLOO_GATEWAY:8080 hipstershop.AdService/GetAds
+
+# Cart Service / Add Items
+grpcurl --plaintext --proto ./install/online-boutique/online-boutique.proto -d '{ "item": { "product_id": "OLJCESPC7Z", "quantity": 100 }, "user_id": "3f8b98ac-95e3-11ed-8acc-ae4af55644c2" }' $GLOO_GATEWAY:8080 hipstershop.CartService/AddItem
+
+# Cart Service / Get Items
+grpcurl --plaintext --proto ./install/online-boutique/online-boutique.proto -d '{"user_id": "3f8b98ac-95e3-11ed-8acc-ae4af55644c2"}' $GLOO_GATEWAY:8080 hipstershop.CartService/GetCart
+
+# Payment Service
+grpcurl --plaintext --proto ./install/online-boutique/online-boutique.proto -d '{ "amount": { "currency_code": "USD", "nanos": 0, "units": "20" }, "credit_card": { "credit_card_cvv": 123, "credit_card_expiration_month": 10, "credit_card_expiration_year": 2023, "credit_card_number": "4432-8015-6152-0454" } }' $GLOO_GATEWAY:8080 hipstershop.PaymentService/Charge
 ```
 
 * We sent the following request:

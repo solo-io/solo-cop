@@ -1,0 +1,20 @@
+apiVersion: security.policy.gloo.solo.io/v2
+kind: CORSPolicy
+metadata:
+  name: cors-policy
+  namespace: dev-team
+spec:
+  applyToRoutes:
+    - route:
+        name: products
+        namespace: dev-team
+        cluster: mgmt-cluster
+  config:
+    allowCredentials: true
+    allowHeaders:
+    - content-type
+    - x-apollo-tracing
+    allowMethods:
+    - POST
+    allowOrigins:
+    - regex: '.*'
