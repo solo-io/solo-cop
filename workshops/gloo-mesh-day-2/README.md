@@ -312,7 +312,7 @@ kubectl create namespace gloo-mesh --context $CLUSTER1
 * Generate a certificate for the `gloo-mesh-mgmt-server` service
 
 ```yaml
-kubectl --context $MGMT_CONTEXT apply -f - <<EOF
+kubectl --context $MGMT apply -f - <<EOF
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
