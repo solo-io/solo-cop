@@ -17,6 +17,10 @@ Each section below contains it's own README and associated links, please feel fr
 - [Examples](examples/)
     - [gloo-mesh-use-cases](https://github.com/solo-io/gloo-mesh-use-cases)
     - [gloo-edge-use-cases](https://github.com/solo-io/gloo-edge-use-cases/)
+    - [Cert Rotation](examples/api/cert-rotation/)
+    - [Distributed Failover](examples/api/failover-distribute/)
+    - [Virtual Destinations Usage](examples/api/virtualdestinations/)
+    - [Weighted Destinations](examples/api/weighted-destinations/)
 
 - [Useful Tools](tools/)
     - [Image List for Air-gap Install of Gloo Mesh Enterprise](tools/airgap-install/README.md)
