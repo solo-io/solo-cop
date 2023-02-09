@@ -4,9 +4,14 @@
 
 To illustrate how Gloo Mesh can provide weighted destination routing within a single cluster, we will use the Online Boutique application.  This application is a microservices-based shopping cart application backed by grpc APIs.
 
+### Prerequisites
 This example assumes the typical 3-cluster setup although it is not necessary to have 3 clusters running for the single cluster example.  We will, however, separate the management plane from the workload cluster.  At a minimum, you should have environment variables pointing to your MGMT and CLUSTER1 clusters.
 
 We also make the assumption that you have Gloo Mesh and Istio installed.
+
+This example uses Istio revision labels for the namespaces.  Note that if you don't want to use revision labels, just adjust the contents of the yaml files in install/online-boutique for the `Namespace` CRs.
+
+Also, if you are installing on OpenShift, you will also need to create CNI and and add scc for anyuid to all the service accounts for both the `web-ui` and `backend-apis` namespaces.
 
 ### Install Online Boutique
 
