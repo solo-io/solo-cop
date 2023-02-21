@@ -104,7 +104,7 @@ else
     wget -q https://storage.googleapis.com/gloo-mesh-enterprise/gloo-mesh-agent/gloo-mesh-agent-${VERSION}.tgz
     tar zxf gloo-mesh-agent-${VERSION}.tgz
     find gloo-mesh-agent -name "values.yaml" | while read file; do
-        cat $file | yq eval $JSON_FLAG | jq -r '.. | .image? | select(. != null) | (if .registry then (if .registry == "docker.io" then "docker.io/library" else .registry end) + "/" else "" end) + .repository + ":" + (.tag | tostring)'
+        cat $file | yq eval $JSON_FLAG | jq -r '.. | .image? | select(. != null) | (if .registry then (if .registry == "docker.io" then "docker.io/library" else .registry end) + "/" else "" end) + .repository? + ":" + (.tag? | tostring)'
     done | sort -u | tee .images.out
 fi
 
@@ -115,7 +115,7 @@ echo "###################################"
 wget -q https://storage.googleapis.com/gloo-mesh-enterprise/gloo-mesh-enterprise/gloo-mesh-enterprise-${VERSION}.tgz
 tar zxf gloo-mesh-enterprise-${VERSION}.tgz
 find gloo-mesh-enterprise -name "values.yaml" | while read file; do
-    cat $file | yq eval $JSON_FLAG | jq -r '.. | .image? | select(. != null) | (if .registry then (if .registry == "docker.io" then "docker.io/library" else .registry end) + "/" else "" end) + .repository + ":" + (.tag | tostring)'
+    cat $file | yq eval $JSON_FLAG | jq -r '.. | .image? | select(. != null) | (if .registry then (if .registry == "docker.io" then "docker.io/library" else .registry end) + "/" else "" end) + .repository? + ":" + (.tag? | tostring)'
 done | sort -u | tee -a .images.out
 
 
@@ -123,8 +123,8 @@ echo ""
 echo "###################################"
 echo "# Getting Solo istio images       #"
 echo "###################################"
-echo us-docker.pkg.dev/gloo-mesh/istio-workshops/pilot:1.12.6-solo | tee -a .images.out
-echo us-docker.pkg.dev/gloo-mesh/istio-workshops/proxyv2:1.12.6-solo | tee -a .images.out
+echo us-docker.pkg.dev/gloo-mesh/istio-workshops/pilot:1.16.1-solo | tee -a .images.out
+echo us-docker.pkg.dev/gloo-mesh/istio-workshops/proxyv2:1.16.1-solo | tee -a .images.out
 
 
 if [ $pull == 1 ]; then
