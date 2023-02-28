@@ -13,6 +13,7 @@ Each section below contains it's own README and associated links, please feel fr
     - [Gloo Mesh Workspaces Best Practices](blogs/workspaces/README.md)
     - [Gloo Mesh + Cert Manager](blogs/cert-manager-gloo-mesh/README.md)
     - [Gloo Edge Canary Flagger Demo](blogs/gloo-edge-canary-flagger-demo/README.md)
+    - [Set up custom CA for Istio with Cert Manager and AWS Private Certificate Authority](https://www.solo.io/blog/istio-aws-private-certificate-authority/)
 
 - [Examples](examples/)
     - [gloo-mesh-use-cases](https://github.com/solo-io/gloo-mesh-use-cases)
