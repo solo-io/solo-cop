@@ -1,7 +1,7 @@
 
 
 Access log entry from an east-west gateway pod. (Istio 1.14+)
-![alt text](https://github.com/[username]/[reponame]/blob/[branch]/image.jpg?raw=true)
+![east west gateway diagram](https://github.com/solo-io/solo-cop/blob/main/tools/access-log/frontend-ew-accesslog.png?raw=true)
 
 Example: 
 ```
