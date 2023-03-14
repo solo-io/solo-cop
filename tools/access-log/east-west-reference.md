@@ -36,3 +36,11 @@ Access Log entry
   "x_forwarded_for": null,
 }
 ```
+
+```
+~ 🏎  $ istioctl pc endpoints istio-eastwestgateway-668485ccb6-xfjxm.istio-gateways | grep frontend.web-ui-team.solo-io.mesh
+10.88.0.12:8080                  HEALTHY     OK                outbound_.80_._.frontend.web-ui-team.solo-io.mesh
+10.88.0.12:8080                  HEALTHY     OK                outbound|80||frontend.web-ui-team.solo-io.mesh
+35.185.120.224:15443             HEALTHY     OK                outbound_.80_._.frontend.web-ui-team.solo-io.mesh
+35.185.120.224:15443             HEALTHY     OK                outbound|80||frontend.web-ui-team.solo-io.mesh
+```
