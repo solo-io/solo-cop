@@ -1,3 +1,7 @@
+![k9s-three-cluster](https://github.com/solo-io/solo-cop/blob/main/tools/cli-productivity/k9s-gloo-mesh.png?raw=true)
+
+
+
 Get all Gloo Mesh resources:
 ```
 kubectl get solo-io -A
