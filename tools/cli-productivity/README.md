@@ -1,6 +1,8 @@
 ![k9s-three-cluster](https://github.com/solo-io/solo-cop/blob/main/tools/cli-productivity/k9s-gloo-mesh.png?raw=true)
 
-
+Tools:
+- https://k9scli.io/ s a terminal based UI to interact with your Kubernetes clusters. 
+- https://github.com/sbstp/kubie offerscontext switching, namespace switching and prompt modification in a way that makes each shell independent from others. It also has support for split configuration files, meaning it can load Kubernetes contexts from multiple files. 
 
 Get all Gloo Mesh resources:
 ```
