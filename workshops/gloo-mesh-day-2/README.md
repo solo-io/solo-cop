@@ -1,35 +1,30 @@
-![Gloo Enterprise](images/gloo-mesh-2.0-banner.png)
+![Gloo Platform](images/gloo-mesh-2.0-banner.png)
 
-# <center>Gloo Day 2 Workshop</center>
+# <center>Gloo Platform Day 2 Workshop</center>
 
 ## Table of Contents
 
 * [Introduction](#introduction)
 * [Lab 1 - Deploy Kubernetes clusters](#Lab-1)
 * [Lab 2 - PKI / Vault and Cert Manager](#Lab-2)
-* [Lab 3 - Install Gloo Mesh](#Lab-3)
-* [Lab 4 - Install Istio](#Lab-4)
-* [Lab 5 - Expose Centralized Apps via Gloo Gateway](#Lab-5)
-* [Lab 6 - Tune Components](#Lab-6)
-* [Lab 7 - Monitoring](#Lab-7)
-
+* [Lab 3 - Install Gloo Platform](#Lab-3)
+* [Lab 4 - High Availability Management Plane](#Lab-4)
+* [Lab 5 - Migrate To Managed Istio](#Lab-4)
 
 ## Introduction <a name="introduction"></a>
 
 ![Day 2 Workshop Architecture](images/day2-arch.png)
 
-The day 2 Gloo workshop is all about the best practices and architectures to make your mutli-cluster deployment resilient, secure, and maintainable for the long term. This workshop was created based upon how Solo.io customers have been able to successfully run Gloo in Production as well as the knowledge from our Istio experts. 
+The day 2 Gloo Platform workshop is all about the best practices and architectures to make your mutli-cluster deployment resilient, secure, and maintainable for the long term. This workshop was created based upon how Solo.io customers have been able to successfully run Gloo in Production as well as the knowledge from our Istio experts.
 
 High level best practices:
 * Use helm and GitOps for deploying infrastructure to kubernetes
-* Monitor and create alerts for your operational infrastructure
 * Keep your PKI secure and rotate certificates
 * Scale your components for resiliency
 
+### Want to learn more about Gloo Platform?
 
-### Want to learn more about Gloo?
-
-You can find more information about Gloo in the official documentation:
+You can find more information about Gloo Platform in the official documentation:
 
 [https://docs.solo.io/gloo-mesh/latest/](https://docs.solo.io/gloo-mesh/latest/)
 
@@ -39,19 +34,19 @@ To get started with this workshop, clone this repo.
 
 ```sh
 git clone https://github.com/solo-io/solo-cop.git
-cd solo-cop/workshops/gloo-mesh-demo && git checkout v1.1.0
+cd solo-cop/workshops/gloo-mesh-demo
 ```
 
 Set these environment variables which will be used throughout the workshop.
 
 ```sh
 # Used to enable Gloo (please ask for a trial license key)
-export GLOO_LICENSE_KEY=<licence_key>
-export GLOO_PLATFORM_VERSION=v2.1.0-beta29
+export GLOO_PLATFORM_LICENSE_KEY=<licence_key>
+export GLOO_PLATFORM_VERSION=v2.2.5
 export ISTIO_IMAGE_REPO=us-docker.pkg.dev/gloo-mesh/istio-workshops
-export ISTIO_IMAGE_TAG=1.14.4-solo
-export ISTIO_VERSION=1.14.4
-export ISTIO_REVISION=1-14
+export ISTIO_IMAGE_TAG=1.16.3-solo
+export ISTIO_VERSION=1.16.3
+export ISTIO_REVISION=1-16
 ```
 
 ## Lab 1 - Configure/Deploy the Kubernetes clusters <a name="Lab-1"></a>
@@ -76,7 +71,6 @@ kubectl config rename-context <context-to-rename> ${MGMT}
 kubectl config rename-context <context-to-rename> ${CLUSTER1} 
 ``` 
 
-
 ## Lab 2 - PKI / Vault and Cert Manager<a name="Lab-2"></a>
 
 Gloo and Istio heavily rely on TLS certificates to facilitate safe and secure communitcation. Gloo Platform uses mutual tls authentication for communication between the Server and the Agents. Istio requires an Intermediate Signing CA so that it can issue workload certificates to each of the mesh enabled services. These workload certificates encrypt and authenticate traffic between each of your microservices.
@@ -90,7 +84,6 @@ It is important to design and implement a secure and reliable Public Key Infrast
 Vault is not only a reliable secret store, but also great at managing and issuing certificates. In this workshop Vault will be responsible for holding `root` certificate as well as two intermediates, one for Istio, the other for Gloo.
 
 ![PKI Deployment](images/vault-certs.png)
-
 
 * Deploy vault and automatically configure it to have a root certificate and 2 intermediates.
 
@@ -124,8 +117,8 @@ This workshop chose cert manager as the last-mile certificate management solutio
 * Deploy cert-manager to both the `mgmt` and `cluster1` clusters
 
 ```sh
-kubectl --context ${MGMT} apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.9.1/cert-manager.yaml
-kubectl --context ${CLUSTER1} apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.9.1/cert-manager.yaml
+kubectl --context ${MGMT} apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.11.0/cert-manager.yaml
+kubectl --context ${CLUSTER1} apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.11.0/cert-manager.yaml
 
 kubectl wait deployment --for condition=Available=True -n cert-manager --context $MGMT --all
 kubectl wait deployment --for condition=Available=True -n cert-manager --context $CLUSTER1 --all
@@ -222,83 +215,9 @@ spec:
 EOF
 ```
 
-### Istio Certificate Setup
-
-As stated above, Istio requries an Intermediate Signing CA so that it can issue workload certificates. Each remote cluster should have an Intermediate Signing CA that is rooted in the same trust chain if you want to facilitate cross cluster communication. 
-
-![Istio Certs](./images/istio-certs.png)
-
-* Create istio-system namespaces
-
-```sh
-kubectl create namespace istio-system --context $MGMT
-kubectl create namespace istio-system --context $CLUSTER1
-```
-
-* Create Istio `cacerts` certificate in the `mgmt` cluster
-
-```yaml
-kubectl apply --context $MGMT -f- <<EOF
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: mgmt-cacerts
-  namespace: istio-system
-spec:
-  secretName: cacerts
-  duration: 720h # 30d
-  renewBefore: 360h # 15d
-  commonName: mgmt.solo.io
-  isCA: true
-  usages:
-    - digital signature
-    - key encipherment
-    - cert sign
-  dnsNames:
-    - mgmt.solo.io
-  issuerRef:
-    kind: ClusterIssuer
-    name: vault-issuer-istio
-EOF
-```
-
-* Create Istio `cacerts` certificate in the `cluster1` cluster
-
-```yaml
-kubectl apply --context $CLUSTER1 -f- <<EOF
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: cluster1-cacerts
-  namespace: istio-system
-spec:
-  secretName: cacerts
-  duration: 720h # 30d
-  renewBefore: 360h # 15d
-  commonName: cluster1.solo.io
-  isCA: true
-  usages:
-    - digital signature
-    - key encipherment
-    - cert sign
-  dnsNames:
-    - cluster1.solo.io
-  issuerRef:
-    kind: ClusterIssuer
-    name: vault-issuer-istio
-EOF
-```
-
-* Verify Secrets are created
-
-```sh
-kubectl get secret -n istio-system cacerts --context $MGMT
-kubectl get secret -n istio-system cacerts --context $CLUSTER1
-```
-
 ## Gloo Platform Certificate Setup
 
-Gloo uses client/server TLS certificates to securely communicate between the server and agents. This prevents non gloo applications from inadvertantly connecting to the Gloo server and accessing its information. 
+Gloo uses client/server TLS certificates to securely communicate between the server and agents. This prevents non gloo applications from inadvertantly connecting to the Gloo server and accessing its information.
 
 ![Gloo Certs](./images/gloo-certs.png)
 
@@ -429,12 +348,16 @@ helm show values gloo-mesh-agent/gloo-mesh-agent --version $GLOO_PLATFORM_VERSIO
 
 ### Install Gloo
 
-* Install the management plane via helm
+Gloo Platform can be installed using Helm. It is recommended to use deploy Gloo Platform via a CI/CD orchectrator such as ArgoCD or Flux.
+
+* Install the management plane via helm. The default prometheus deployment will be disabled in favor of a more production based install. The automatic certificate generation is also disabled as it is now handled by cert-manager. 
 
 ```sh
 helm upgrade --install gloo-mesh-enterprise gloo-mesh-enterprise/gloo-mesh-enterprise \
   --version=${GLOO_PLATFORM_VERSION} \
-  --set licenseKey=${GLOO_MESH_LICENSE_KEY} \
+  --set glooMeshLicenseKey=$GLOO_PLATFORM_LICENSE_KEY \
+  --set glooTrialLicenseKey=$GLOO_PLATFORM_LICENSE_KEY \
+  --set glooGatewayLicenseKey=$GLOO_PLATFORM_LICENSE_KEY \
   --kube-context ${MGMT} \
   --namespace gloo-mesh \
   --set glooMeshMgmtServer.relay.disableTokenGeneration=true \
@@ -479,6 +402,8 @@ echo "RELAY_ADDRESS: ${RELAY_ADDRESS}"
 * Install a Gloo agent on the management plane so we later can add and manage Gloo Gateway on it.
 
 ```sh
+# create a dummy token, gloo platform requires the token to exist
+kubectl create secret generic relay-identity-token-secret --from-literal=token=not-used -n gloo-mesh --context $MGMT
 helm upgrade --install gloo-mesh-agent gloo-mesh-agent/gloo-mesh-agent \
   --kube-context=${MGMT} \
   --namespace gloo-mesh \
@@ -492,6 +417,8 @@ helm upgrade --install gloo-mesh-agent gloo-mesh-agent/gloo-mesh-agent \
 * Install a Gloo agent on the remote cluster.
 
 ```sh
+# create a dummy token, gloo platform requires the token to exist
+kubectl create secret generic relay-identity-token-secret --from-literal=token=not-used -n gloo-mesh --context $CLUSTER1
 helm upgrade --install gloo-mesh-agent gloo-mesh-agent/gloo-mesh-agent \
   --kube-context=${CLUSTER1} \
   --namespace gloo-mesh \
@@ -502,7 +429,7 @@ helm upgrade --install gloo-mesh-agent gloo-mesh-agent/gloo-mesh-agent \
   --wait
 ```
 
-* Install the gloo mesh addons (rate-limiter/ext-auth-service) in the `mgmt` cluster
+* Install the gloo mesh addons (rate-limiter/ext-auth-service) in the `mgmt` cluster. Typically these resources are deployed to the workload clusters. In this workshop we will use them to secure the shared services on this cluster such as the Gloo Platform UI and Grafana. 
 
 ```sh
 helm upgrade --install gloo-mesh-addons gloo-mesh-agent/gloo-mesh-agent \
@@ -516,17 +443,97 @@ helm upgrade --install gloo-mesh-addons gloo-mesh-agent/gloo-mesh-agent \
   --wait
 ```
 
-* Download `meshctl`
-
+* Since Prometheus has not been installed yet we will have to verify the agents are connected by looking at the stats emitted by the management plane.
 ```sh
-curl -sL https://run.solo.io/meshctl/install | GLOO_MESH_VERSION=${GLOO_PLATFORM_VERSION} sh -
+kubectl port-forward -n gloo-mesh deploy/gloo-mesh-mgmt-server --context $MGMT 9091:9091
 
-export PATH=$HOME/.gloo-mesh/bin:$PATH
+curl -sS localhost:9091/metrics | grep relay_push_clients_connected
 ```
 
-* Verify install by running `meshctl dashboard --kubecontext $MGMT`
+* Expected Output
+```sh
+▶ curl -sS localhost:9091/metrics | grep relay_push_clients_connected
+# HELP relay_push_clients_connected Current number of connected Relay push clients (Relay Agents).
+# TYPE relay_push_clients_connected gauge
+relay_push_clients_connected{cluster="cluster1"} 1
+relay_push_clients_connected{cluster="mgmt-cluster"} 1
+```
 
 ## Install Istio <a name="Lab-4"></a>
+
+### Istio Certificate Setup
+
+As stated above, Istio requries an Intermediate Signing CA so that it can issue workload certificates. Each remote cluster should have an Intermediate Signing CA that is rooted in the same trust chain if you want to facilitate cross cluster communication. 
+
+![Istio Certs](./images/istio-certs.png)
+
+* Create istio-system namespaces
+
+```sh
+kubectl create namespace istio-system --context $MGMT
+kubectl create namespace istio-system --context $CLUSTER1
+```
+
+* Create Istio `cacerts` certificate in the `mgmt` cluster
+
+```yaml
+kubectl apply --context $MGMT -f- <<EOF
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: mgmt-cacerts
+  namespace: istio-system
+spec:
+  secretName: cacerts
+  duration: 720h # 30d
+  renewBefore: 360h # 15d
+  commonName: mgmt.solo.io
+  isCA: true
+  usages:
+    - digital signature
+    - key encipherment
+    - cert sign
+  dnsNames:
+    - mgmt.solo.io
+  issuerRef:
+    kind: ClusterIssuer
+    name: vault-issuer-istio
+EOF
+```
+
+* Create Istio `cacerts` certificate in the `cluster1` cluster
+
+```yaml
+kubectl apply --context $CLUSTER1 -f- <<EOF
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: cluster1-cacerts
+  namespace: istio-system
+spec:
+  secretName: cacerts
+  duration: 720h # 30d
+  renewBefore: 360h # 15d
+  commonName: cluster1.solo.io
+  isCA: true
+  usages:
+    - digital signature
+    - key encipherment
+    - cert sign
+  dnsNames:
+    - cluster1.solo.io
+  issuerRef:
+    kind: ClusterIssuer
+    name: vault-issuer-istio
+EOF
+```
+
+* Verify Secrets are created
+
+```sh
+kubectl get secret -n istio-system cacerts --context $MGMT
+kubectl get secret -n istio-system cacerts --context $CLUSTER1
+```
 
 Istio now recommends using `helm` to install its components. The helm charts are broken up into a few distinct charts. This makes it easier to manage istio and upgrade the component individually when needed. 
 
