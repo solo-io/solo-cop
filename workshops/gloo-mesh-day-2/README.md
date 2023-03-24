@@ -756,6 +756,23 @@ env:
 EOF
 ```
 
+## High Availability Managemnent Plant<a name="Lab-5"></a>
+
+In production it's benefitial to run more than one managment server replica. Because data is cached in Redis, multiple manangement servers pods can run and serve agents at a time. Not only does this help provide higher availability, it also will be more performant with many clusters connected. The agent connections are long lived so simply scaling the management replicas will cause the agents to balance. To get a more balanced connection pool, enable `glooMeshMgmtServer.enableClusterLoadBalancing=true` which will tell the management replica pods to auto balance the connections.
+
+* Upgrade the management plane to have 2 replias and enable agent load balancing.
+
+```sh
+helm upgrade --install gloo-mesh-enterprise gloo-mesh-enterprise/gloo-mesh-enterprise \
+  --version=${GLOO_PLATFORM_VERSION} \
+  --reuse-values \
+  --kube-context ${MGMT} \
+  --namespace gloo-mesh \
+  --set glooMeshMgmtServer.enableClusterLoadBalancing=true \
+  --set glooMeshMgmtServer.deploymentOverrides.spec.replicas=2 \
+  --wait
+```
+
 ## Expose Centralized Apps via Gloo Gateway<a name="Lab-5"></a>
 
 * Setup Gloo Workspace for managing the service mesh components
@@ -867,52 +884,39 @@ spec:
 EOF
 ```
 
-* Create the RouteTable
-
-```sh
-
-```
-
-
-## Tune Components<a name="Lab-6"></a>
-
-```sh
---reuse-values
-```
-
-
-
 ## Monitoring<a name="Lab-7"></a>
 
 * Install prometheus in the mgmt plane
-
-```
+```sh
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 helm repo update
 
-helm upgrade --install --create-namespace prom prometheus-community/prometheus --version 15.10.3 -n monitoring --kube-context ${MGMT} -f install/prometheus/prom-values.yaml
-```
-
-* Install Grafana in the mgmt plane
-
-```
-kubectl apply -f install/grafana/grafana.yaml --context ${MGMT}
-```
-
-
-
-## TODO Secure the apps?
-
-* Install the gloo mesh addons (rate-limiter/ext-auth-service) in the `cluster1` cluster. In this workshop we will use them to secure the shared services on this cluster such as the Gloo Platform UI and Grafana. 
-
-```sh
-helm upgrade --install gloo-mesh-addons gloo-mesh-agent/gloo-mesh-agent \
-  --kube-context=${CLUSTER1} \
+helm upgrade --install prom prometheus-community/kube-prometheus-stack \
+  --set grafana.defaultDashboardsEnabled=false \
+  --version 42.2.1 \
+  -n monitoring \
   --create-namespace \
-  --namespace gloo-mesh-addons \
-  --set glooMeshAgent.enabled=false \
-  --set rate-limiter.enabled=true \
-  --set ext-auth-service.enabled=true \
-  --version ${GLOO_PLATFORM_VERSION} \
+  --kube-context $MGMT \
+  -f -<<EOF
+prometheusSpec:
+  additionalScrapeConfigs:
+    - job_name: 'kubernetes-pods'
+      kubernetes_sd_configs:
+        - role: pod
+      relabel_configs:
+        - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+          action: keep
+          regex: true
+EOF
+```
+
+* Update the management plane to use the new prometheus endpoints
+```sh
+helm upgrade --install gloo-mesh-enterprise gloo-mesh-enterprise/gloo-mesh-enterprise \
+  --version=${GLOO_PLATFORM_VERSION} \
+  --reuse-values \
+  --kube-context ${MGMT} \
+  --namespace gloo-mesh \
+  --set prometheusUrl=prom-kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090 \
   --wait
 ```
