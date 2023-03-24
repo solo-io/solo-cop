@@ -346,7 +346,7 @@ helm show values gloo-mesh-enterprise/gloo-mesh-enterprise --version $GLOO_PLATF
 helm show values gloo-mesh-agent/gloo-mesh-agent --version $GLOO_PLATFORM_VERSION
 ```
 
-### Install Gloo
+## Install Gloo Platform <a name="Lab-3"></a>
 
 Gloo Platform can be installed using Helm. It is recommended to use deploy Gloo Platform via a CI/CD orchectrator such as ArgoCD or Flux.
 
@@ -425,20 +425,6 @@ helm upgrade --install gloo-mesh-agent gloo-mesh-agent/gloo-mesh-agent \
   --set relay.serverAddress=${RELAY_ADDRESS} \
   --set cluster=${CLUSTER1} \
   --set relay.clientTlsSecret.name=gloo-agent-tls-cert \
-  --version ${GLOO_PLATFORM_VERSION} \
-  --wait
-```
-
-* Install the gloo mesh addons (rate-limiter/ext-auth-service) in the `mgmt` cluster. Typically these resources are deployed to the workload clusters. In this workshop we will use them to secure the shared services on this cluster such as the Gloo Platform UI and Grafana. 
-
-```sh
-helm upgrade --install gloo-mesh-addons gloo-mesh-agent/gloo-mesh-agent \
-  --kube-context=${MGMT} \
-  --create-namespace \
-  --namespace gloo-mesh-addons \
-  --set glooMeshAgent.enabled=false \
-  --set rate-limiter.enabled=true \
-  --set ext-auth-service.enabled=true \
   --version ${GLOO_PLATFORM_VERSION} \
   --wait
 ```
@@ -535,7 +521,7 @@ kubectl get secret -n istio-system cacerts --context $MGMT
 kubectl get secret -n istio-system cacerts --context $CLUSTER1
 ```
 
-Istio now recommends using `helm` to install its components. The helm charts are broken up into a few distinct charts. This makes it easier to manage istio and upgrade the component individually when needed. 
+Istio now recommends using `helm` to install its components. The helm charts are broken up into a few distinct charts. This makes it easier to manage istio and upgrade the component individually when needed.
 
 Istio charts:
 * istio/base - Istio custom resource definitions
@@ -682,37 +668,9 @@ EOF
 2022-10-05T19:50:32.288788Z    info    x509 cert - Issuer: "CN=solo.io", Subject: "CN=Solo.io Istio CA Issuer", SN: 56f87198ca42c8f622987c4336fc4103e719c122, NotBefore: "2022-10-05T19:36:53Z", NotAfter: "2027-10-04T19:37:23Z"
 ```
 
-
-* Install Gateways in mgmt cluster
+* Install an Eastwest gateway in mgmt cluster
 
 ```sh
-helm upgrade --install istio-ingressgateway-${ISTIO_REVISION} istio/gateway \
-  --set revision=${ISTIO_REVISION} \
-  --set global.hub=${ISTIO_IMAGE_REPO} \
-  --set global.tag=${ISTIO_IMAGE_TAG} \
-  --version ${ISTIO_VERSION} \
-  --create-namespace \
-  --namespace istio-ingress \
-  --kube-context ${MGMT} \
-  --wait \
-  -f- <<EOF
-name: istio-ingressgateway-${ISTIO_REVISION}
-labels:
-  istio: ingressgateway
-  revision: ${ISTIO_REVISION}
-service:
-  type: LoadBalancer
-  ports:
-  # main http ingress port
-  - port: 80
-    targetPort: 8080
-    name: http2
-  # main https ingress port
-  - port: 443
-    targetPort: 8443
-    name: https
-EOF
-
 helm upgrade --install istio-eastwestgateway-${ISTIO_REVISION} istio/gateway \
   --set revision=${ISTIO_REVISION} \
   --set global.hub=${ISTIO_IMAGE_REPO} \
@@ -733,6 +691,9 @@ service:
   - name: tls
     port: 15443
     targetPort: 15443
+  - name: https
+    port: 16443
+    targetPort: 16443
 env:
   # Required for Gloo multi-cluster routing
   ISTIO_META_ROUTER_MODE: "sni-dnat"
@@ -797,7 +758,7 @@ EOF
 
 ## Expose Centralized Apps via Gloo Gateway<a name="Lab-5"></a>
 
-* Setup Gloo workspace
+* Setup Gloo Workspace for managing the service mesh components
 
 ```yaml
 kubectl create namespace ops-team --context ${MGMT}
@@ -811,15 +772,14 @@ spec:
   workloadClusters:
   - name: 'mgmt-cluster'
     namespaces:
+    - name: gloo-mesh
     - name: ops-team
-    - name: istio-ingress
     - name: istio-eastwest
-    - name: gloo-mesh-addons
     - name: monitoring
   - name: 'cluster1'
     namespaces:
     - name: istio-ingress
-    - name: istio-eastwest
+    - name: gloo-mesh-addons
 ---
 apiVersion: admin.gloo.solo.io/v2
 kind: WorkspaceSettings
@@ -827,20 +787,13 @@ metadata:
   name: ops-team
   namespace: ops-team
 spec:
-  exportTo:
-  - workspaces:
-    - name: "*"
-    resources:
-    - kind: SERVICE
-      namespace: gloo-mesh-addons
-    - kind: VIRTUAL_DESTINATION
-      namespace: gloo-mesh-addons
   options:
+    virtualDestClientMode:
+      tlsTermination: {} # allow for routing to non mesh applications
     eastWestGateways:
     - selector:
         labels:
           istio: eastwestgateway
-          revision: ${ISTIO_REVISION}
 EOF
 ```
 
@@ -849,16 +802,33 @@ EOF
 ```yaml
 kubectl --context ${MGMT} apply -f - <<EOF
 apiVersion: networking.gloo.solo.io/v2
+kind: VirtualDestination
+metadata:
+  name: gloo-platform-ui
+  namespace: ops-team
+spec:
+  hosts:
+  - gloo-ui.solo.internal
+  services:
+  - labels:
+      app: gloo-mesh-ui
+  ports:
+  - number: 8090
+    protocol: HTTP
+    targetPort:
+      name: console
+---
+apiVersion: networking.gloo.solo.io/v2
 kind: VirtualGateway
 metadata:
-  name: north-south-gw
+  name: ingress-gateway
   namespace: ops-team
 spec:
   workloads:
     - selector:
         labels:
           istio: ingressgateway
-        cluster: mgmt-cluster
+        cluster: cluster1
         namespace: istio-ingress
   listeners: 
     - http: {}
@@ -868,6 +838,32 @@ spec:
         - host: '*'
           selector:
             workspace: ops-team
+---
+apiVersion: networking.gloo.solo.io/v2
+kind: RouteTable
+metadata:
+  name: gloo-platform-ui
+  namespace: ops-team
+spec:
+  hosts:
+    - '*'
+  virtualGateways:
+    - name: ingress-gateway
+      namespace: ops-team
+      cluster: mgmt-cluster
+  workloadSelectors: []
+  http:
+    - name: gloo-platform-ui
+      labels:
+        virtual-destination: gloo-platform-ui
+      forwardTo:
+        destinations:
+          - ref:
+              name: gloo-platform-ui
+              namespace: ops-team
+            kind: VIRTUAL_DESTINATION
+            port:
+              number: 8090
 EOF
 ```
 
@@ -902,7 +898,21 @@ helm upgrade --install --create-namespace prom prometheus-community/prometheus -
 ```
 kubectl apply -f install/grafana/grafana.yaml --context ${MGMT}
 ```
-### Optional
 
-* In lieu of Grafana some users prefer a software as a service model such as [Datadog](https://www.datadoghq.com/). If you'd like to monitor Gloo Mesh or Istio using Datadog, then you can follow instructions posted [here](https://github.com/solo-io/solo-cop/tree/main/tools/datadog) as a starting point.
 
+
+## TODO Secure the apps?
+
+* Install the gloo mesh addons (rate-limiter/ext-auth-service) in the `cluster1` cluster. In this workshop we will use them to secure the shared services on this cluster such as the Gloo Platform UI and Grafana. 
+
+```sh
+helm upgrade --install gloo-mesh-addons gloo-mesh-agent/gloo-mesh-agent \
+  --kube-context=${CLUSTER1} \
+  --create-namespace \
+  --namespace gloo-mesh-addons \
+  --set glooMeshAgent.enabled=false \
+  --set rate-limiter.enabled=true \
+  --set ext-auth-service.enabled=true \
+  --version ${GLOO_PLATFORM_VERSION} \
+  --wait
+```
