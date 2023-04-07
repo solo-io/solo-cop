@@ -938,18 +938,90 @@ helm upgrade --install gloo-telemetry-gateway gloo-platform/gloo-platform \
   -f install/gloo-platform/telemetry-gateway-values.yaml
 ```
 
+* Get the Gloo Telemetry Gateway Endpoint
+```sh
+GLOO_TELEMETRY_GATEWAY=$(kubectl get svc -n gloo-mesh gloo-telemetry-gateway --context $MGMT -o jsonpath='{.status.loadBalancer.ingress[0].*}'):$(kubectl --context ${MGMT} -n gloo-mesh get svc gloo-telemetry-gateway -o jsonpath='{.spec.ports[?(@.port==4317)].port}')
+
+echo "Metrics Gateway Address: $GLOO_TELEMETRY_GATEWAY"
+```
+
 * Install Gloo Telemetry Collector in the `cluster1` cluster
 ```sh
 helm upgrade --install gloo-telemetry-collector gloo-platform/gloo-platform \
   --version=${GLOO_PLATFORM_VERSION} \
   --kube-context ${CLUSTER1} \
+  --set telemetryCollector.config.exporters.otlp.endpoint=$GLOO_TELEMETRY_GATEWAY \
   --namespace gloo-mesh \
   --devel \
   -f install/gloo-platform/telemetry-collector-values.yaml
 ```
 
+* Update Istio installation and set teletry urls to the Gloo Telemetry Collector
+```sh
+helm upgrade --install istiod-${ISTIO_REVISION} istio/istiod \
+  --set revision=${ISTIO_REVISION} \
+  --set global.hub=${ISTIO_IMAGE_REPO} \
+  --set global.tag=${ISTIO_IMAGE_TAG} \
+  --version ${ISTIO_VERSION} \
+  --namespace istio-system \
+  --kube-context ${CLUSTER1} \
+  -f- <<EOF
+meshConfig:
+  enableTracing: true
+  extensionProviders:
+    - name: zipkincustom
+      zipkin:
+        service: "gloo-telemetry-collector.gloo-mesh.svc.cluster.local"
+        port: "9411"
+    - name: envoyOtelAls
+      envoyOtelAls:
+        service: "gloo-telemetry-collector.gloo-mesh.svc.cluster.local"
+  # The trust domain corresponds to the trust root of a system. 
+  # For Gloo this should be the name of the cluster that cooresponds with the CA certificate CommonName identity
+  trustDomain: mgmt-cluster
+  # enable access logging to standard output
+  accessLogFile: /dev/stdout
+  defaultConfig:
+    # wait for the istio-proxy to start before application pods
+    holdApplicationUntilProxyStarts: true
+    proxyMetadata:
+      # Enable Istio agent to handle DNS requests for known hosts
+      # Unknown hosts will automatically be resolved using upstream dns servers in resolv.conf
+      # (for proxy-dns)
+      ISTIO_META_DNS_CAPTURE: "true"
+      # Enable automatic address allocation (for proxy-dns)
+      ISTIO_META_DNS_AUTO_ALLOCATE: "true"
+pilot:
+  env:
+    # Allow multiple trust domains (Required for Gloo east/west routing)
+    PILOT_SKIP_VALIDATE_TRUST_DOMAIN: "true"
+    # Reload cacerts when cert-manager changes it
+    AUTO_RELOAD_PLUGIN_CERTS: "true"
+    # Disable selecting workload entries for local service routing.
+    # Required for Gloo VirtualDestinaton functionality.
+    PILOT_ENABLE_K8S_SELECT_WORKLOAD_ENTRIES: "false"
+EOF
+```
 
-
+* Configure Istio to send data to Gloo Telemetry Collector
+```sh
+kubectl --context ${CLUSTER1} apply -f - <<EOF
+apiVersion: telemetry.istio.io/v1alpha1
+kind: Telemetry
+metadata:
+  name: default
+  namespace: istio-system
+spec:
+  tracing:
+  - providers:
+      - name: zipkincustom
+    randomSamplingPercentage: 100
+    disableSpanReporting: false
+  accessLogging:
+  - providers:
+    - name: envoyOtelAls
+EOF
+```
 
 * Navigate to the Gloo UI to view that it correctly shows the clusters connected
 ```sh
@@ -968,33 +1040,7 @@ kubectl port-forward svc/prom-kube-prometheus-stack-prometheus --context $MGMT -
 
 2. Open browser at http://localhost:9080
 
-3. Search for metrics prefixed with `gloo_mesh_`, Example `relay_push_clients_connected`
-
-### Gloo Platform UI
-
-The Gloo UI is automatically installed in the Gloo management cluster. Let's explore some of the key features that you have access to when using the Gloo UI:
-
-* **Gloo Platform overview: With the Gloo UI:** you can view information about your Gloo Platform environment, such as the number of clusters that are registered with the Gloo management server and the Istio version that is deployed to them. You can also review your workspace settings and which Gloo resources you import and export to other workspaces.
-* **Verify service mesh configurations:** The Gloo Mesh UI lets you quickly find important information about your service mesh setup, the participating clusters, and the Gloo Mesh resources that you applied to the service mesh. For example, you can review your workspace settings and which Gloo Mesh resources you import and export to other workspaces. You can also view your gateway and listener configurations and traffic policies that you applied to your service mesh routes.
-* **Drill into apps and services:** Review what services can communicate with other services in the mesh, the policies that are applied before traffic is sent to a service, and how traffic between services is secured.
-* **Visualize and monitor service mesh health metrics:** With the built-in Prometheus integration, the Gloo Mesh UI has access to detailed Kubernetes cluster and service mesh metrics, such as the node's CPU and memory capacity, unresponsive nodes or nodes with degraded traffic, and mTLS settings for services in the mesh. For more information about the Prometheus integration in Gloo Mesh, see Prometheus.
-* **OIDC authentication and authorization support:** Set up authentication and authorization (AuthN/AuthZ) for the Gloo Mesh UI by using OpenID Connect (OIDC) and Kubernetes role-based access control (RBAC). The Gloo Mesh UI supports OpenID Connect (OIDC) authentication from common providers such as Google, Okta, and Auth0.
-
-For a detailed overview of what information you can find in the Gloo UI, see [Explore the Gloo UI](https://docs.solo.io/gloo-mesh-enterprise/latest/observability/tools/dashboard/ui-overview/).
-
-1. Navigate to Gloo Mesh Graph
-
-![Gloo Platform Graph](../images/gloo-platform-graph.png)
-
-```sh
-meshctl dashboard --kubecontext $MGMT
-```
-
-2. Click `Workspaces` and select all workspaces
-
-3. Click `Layout Settings` in the bottom right of the screen and update `Group By:` to `CLUSTER`
-
-![Gloo Platform Layout](./images/gloo-platform-graph-layout.png)
+3. Search for metrics prefixed with `istio_`, Example `istio_requests_total`
 
 ### Tracing
 
@@ -1004,63 +1050,10 @@ Distributed tracing helps you track requests across multiple services in your di
 
 ![Gloo Platform Tracing](./images/jaeger.png)
 
-Create certificates
-
-```sh
-kubectl --context $MGMT apply -f - <<EOF
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: gloo-server
-  namespace: gloo-mesh
-spec:
-  commonName: gloo-server
-  dnsNames:
-    - "*.gloo-mesh"
-  duration: 8760h0m0s   ### 1 year life
-  renewBefore: 8736h0m0s
-  issuerRef:
-    kind: ClusterIssuer
-    name: vault-issuer-gloo
-  secretName: gloo-server-tls-cert
-  usages:
-    - server auth
-    - client auth
-  privateKey:
-    algorithm: "RSA"
-    size: 4096
----
-kind: Certificate
-apiVersion: cert-manager.io/v1
-metadata:
-  name: gloo-agent
-  namespace: gloo-mesh
-spec:
-  commonName: gloo-agent
-  dnsNames:
-    # Must match the cluster name used in the helm chart install
-    - "mgmt-cluster"
-  duration: 8760h0m0s   ### 1 year life
-  renewBefore: 8736h0m0s
-  issuerRef:
-    kind: ClusterIssuer
-    name: vault-issuer-gloo
-  secretName: gloo-agent-tls-cert
-  usages:
-    - digital signature
-    - key encipherment
-    - client auth
-    - server auth
-  privateKey:
-    algorithm: "RSA"
-    size: 4096
-EOF
-```
-
 1. Deploy Jaeger to the `Management Plane`
 ```sh
 helm repo add jaegertracing https://jaegertracing.github.io/helm-charts
-helm upgrade --install --kube-context $MGMT jaeger jaegertracing/jaeger \
+helm upgrade --install -n monitoring --kube-context $MGMT jaeger jaegertracing/jaeger \
   -f -<<EOF
 provisionDataStore:
   cassandra: false
@@ -1077,47 +1070,11 @@ query:
 EOF
 ```
 
-2. Enable Tracing within each cluster
-```sh
-kubectl --context ${CLUSTER1} apply -f - <<EOF
-apiVersion: telemetry.istio.io/v1alpha1
-kind: Telemetry
-metadata:
-  name: default
-  namespace: istio-system
-spec:
-  tracing:
-  - providers:
-      - name: zipkincustom
-    randomSamplingPercentage: 100
-    disableSpanReporting: false
-  accessLogging:
-  - providers:
-    - name: envoyOtelAls
-EOF
-kubectl --context ${CLUSTER2} apply -f - <<EOF
-apiVersion: telemetry.istio.io/v1alpha1
-kind: Telemetry
-metadata:
-  name: default
-  namespace: istio-system
-spec:
-  tracing:
-  - providers:
-      - name: zipkincustom
-    randomSamplingPercentage: 100
-    disableSpanReporting: false
-  accessLogging:
-  - providers:
-    - name: envoyOtelAls
-EOF
-```
-
 3. Open Jaeger and observe tracing
 ```sh
-kubectl port-forward --context $MGMT -n gloo-mesh svc/tracing 9081:80
+kubectl port-forward --context $MGMT -n gloo-mesh svc/jaeger-query 16686:16686
 ```
 
-4. Open browser at http://localhost:9081
+4. Open browser at http://localhost:16686
 
-5. Select service `frontend.online-boutique` and then click `Find Traces`
+5. Select service `istio-ingressgateway.istio-system` and then click `Find Traces`

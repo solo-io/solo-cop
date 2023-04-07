@@ -18,7 +18,7 @@ telemetryGatewayCustomization:
   disableCertGeneration: true
   extraExporters:
     otlp/tracing:
-      endpoint: jaeger-collector.gloo-mesh.svc.cluster.local:4317
+      endpoint: jaeger-collector.monitoring.svc.cluster.local:4317
       tls:
         insecure: true
   extraPipelines:
