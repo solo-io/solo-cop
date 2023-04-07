@@ -22,6 +22,7 @@ High level best practices:
 * Use helm and GitOps for deploying infrastructure to kubernetes
 * Keep your PKI secure and rotate certificates
 * Scale your components for resiliency
+* Effectively monitoring Gloo Platform and the data plane
 
 ### Want to learn more about Gloo Platform?
 
