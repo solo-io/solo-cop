@@ -851,7 +851,7 @@ EOF
 
 *. Access Gloo UI through the gateway
 ```sh
-export GLOO_GATEWAY=$(kubectl --context ${CLUSTER1} -n istio-ingress get svc istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].*}'):80
+export GLOO_GATEWAY=$(kubectl --context ${CLUSTER1} -n istio-ingress get svc istio-ingressgateway-1-16 -o jsonpath='{.status.loadBalancer.ingress[0].*}'):80
 
 echo "Gloo UI available at http://$GLOO_GATEWAY"
 ```
