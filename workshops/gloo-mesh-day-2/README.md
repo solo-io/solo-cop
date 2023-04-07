@@ -8,8 +8,9 @@
 * [Lab 1 - Deploy Kubernetes clusters](#Configure)
 * [Lab 2 - PKI / Vault and Cert Manager](#Certificates)
 * [Lab 3 - Install Gloo Platform](#Installation)
-* [Lab 4 - High Availability Management Plane](#Lab-4)
-* [Lab 5 - Migrate To Managed Istio](#Lab-4)
+* [Lab 4 - High Availability Management Plane](#HA)
+* [Lab 5 - Expose Gloo UI](#GlooUI)
+* [Lab 6 - Observability](#Observability)
 
 ## Introduction <a name="introduction"></a>
 
@@ -717,7 +718,7 @@ service:
 EOF
 ```
 
-## High Availability Managemnent Plant<a name="Lab-5"></a>
+## High Availability Managemnent Plane<a name="HA"></a>
 
 In production it's benefitial to run more than one managment server replica. Because data is cached in Redis, multiple manangement servers pods can run and serve agents at a time. Not only does this help provide higher availability, it also will be more performant with many clusters connected. The agent connections are long lived so simply scaling the management replicas will cause the agents to balance. To get a more balanced connection pool, enable `glooMeshMgmtServer.enableClusterLoadBalancing=true` which will tell the management replica pods to auto balance the connections.
 
@@ -733,7 +734,7 @@ helm upgrade --install gloo-platform gloo-platform/gloo-platform \
   --set glooMgmtServer.deploymentOverrides.spec.replicas=2
 ```
 
-## Expose Centralized Apps via Gloo Gateway<a name="Lab-5"></a>
+## Expose Gloo UI via Gloo Gateway<a name="GlooUI"></a>
 
 * Setup Gloo Workspace for managing the service mesh components
 
@@ -851,7 +852,7 @@ export GLOO_GATEWAY=$(kubectl --context ${CLUSTER1} -n istio-ingress get svc ist
 echo "Gloo UI available at http://$GLOO_GATEWAY"
 ```
 
-## Monitoring<a name="Monitoring"></a>
+## Observability<a name="Observability"></a>
 
 Gloo Platform offers the best in class observability for communication between your services. By aggregating logging, tracing, and metrics, Gloo Platform combines telemetry from all environments to give you a complete picture of how your platform is performing. 
 
