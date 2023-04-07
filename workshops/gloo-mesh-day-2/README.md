@@ -5,9 +5,9 @@
 ## Table of Contents
 
 * [Introduction](#introduction)
-* [Lab 1 - Deploy Kubernetes clusters](#Lab-1)
-* [Lab 2 - PKI / Vault and Cert Manager](#Lab-2)
-* [Lab 3 - Install Gloo Platform](#Lab-3)
+* [Lab 1 - Deploy Kubernetes clusters](#Configure)
+* [Lab 2 - PKI / Vault and Cert Manager](#Certificates)
+* [Lab 3 - Install Gloo Platform](#Installation)
 * [Lab 4 - High Availability Management Plane](#Lab-4)
 * [Lab 5 - Migrate To Managed Istio](#Lab-4)
 
@@ -42,14 +42,14 @@ Set these environment variables which will be used throughout the workshop.
 ```sh
 # Used to enable Gloo (please ask for a trial license key)
 export GLOO_PLATFORM_LICENSE_KEY=<licence_key>
-export GLOO_PLATFORM_VERSION=v2.2.5
+export GLOO_PLATFORM_VERSION=v2.3.0-rc1
 export ISTIO_IMAGE_REPO=us-docker.pkg.dev/gloo-mesh/istio-workshops
 export ISTIO_IMAGE_TAG=1.16.3-solo
 export ISTIO_VERSION=1.16.3
 export ISTIO_REVISION=1-16
 ```
 
-## Lab 1 - Configure/Deploy the Kubernetes clusters <a name="Lab-1"></a>
+## Lab 1 - Configure/Deploy the Kubernetes clusters <a name="Configure"></a>
 
 You will need to create two Kubernetes Clusters. One will serve as the Management cluster in which the Gloo Platform server will be deployed. The second cluster will be a workload cluster.
 
@@ -67,11 +67,11 @@ Rename the kubectl config contexts of each of your two clusters to `mgmt`, `clus
 
 ```sh
 # UPDATE <context-to-rename> BEFORE APPLYING
-kubectl config rename-context <context-to-rename> ${MGMT} 
-kubectl config rename-context <context-to-rename> ${CLUSTER1} 
+kubectl config rename-context <context-to-rename> ${MGMT}
+kubectl config rename-context <context-to-rename> ${CLUSTER1}
 ``` 
 
-## Lab 2 - PKI / Vault and Cert Manager<a name="Lab-2"></a>
+## Lab 2 - PKI / Vault and Cert Manager<a name="Certificates"></a>
 
 Gloo and Istio heavily rely on TLS certificates to facilitate safe and secure communitcation. Gloo Platform uses mutual tls authentication for communication between the Server and the Agents. Istio requires an Intermediate Signing CA so that it can issue workload certificates to each of the mesh enabled services. These workload certificates encrypt and authenticate traffic between each of your microservices.
 
@@ -320,7 +320,7 @@ kubectl get secret gloo-agent-tls-cert -n gloo-mesh --context $MGMT
 kubectl get secret gloo-agent-tls-cert -n gloo-mesh --context $CLUSTER1
 ```
 
-## Install Gloo <a name="Lab-3"></a>
+## Install Gloo Platform<a name="Installation"></a>
 
 Gloo consists of a centralized management server to which agents running on each of the workload clusters connect. The recommended way to install Gloo in production is via `helm`. Helm was chosen because of the amount of support it has with various GitOps based deployment solutions. Many of our customers today use `ArgoCD` to deploy Gloo. For more see [GitOps with ArgoCD and Gloo](https://www.solo.io/blog/gitops-with-argo-cd-and-gloo-mesh-part-1/)
 
@@ -329,46 +329,40 @@ Gloo consists of a centralized management server to which agents running on each
 * Add Gloo Helm charts to your repository
 
 ```sh
-helm repo add gloo-mesh-agent https://storage.googleapis.com/gloo-mesh-enterprise/gloo-mesh-agent
-helm repo add gloo-mesh-enterprise https://storage.googleapis.com/gloo-mesh-enterprise/gloo-mesh-enterprise 
+helm repo add gloo-platform https://storage.googleapis.com/gloo-platform/helm-charts
 helm repo update
 ```
 
 * View the default management plane values
 
 ```sh
-helm show values gloo-mesh-enterprise/gloo-mesh-enterprise --version $GLOO_PLATFORM_VERSION
+helm show values gloo-platform/gloo-platform --version $GLOO_PLATFORM_VERSION
 ```
-
-* View the default control plane values
-
-```sh
-helm show values gloo-mesh-agent/gloo-mesh-agent --version $GLOO_PLATFORM_VERSION
-```
-
-## Install Gloo Platform <a name="Lab-3"></a>
 
 Gloo Platform can be installed using Helm. It is recommended to use deploy Gloo Platform via a CI/CD orchectrator such as ArgoCD or Flux.
 
 * Install the management plane via helm. The default prometheus deployment will be disabled in favor of a more production based install. The automatic certificate generation is also disabled as it is now handled by cert-manager. 
 
 ```sh
-helm upgrade --install gloo-mesh-enterprise gloo-mesh-enterprise/gloo-mesh-enterprise \
+helm upgrade --install gloo-platform-crds gloo-platform/gloo-platform-crds \
+  --version=$GLOO_PLATFORM_VERSION \
+  --devel \
+  --namespace=gloo-mesh \
+  --kube-context $MGMT \
+  --create-namespace
+
+helm upgrade --install gloo-platform gloo-platform/gloo-platform \
   --version=${GLOO_PLATFORM_VERSION} \
-  --set glooMeshLicenseKey=$GLOO_PLATFORM_LICENSE_KEY \
-  --set glooTrialLicenseKey=$GLOO_PLATFORM_LICENSE_KEY \
-  --set glooGatewayLicenseKey=$GLOO_PLATFORM_LICENSE_KEY \
+  --set licensing.glooMeshLicenseKey=$GLOO_PLATFORM_LICENSE_KEY \
+  --set licensing.glooTrialLicenseKey=$GLOO_PLATFORM_LICENSE_KEY \
+  --set licensing.glooGatewayLicenseKey=$GLOO_PLATFORM_LICENSE_KEY \
   --kube-context ${MGMT} \
   --namespace gloo-mesh \
-  --set glooMeshMgmtServer.relay.disableTokenGeneration=true \
-  --set glooMeshMgmtServer.relay.disableCa=true \
-  --set glooMeshMgmtServer.relay.disableCaCertGeneration=true \
-  --set glooMeshMgmtServer.relay.tlsSecret.name=gloo-server-tls-cert \
-  --set prometheus.enabled=false \
-  --wait
+  --devel \
+  -f install/gloo-platform/mgmt-values.yaml
 ```
 
-* Register mgmt and cluster1 with the management plane so that the connecting agents will be trusted
+* Register `mgmt` and `cluster1` with the management plane so that the connecting agents will be trusted
 
 ```yaml
 kubectl apply --context $MGMT -f- <<EOF
@@ -393,10 +387,11 @@ EOF
 * Get the mgmt plane address
 
 ```sh
-MGMT_INGRESS_ADDRESS=$(kubectl get svc -n gloo-mesh gloo-mesh-mgmt-server --context $MGMT -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-MGMT_INGRESS_PORT=$(kubectl -n gloo-mesh get service gloo-mesh-mgmt-server --context $MGMT -o jsonpath='{.spec.ports[?(@.name=="grpc")].port}')
-RELAY_ADDRESS=${MGMT_INGRESS_ADDRESS}:${MGMT_INGRESS_PORT}
-echo "RELAY_ADDRESS: ${RELAY_ADDRESS}"
+MGMT_SERVER_NETWORKING_DOMAIN=$(kubectl get svc -n gloo-mesh gloo-mesh-mgmt-server --context $MGMT -o jsonpath='{.status.loadBalancer.ingress[0].*}')
+MGMT_SERVER_NETWORKING_PORT=$(kubectl -n gloo-mesh get service gloo-mesh-mgmt-server --context $MGMT -o jsonpath='{.spec.ports[?(@.name=="grpc")].port}')
+MGMT_SERVER_NETWORKING_ADDRESS=${MGMT_SERVER_NETWORKING_DOMAIN}:${MGMT_SERVER_NETWORKING_PORT}
+
+echo "Mgmt Plane Address: $MGMT_SERVER_NETWORKING_ADDRESS"
 ```
 
 * Install a Gloo agent on the management plane so we later can add and manage Gloo Gateway on it.
@@ -404,29 +399,35 @@ echo "RELAY_ADDRESS: ${RELAY_ADDRESS}"
 ```sh
 # create a dummy token, gloo platform requires the token to exist
 kubectl create secret generic relay-identity-token-secret --from-literal=token=not-used -n gloo-mesh --context $MGMT
-helm upgrade --install gloo-mesh-agent gloo-mesh-agent/gloo-mesh-agent \
+helm upgrade --install gloo-agent gloo-platform/gloo-platform \
   --kube-context=${MGMT} \
   --namespace gloo-mesh \
-  --set relay.serverAddress=${RELAY_ADDRESS} \
-  --set cluster=mgmt-cluster \
-  --set relay.clientTlsSecret.name=gloo-agent-tls-cert \
+  --set glooAgent.relay.serverAddress=gloo-mesh-mgmt-server.gloo-mesh:9900 \
+  --set common.cluster=${MGMT} \
   --version ${GLOO_PLATFORM_VERSION} \
-  --wait
+  -f install/gloo-platform/agent-values.yaml
 ```
 
 * Install a Gloo agent on the remote cluster.
 
 ```sh
+# apply the CRDs
+helm upgrade --install gloo-platform-crds gloo-platform/gloo-platform-crds \
+  --version=$GLOO_PLATFORM_VERSION \
+  --devel \
+  --namespace=gloo-mesh \
+  --kube-context $CLUSTER1 \
+  --create-namespace
+
 # create a dummy token, gloo platform requires the token to exist
 kubectl create secret generic relay-identity-token-secret --from-literal=token=not-used -n gloo-mesh --context $CLUSTER1
-helm upgrade --install gloo-mesh-agent gloo-mesh-agent/gloo-mesh-agent \
+helm upgrade --install gloo-agent gloo-platform/gloo-platform \
   --kube-context=${CLUSTER1} \
   --namespace gloo-mesh \
-  --set relay.serverAddress=${RELAY_ADDRESS} \
-  --set cluster=${CLUSTER1} \
-  --set relay.clientTlsSecret.name=gloo-agent-tls-cert \
+  --set glooAgent.relay.serverAddress=${MGMT_SERVER_NETWORKING_ADDRESS} \
+  --set common.cluster=${CLUSTER1} \
   --version ${GLOO_PLATFORM_VERSION} \
-  --wait
+  -f install/gloo-platform/agent-values.yaml
 ```
 
 * Since Prometheus has not been installed yet we will have to verify the agents are connected by looking at the stats emitted by the management plane.
@@ -577,7 +578,6 @@ helm upgrade --install istiod-${ISTIO_REVISION} istio/istiod \
   --version ${ISTIO_VERSION} \
   --namespace istio-system \
   --kube-context ${MGMT} \
-  --wait \
   -f- <<EOF
 meshConfig:
   # The trust domain corresponds to the trust root of a system. 
@@ -588,12 +588,6 @@ meshConfig:
   defaultConfig:
     # wait for the istio-proxy to start before application pods
     holdApplicationUntilProxyStarts: true
-    # enable Gloo metrics service (required for Gloo UI)
-    envoyMetricsService:
-      address: gloo-mesh-agent.gloo-mesh:9977
-      # enable Gloo accesslog service (required for Gloo Access Logging)
-    envoyAccessLogService:
-      address: gloo-mesh-agent.gloo-mesh:9977
     proxyMetadata:
       # Enable Istio agent to handle DNS requests for known hosts
       # Unknown hosts will automatically be resolved using upstream dns servers in resolv.conf
@@ -601,15 +595,15 @@ meshConfig:
       ISTIO_META_DNS_CAPTURE: "true"
       # Enable automatic address allocation (for proxy-dns)
       ISTIO_META_DNS_AUTO_ALLOCATE: "true"
-      # Used for gloo mesh metrics aggregation
-      # should match trustDomain (required for Gloo UI)
-      GLOO_MESH_CLUSTER_NAME: mgmt-cluster
 pilot:
   env:
     # Allow multiple trust domains (Required for Gloo east/west routing)
     PILOT_SKIP_VALIDATE_TRUST_DOMAIN: "true"
     # Reload cacerts when cert-manager changes it
     AUTO_RELOAD_PLUGIN_CERTS: "true"
+    # Disable selecting workload entries for local service routing.
+    # Required for Gloo VirtualDestinaton functionality.
+    PILOT_ENABLE_K8S_SELECT_WORKLOAD_ENTRIES: "false"
 EOF
 ```
 
@@ -623,23 +617,16 @@ helm upgrade --install istiod-${ISTIO_REVISION} istio/istiod \
   --version ${ISTIO_VERSION} \
   --namespace istio-system \
   --kube-context ${CLUSTER1} \
-  --wait \
   -f- <<EOF
 meshConfig:
   # The trust domain corresponds to the trust root of a system. 
   # For Gloo this should be the name of the cluster that cooresponds with the CA certificate CommonName identity
-  trustDomain: cluster1
+  trustDomain: mgmt-cluster
   # enable access logging to standard output
   accessLogFile: /dev/stdout
   defaultConfig:
     # wait for the istio-proxy to start before application pods
     holdApplicationUntilProxyStarts: true
-    # enable Gloo metrics service (required for Gloo UI)
-    envoyMetricsService:
-      address: gloo-mesh-agent.gloo-mesh:9977
-      # enable Gloo accesslog service (required for Gloo Access Logging)
-    envoyAccessLogService:
-      address: gloo-mesh-agent.gloo-mesh:9977
     proxyMetadata:
       # Enable Istio agent to handle DNS requests for known hosts
       # Unknown hosts will automatically be resolved using upstream dns servers in resolv.conf
@@ -647,19 +634,19 @@ meshConfig:
       ISTIO_META_DNS_CAPTURE: "true"
       # Enable automatic address allocation (for proxy-dns)
       ISTIO_META_DNS_AUTO_ALLOCATE: "true"
-      # Used for gloo mesh metrics aggregation
-      # should match trustDomain (required for Gloo UI)
-      GLOO_MESH_CLUSTER_NAME: cluster1
 pilot:
   env:
     # Allow multiple trust domains (Required for Gloo east/west routing)
     PILOT_SKIP_VALIDATE_TRUST_DOMAIN: "true"
     # Reload cacerts when cert-manager changes it
     AUTO_RELOAD_PLUGIN_CERTS: "true"
+    # Disable selecting workload entries for local service routing.
+    # Required for Gloo VirtualDestinaton functionality.
+    PILOT_ENABLE_K8S_SELECT_WORKLOAD_ENTRIES: "false"
 EOF
 ```
 
-* Verify that Istio is using the plugged in certs `kubectl logs --context ${MGMT} -l app=istiod -n istio-system --tail 100`
+* Verify that Istio is using the plugged in certs `kubectl logs --context ${MGMT} -l app=istiod -n istio-system --tail 100 | grep x509`
 ```sh
 2022-10-05T19:50:32.288662Z    info    Using kubernetes.io/tls secret type for signing ca files
 2022-10-05T19:50:32.288667Z    info    Use plugged-in cert at etc/cacerts/tls.key
@@ -679,7 +666,6 @@ helm upgrade --install istio-eastwestgateway-${ISTIO_REVISION} istio/gateway \
   --create-namespace \
   --namespace istio-eastwest \
   --kube-context ${MGMT} \
-  --wait \
   -f- <<EOF
 name: istio-eastwestgateway-${ISTIO_REVISION}
 labels:
@@ -729,31 +715,6 @@ service:
     targetPort: 8443
     name: https
 EOF
-
-helm upgrade --install istio-eastwestgateway-${ISTIO_REVISION} istio/gateway \
-  --set revision=${ISTIO_REVISION} \
-  --set global.hub=${ISTIO_IMAGE_REPO} \
-  --set global.tag=${ISTIO_IMAGE_TAG} \
-  --version ${ISTIO_VERSION} \
-  --create-namespace \
-  --namespace istio-eastwest \
-  --kube-context ${CLUSTER1} \
-  --wait \
-  -f- <<EOF
-name: istio-eastwestgateway-${ISTIO_REVISION}
-labels:
-  istio: eastwestgateway
-  revision: ${ISTIO_REVISION}
-service:
-  type: LoadBalancer
-  ports:
-  - name: tls
-    port: 15443
-    targetPort: 15443
-env:
-  # Required for Gloo multi-cluster routing
-  ISTIO_META_ROUTER_MODE: "sni-dnat"
-EOF
 ```
 
 ## High Availability Managemnent Plant<a name="Lab-5"></a>
@@ -761,16 +722,15 @@ EOF
 In production it's benefitial to run more than one managment server replica. Because data is cached in Redis, multiple manangement servers pods can run and serve agents at a time. Not only does this help provide higher availability, it also will be more performant with many clusters connected. The agent connections are long lived so simply scaling the management replicas will cause the agents to balance. To get a more balanced connection pool, enable `glooMeshMgmtServer.enableClusterLoadBalancing=true` which will tell the management replica pods to auto balance the connections.
 
 * Upgrade the management plane to have 2 replias and enable agent load balancing.
-
 ```sh
-helm upgrade --install gloo-mesh-enterprise gloo-mesh-enterprise/gloo-mesh-enterprise \
+helm upgrade --install gloo-platform gloo-platform/gloo-platform \
   --version=${GLOO_PLATFORM_VERSION} \
   --reuse-values \
   --kube-context ${MGMT} \
   --namespace gloo-mesh \
-  --set glooMeshMgmtServer.enableClusterLoadBalancing=true \
-  --set glooMeshMgmtServer.deploymentOverrides.spec.replicas=2 \
-  --wait
+  --devel \
+  --set glooMgmtServer.enableClusterLoadBalancing=true \
+  --set glooMgmtServer.deploymentOverrides.spec.replicas=2
 ```
 
 ## Expose Centralized Apps via Gloo Gateway<a name="Lab-5"></a>
@@ -884,7 +844,25 @@ spec:
 EOF
 ```
 
-## Monitoring<a name="Lab-7"></a>
+*. Access Gloo UI through the gateway
+```sh
+export GLOO_GATEWAY=$(kubectl --context ${CLUSTER1} -n istio-ingress get svc istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].*}'):80
+
+echo "Gloo UI available at http://$GLOO_GATEWAY"
+```
+
+## Monitoring<a name="Monitoring"></a>
+
+Gloo Platform offers the best in class observability for communication between your services. By aggregating logging, tracing, and metrics, Gloo Platform combines telemetry from all environments to give you a complete picture of how your platform is performing. 
+
+![Gloo Platform Graph](../images/gloo-platform-graph.png)
+
+Links:
+* [Exploying the Gloo UI](https://docs.solo.io/gloo-mesh-enterprise/latest/observability/tools/dashboard/ui-overview/)
+* [Prometheus](https://docs.solo.io/gloo-mesh-enterprise/latest/observability/tools/prometheus/)
+* [Gloo Platform Tracing/Metrics/Logs](https://docs.solo.io/gloo-mesh-enterprise/latest/observability/mesh/)
+
+### Metrics
 
 * Install prometheus in the mgmt plane
 ```sh
@@ -892,31 +870,254 @@ helm repo add prometheus-community https://prometheus-community.github.io/helm-c
 helm repo update
 
 helm upgrade --install prom prometheus-community/kube-prometheus-stack \
-  --set grafana.defaultDashboardsEnabled=false \
-  --version 42.2.1 \
+  --version 45.9.1 \
   -n monitoring \
   --create-namespace \
   --kube-context $MGMT \
-  -f -<<EOF
-prometheusSpec:
-  additionalScrapeConfigs:
-    - job_name: 'kubernetes-pods'
-      kubernetes_sd_configs:
-        - role: pod
-      relabel_configs:
-        - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
-          action: keep
-          regex: true
-EOF
+  -f install/prometheus/prom-values.yaml
 ```
 
-* Update the management plane to use the new prometheus endpoints
+* Update Gloo Platform to use new Prometheus endpoint
 ```sh
-helm upgrade --install gloo-mesh-enterprise gloo-mesh-enterprise/gloo-mesh-enterprise \
+helm upgrade --install gloo-platform gloo-platform/gloo-platform \
   --version=${GLOO_PLATFORM_VERSION} \
   --reuse-values \
   --kube-context ${MGMT} \
   --namespace gloo-mesh \
-  --set prometheusUrl=prom-kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090 \
-  --wait
+  --devel \
+  --set glooUi.prometheusUrl=http://prom-kube-prometheus-stack-prometheus.monitoring:9090
 ```
+
+
+### Telemetry
+
+Gloo Platform Telemetry is based on the [Open Telemetry](https://opentelemetry.io/) standards. Metrics, logs and traces are gathered in cluster by the `Gloo Telemetry Collector`. Where it is shipped from there is up the user. By default, telemetry data will be shipped to the `Gloo Telemetry Gateway` in the `Management Plane` and aggregated with all other telemetry data from other clusters.
+
+![Gloo Telemetry Arch](./images/gloo-platform-telemetry.png)
+
+**Third Party Support**
+
+Gloo Platform can also ship these metrics to you third party telemetry provider like `Datadog`, `Splunk`, `New Relic`, or `Dynatrace`. 
+
+![Gloo Telemetry ThirdParty](./images/external-telemetry.png)
+
+* Create mTLS certificate for Gloo Telemetry Gateway
+```sh
+kubectl --context $MGMT apply -f - <<EOF
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: gloo-telemetry-gateway
+  namespace: gloo-mesh
+spec:
+  commonName: gloo-telemetry-gateway
+  dnsNames:
+    - "gloo-telemetry-gateway.gloo-mesh"
+  duration: 8760h0m0s   ### 1 year life
+  renewBefore: 8736h0m0s
+  issuerRef:
+    kind: ClusterIssuer
+    name: vault-issuer-gloo
+  secretName: gloo-telemetry-gateway-tls-secret
+  usages:
+    - server auth
+    - client auth
+  privateKey:
+    algorithm: "RSA"
+    size: 4096
+EOF
+```
+
+* Install Gloo Telemetry Gateway in the `mgmt` cluster
+```sh
+helm upgrade --install gloo-telemetry-gateway gloo-platform/gloo-platform \
+  --version=${GLOO_PLATFORM_VERSION} \
+  --kube-context ${MGMT} \
+  --namespace gloo-mesh \
+  --devel \
+  -f install/gloo-platform/telemetry-gateway-values.yaml
+```
+
+* Install Gloo Telemetry Collector in the `cluster1` cluster
+```sh
+helm upgrade --install gloo-telemetry-collector gloo-platform/gloo-platform \
+  --version=${GLOO_PLATFORM_VERSION} \
+  --kube-context ${CLUSTER1} \
+  --namespace gloo-mesh \
+  --devel \
+  -f install/gloo-platform/telemetry-collector-values.yaml
+```
+
+
+
+
+* Navigate to the Gloo UI to view that it correctly shows the clusters connected
+```sh
+echo "Gloo UI available at http://$GLOO_GATEWAY"
+```
+
+Metrics provide important information about the health of the apps in your service mesh. You can use these measures to detect failures, troubleshoot bottlenecks, and to find ways to improve the performance and reliability of your service mesh.
+
+![Prometheus Metrics](./images/prometheus-metrics.png)
+
+1. To view the raw metrics 
+
+```sh
+kubectl port-forward svc/prom-kube-prometheus-stack-prometheus --context $MGMT -n monitoring 9090:9090
+```
+
+2. Open browser at http://localhost:9080
+
+3. Search for metrics prefixed with `gloo_mesh_`, Example `relay_push_clients_connected`
+
+### Gloo Platform UI
+
+The Gloo UI is automatically installed in the Gloo management cluster. Let's explore some of the key features that you have access to when using the Gloo UI:
+
+* **Gloo Platform overview: With the Gloo UI:** you can view information about your Gloo Platform environment, such as the number of clusters that are registered with the Gloo management server and the Istio version that is deployed to them. You can also review your workspace settings and which Gloo resources you import and export to other workspaces.
+* **Verify service mesh configurations:** The Gloo Mesh UI lets you quickly find important information about your service mesh setup, the participating clusters, and the Gloo Mesh resources that you applied to the service mesh. For example, you can review your workspace settings and which Gloo Mesh resources you import and export to other workspaces. You can also view your gateway and listener configurations and traffic policies that you applied to your service mesh routes.
+* **Drill into apps and services:** Review what services can communicate with other services in the mesh, the policies that are applied before traffic is sent to a service, and how traffic between services is secured.
+* **Visualize and monitor service mesh health metrics:** With the built-in Prometheus integration, the Gloo Mesh UI has access to detailed Kubernetes cluster and service mesh metrics, such as the node's CPU and memory capacity, unresponsive nodes or nodes with degraded traffic, and mTLS settings for services in the mesh. For more information about the Prometheus integration in Gloo Mesh, see Prometheus.
+* **OIDC authentication and authorization support:** Set up authentication and authorization (AuthN/AuthZ) for the Gloo Mesh UI by using OpenID Connect (OIDC) and Kubernetes role-based access control (RBAC). The Gloo Mesh UI supports OpenID Connect (OIDC) authentication from common providers such as Google, Okta, and Auth0.
+
+For a detailed overview of what information you can find in the Gloo UI, see [Explore the Gloo UI](https://docs.solo.io/gloo-mesh-enterprise/latest/observability/tools/dashboard/ui-overview/).
+
+1. Navigate to Gloo Mesh Graph
+
+![Gloo Platform Graph](../images/gloo-platform-graph.png)
+
+```sh
+meshctl dashboard --kubecontext $MGMT
+```
+
+2. Click `Workspaces` and select all workspaces
+
+3. Click `Layout Settings` in the bottom right of the screen and update `Group By:` to `CLUSTER`
+
+![Gloo Platform Layout](./images/gloo-platform-graph-layout.png)
+
+### Tracing
+
+Sample request traces to monitor the traffic and health of your service mesh.
+
+Distributed tracing helps you track requests across multiple services in your distributed service mesh. Sampling the requests in your mesh can give you insight into request latency, serialization, and parallelism
+
+![Gloo Platform Tracing](./images/jaeger.png)
+
+Create certificates
+
+```sh
+kubectl --context $MGMT apply -f - <<EOF
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: gloo-server
+  namespace: gloo-mesh
+spec:
+  commonName: gloo-server
+  dnsNames:
+    - "*.gloo-mesh"
+  duration: 8760h0m0s   ### 1 year life
+  renewBefore: 8736h0m0s
+  issuerRef:
+    kind: ClusterIssuer
+    name: vault-issuer-gloo
+  secretName: gloo-server-tls-cert
+  usages:
+    - server auth
+    - client auth
+  privateKey:
+    algorithm: "RSA"
+    size: 4096
+---
+kind: Certificate
+apiVersion: cert-manager.io/v1
+metadata:
+  name: gloo-agent
+  namespace: gloo-mesh
+spec:
+  commonName: gloo-agent
+  dnsNames:
+    # Must match the cluster name used in the helm chart install
+    - "mgmt-cluster"
+  duration: 8760h0m0s   ### 1 year life
+  renewBefore: 8736h0m0s
+  issuerRef:
+    kind: ClusterIssuer
+    name: vault-issuer-gloo
+  secretName: gloo-agent-tls-cert
+  usages:
+    - digital signature
+    - key encipherment
+    - client auth
+    - server auth
+  privateKey:
+    algorithm: "RSA"
+    size: 4096
+EOF
+```
+
+1. Deploy Jaeger to the `Management Plane`
+```sh
+helm repo add jaegertracing https://jaegertracing.github.io/helm-charts
+helm upgrade --install --kube-context $MGMT jaeger jaegertracing/jaeger \
+  -f -<<EOF
+provisionDataStore:
+  cassandra: false
+allInOne:
+  enabled: true
+storage:
+  type: none
+agent:
+  enabled: false
+collector:
+  enabled: false
+query:
+  enabled: false
+EOF
+```
+
+2. Enable Tracing within each cluster
+```sh
+kubectl --context ${CLUSTER1} apply -f - <<EOF
+apiVersion: telemetry.istio.io/v1alpha1
+kind: Telemetry
+metadata:
+  name: default
+  namespace: istio-system
+spec:
+  tracing:
+  - providers:
+      - name: zipkincustom
+    randomSamplingPercentage: 100
+    disableSpanReporting: false
+  accessLogging:
+  - providers:
+    - name: envoyOtelAls
+EOF
+kubectl --context ${CLUSTER2} apply -f - <<EOF
+apiVersion: telemetry.istio.io/v1alpha1
+kind: Telemetry
+metadata:
+  name: default
+  namespace: istio-system
+spec:
+  tracing:
+  - providers:
+      - name: zipkincustom
+    randomSamplingPercentage: 100
+    disableSpanReporting: false
+  accessLogging:
+  - providers:
+    - name: envoyOtelAls
+EOF
+```
+
+3. Open Jaeger and observe tracing
+```sh
+kubectl port-forward --context $MGMT -n gloo-mesh svc/tracing 9081:80
+```
+
+4. Open browser at http://localhost:9081
+
+5. Select service `frontend.online-boutique` and then click `Find Traces`

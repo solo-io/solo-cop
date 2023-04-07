@@ -1,0 +1,6 @@
+# Configuration for the Gloo agent.
+glooAgent:
+  enabled: true
+  relay: 
+    clientTlsSecret:
+      name: gloo-agent-tls-cert
