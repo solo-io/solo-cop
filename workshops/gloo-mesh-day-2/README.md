@@ -36,7 +36,7 @@ To get started with this workshop, clone this repo.
 
 ```sh
 git clone https://github.com/solo-io/solo-cop.git
-cd solo-cop/workshops/gloo-mesh-demo
+cd solo-cop/workshops/gloo-mesh-day-2
 ```
 
 Set these environment variables which will be used throughout the workshop.
