@@ -435,7 +435,10 @@ helm upgrade --install gloo-agent gloo-platform/gloo-platform \
 * Since Prometheus has not been installed yet we will have to verify the agents are connected by looking at the stats emitted by the management plane.
 ```sh
 kubectl port-forward -n gloo-mesh deploy/gloo-mesh-mgmt-server --context $MGMT 9091:9091
+```
 
+In another terminal, curl the metrics endpoint
+```
 curl -sS localhost:9091/metrics | grep relay_push_clients_connected
 ```
 
