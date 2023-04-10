@@ -1,0 +1,39 @@
+# Cluster name
+common:
+  cluster: mgmt-cluster
+
+# OTLP collector for workload cluster collectors
+telemetryGateway:
+  enabled: true
+
+# dont try and generate the token
+glooMgmtServer:
+  enabled: false
+  relay:
+    disableTokenGeneration: true
+
+# Optional customization for the Gloo Platform Telemetry Collector.
+telemetryGatewayCustomization:
+  # Disable cert generation for the Gloo Platform Telemetry Gateway.
+  disableCertGeneration: true
+  extraExporters:
+    otlp/tracing:
+      endpoint: jaeger-collector.monitoring.svc.cluster.local:4317
+      tls:
+        insecure: true
+  extraPipelines:
+    metrics/same:
+      receivers:
+      - otlp
+      processors:
+      - memory_limiter
+      - batch
+      exporters:
+      - prometheus
+    traces/gloo-mesh:
+      receivers:
+      - otlp
+      processors: 
+      - batch
+      exporters: 
+      - otlp/tracing

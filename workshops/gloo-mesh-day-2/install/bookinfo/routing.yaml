@@ -1,0 +1,22 @@
+apiVersion: networking.gloo.solo.io/v2
+kind: RouteTable
+metadata:
+  name: bookinfo
+  namespace: bookinfo
+spec:
+  hosts:
+    - 'bookinfo.solo.io'
+  virtualGateways:
+    - name: ingress-gateway
+      namespace: ops-team
+      cluster: mgmt-cluster
+  workloadSelectors: []
+  http:
+    - name: bookinfo
+      forwardTo:
+        destinations:
+          - ref:
+              name: productpage
+              namespace: bookinfo
+            port:
+              number: 9080

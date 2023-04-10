@@ -1,0 +1,60 @@
+# Cluster name
+common:
+  cluster: cluster1
+
+# Configuration for the Gloo Platform Telemetry Collector. See the [OpenTelemetry Helm chart](https://github.com/open-telemetry/opentelemetry-helm-charts/blob/main/charts/opentelemetry-collector/values.yaml) for the complete set of values.
+telemetryCollector:
+  enabled: true
+  replicaCount: 1
+  mode: deployment
+  service: 
+    type: ClusterIP
+  extraVolumes:
+    - name: root-ca
+      secret:
+        defaultMode: 420
+        secretName: gloo-agent-tls-cert
+    - configMap:
+        items:
+          - key: relay
+            path: relay.yaml
+        name: gloo-telemetry-collector-config
+      name: telemetry-configmap
+# Optional customization for the Gloo Platform Telemetry Collector.
+telemetryCollectorCustomization:
+  extraPipelines:
+    logs/gloo-mesh:
+      receivers: [otlp/gloo-mesh]
+      processors: [batch]
+      exporters: 
+        - logging/gloo-mesh
+    traces/gloo-mesh: 
+      receivers: [zipkin/gloo-mesh]
+      processors: [batch]
+      exporters:
+        - otlp
+    metrics/gloo-mesh:
+      receivers: [prometheus]
+      processors:
+        - memory_limiter
+        - filter/min # Add this, if you want to filter for the Minimum Metrics Set, required for Gloo Mesh UI.
+        - batch
+        - attributes/drop_extra_istio_labels # Add this to drop labels not needed for Gloo Mesh UI.
+        - attributes/drop_extra_otel_labels # Add this to drop some labels from the OTel collector itself.
+        - gloo_metrics_processor
+      exporters:
+        - otlp
+  extraExporters:
+    logging/gloo-mesh:
+      verbosity: normal
+      sampling_initial: 5
+      sampling_thereafter: 200
+  extraReceivers:
+    zipkin/gloo-mesh:
+        endpoint: 0.0.0.0:9411
+    otlp/gloo-mesh:
+      protocols:
+        grpc:
+          endpoint: 0.0.0.0:4317
+        http:
+          endpoint: 0.0.0.0:4318

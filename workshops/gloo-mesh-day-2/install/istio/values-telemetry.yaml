@@ -1,0 +1,53 @@
+meshConfig:
+  enableTracing: true
+  extensionProviders:
+    - name: zipkincustom
+      zipkin:
+        service: "gloo-telemetry-collector.gloo-mesh.svc.cluster.local"
+        port: "9411"
+    - name: envoyOtelAls
+      envoyOtelAls:
+        service: "gloo-telemetry-collector.gloo-mesh.svc.cluster.local"
+  # Enable access logging only if using.
+  accessLogFile: /dev/stdout
+  # Encoding for the proxy access log (TEXT or JSON). Default value is TEXT.
+  accessLogEncoding: JSON
+  defaultConfig:
+    # Wait for the istio-proxy to start before starting application pods
+    holdApplicationUntilProxyStarts: true
+    proxyMetadata:
+      # Enable Istio agent to handle DNS requests for known hosts
+      # Unknown hosts are automatically resolved using upstream DNS servers
+      # in resolv.conf (for proxy-dns)
+      ISTIO_META_DNS_CAPTURE: "true"
+      # Enable automatic address allocation (for proxy-dns)
+      ISTIO_META_DNS_AUTO_ALLOCATE: "true"
+  # Set the default behavior of the sidecar for handling outbound traffic
+  # from the application
+  outboundTrafficPolicy:
+    mode: ALLOW_ANY
+  # The administrative root namespace for Istio configuration
+  rootNamespace: istio-system
+# Traffic management
+values:
+  global:
+    meshID: mesh1
+    network: "istio-network"
+# Traffic management
+components:
+  # Disable gateways deployments, which are deployed in separate resources
+  ingressGateways:
+  - name: istio-ingressgateway
+    enabled: false
+  - name: istio-eastwestgateway
+    enabled: false
+  egressGateways:
+  - name: istio-egressgateway
+    enabled: false
+  pilot:
+    k8s:
+      env:
+        # Disable selecting workload entries for local service routing.
+        # Required for Gloo VirtualDestinaton functionality.
+        - name: PILOT_ENABLE_K8S_SELECT_WORKLOAD_ENTRIES
+          value: "false"
