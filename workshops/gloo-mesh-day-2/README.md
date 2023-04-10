@@ -8,9 +8,10 @@
 * [Lab 1 - Deploy Kubernetes clusters](#Configure)
 * [Lab 2 - PKI / Vault and Cert Manager](#Certificates)
 * [Lab 3 - Install Gloo Platform](#Installation)
-* [Lab 4 - High Availability Management Plane](#HA)
-* [Lab 5 - Expose Gloo UI](#GlooUI)
-* [Lab 6 - Observability](#Observability)
+* [Lab 4 - Install Production Istio](#Istio)
+* [Lab 5 - High Availability Management Plane](#HA)
+* [Lab 6 - Expose Gloo UI](#GlooUI)
+* [Lab 7 - Observability](#Observability)
 
 ## Introduction <a name="introduction"></a>
 
@@ -326,7 +327,7 @@ kubectl get secret gloo-agent-tls-cert -n gloo-mesh --context $CLUSTER1
 
 Gloo consists of a centralized management server to which agents running on each of the workload clusters connect. The recommended way to install Gloo in production is via `helm`. Helm was chosen because of the amount of support it has with various GitOps based deployment solutions. Many of our customers today use `ArgoCD` to deploy Gloo. For more see [GitOps with ArgoCD and Gloo](https://www.solo.io/blog/gitops-with-argo-cd-and-gloo-mesh-part-1/)
 
-![Gloo Architecture](./images/gloo.png)
+![Gloo Architecture](./images/day2-arch.png)
 
 * Add Gloo Helm charts to your repository
 
@@ -348,7 +349,6 @@ Gloo Platform can be installed using Helm. It is recommended to use deploy Gloo 
 ```sh
 helm upgrade --install gloo-platform-crds gloo-platform/gloo-platform-crds \
   --version=$GLOO_PLATFORM_VERSION \
-  --devel \
   --namespace=gloo-mesh \
   --kube-context $MGMT \
   --create-namespace
@@ -360,7 +360,6 @@ helm upgrade --install gloo-platform gloo-platform/gloo-platform \
   --set licensing.glooGatewayLicenseKey=$GLOO_PLATFORM_LICENSE_KEY \
   --kube-context ${MGMT} \
   --namespace gloo-mesh \
-  --devel \
   -f install/gloo-platform/mgmt-values.yaml
 ```
 
@@ -416,7 +415,6 @@ helm upgrade --install gloo-agent gloo-platform/gloo-platform \
 # apply the CRDs
 helm upgrade --install gloo-platform-crds gloo-platform/gloo-platform-crds \
   --version=$GLOO_PLATFORM_VERSION \
-  --devel \
   --namespace=gloo-mesh \
   --kube-context $CLUSTER1 \
   --create-namespace
@@ -438,7 +436,7 @@ kubectl port-forward -n gloo-mesh deploy/gloo-mesh-mgmt-server --context $MGMT 9
 ```
 
 In another terminal, curl the metrics endpoint
-```
+```sh
 curl -sS localhost:9091/metrics | grep relay_push_clients_connected
 ```
 
@@ -451,7 +449,7 @@ relay_push_clients_connected{cluster="cluster1"} 1
 relay_push_clients_connected{cluster="mgmt-cluster"} 1
 ```
 
-## Install Istio <a name="Lab-4"></a>
+## Install Istio <a name="Istio"></a>
 
 ### Istio Certificate Setup
 
@@ -651,16 +649,23 @@ pilot:
 EOF
 ```
 
-* Verify that Istio is using the plugged in certs `kubectl logs --context ${MGMT} -l app=istiod -n istio-system --tail 100 | grep x509`
+* Verify that Istio is using the plugged in certs `kubectl logs --context ${MGMT} -l app=istiod -n istio-system | grep x509`
 ```sh
-2022-10-05T19:50:32.288662Z    info    Using kubernetes.io/tls secret type for signing ca files
-2022-10-05T19:50:32.288667Z    info    Use plugged-in cert at etc/cacerts/tls.key
-2022-10-05T19:50:32.288759Z    info    x509 cert - Issuer: "CN=cluster1.solo.io", Subject: "", SN: 7d9a3353a9fcf01ed7e492a5ee11f9ef, NotBefore: "2022-10-05T19:48:32Z", NotAfter: "2032-10-02T19:50:32Z"
-2022-10-05T19:50:32.288773Z    info    x509 cert - Issuer: "CN=Solo.io Istio CA Issuer", Subject: "CN=cluster1.solo.io", SN: 534ef6afdefd0bda57eade9181f01ddf9cca1a82, NotBefore: "2022-10-05T19:45:03Z" NotAfter: "2022-11-04T19:45:33Z"
-2022-10-05T19:50:32.288788Z    info    x509 cert - Issuer: "CN=solo.io", Subject: "CN=Solo.io Istio CA Issuer", SN: 56f87198ca42c8f622987c4336fc4103e719c122, NotBefore: "2022-10-05T19:36:53Z", NotAfter: "2027-10-04T19:37:23Z"
+2023-04-10T14:21:41.638520Z     info    x509 cert - Issuer: "CN=mgmt.solo.io", Subject: "", SN: d7c4889aa3e4dd3b53b02169f1dc9016, NotBefore: "2023-04-10T14:19:41Z", NotAfter: "2033-04-07T14:21:41Z"
+2023-04-10T14:21:41.638547Z     info    x509 cert - Issuer: "CN=Intermediate CA,O=Istio", Subject: "CN=mgmt.solo.io", SN: 60d431616502af501d1f3454e1a4a9f7d35ddd4e, NotBefore: "2023-04-10T14:20:45Z", NotAfter: "2023-05-10T14:21:15Z"
+2023-04-10T14:21:41.638580Z     info    x509 cert - Issuer: "CN=Root Certificate", Subject: "CN=Intermediate CA,O=Istio", SN: 3e8948df93d720abc4a908e172eafa617e617187, NotBefore: "2023-04-10T14:13:31Z", NotAfter: "2028-04-08T14:14:01Z"
+2023-04-10T14:21:41.638598Z     info    x509 cert - Issuer: "CN=Root Certificate", Subject: "CN=Root Certificate", SN: 643b4f58d74689e0facc6318ab39d5a86c0c5d5f, NotBefore: "2023-04-10T14:14:01Z", NotAfter: "2033-04-07T14:14:01Z"
 ```
 
-* Install an Eastwest gateway in mgmt cluster
+* Verify that Istio is using the plugged in certs for cluster1 `kubectl logs --context ${CLUSTER1} -l app=istiod -n istio-system | grep x509`
+```sh
+2023-04-10T14:24:59.559865Z     info    x509 cert - Issuer: "CN=cluster1.solo.io", Subject: "", SN: c848d01c8e0867395b850dc742afde71, NotBefore: "2023-04-10T14:22:59Z", NotAfter: "2033-04-07T14:24:59Z"
+2023-04-10T14:24:59.559882Z     info    x509 cert - Issuer: "CN=Intermediate CA,O=Istio", Subject: "CN=cluster1.solo.io", SN: 220eed6f615f2f4ffc1b9e625d6464e640c0a419, NotBefore: "2023-04-10T14:20:50Z", NotAfter: "2023-05-10T14:21:20Z"
+2023-04-10T14:24:59.559895Z     info    x509 cert - Issuer: "CN=Root Certificate", Subject: "CN=Intermediate CA,O=Istio", SN: 3e8948df93d720abc4a908e172eafa617e617187, NotBefore: "2023-04-10T14:13:31Z", NotAfter: "2028-04-08T14:14:01Z"
+2023-04-10T14:24:59.559906Z     info    x509 cert - Issuer: "CN=Root Certificate", Subject: "CN=Root Certificate", SN: 643b4f58d74689e0facc6318ab39d5a86c0c5d5f, NotBefore: "2023-04-10T14:14:01Z", NotAfter: "2033-04-07T14:14:01Z"
+```
+
+* Install an Eastwest gateway in `mgmt` cluster. This will allow us to expose the Gloo UI through the Ingress gateway in `cluster1`
 
 ```sh
 helm upgrade --install istio-eastwestgateway-${ISTIO_REVISION} istio/gateway \
@@ -691,7 +696,7 @@ env:
 EOF
 ```
 
-* Install Gateways in cluster1
+* Install Gloo Gateway in `cluster1`
 
 ```sh
 helm upgrade --install istio-ingressgateway-${ISTIO_REVISION} istio/gateway \
@@ -722,9 +727,15 @@ service:
 EOF
 ```
 
+* This is the architecture after the installation of Gloo Platform and Istio
+
+![Gloo Platform Achitecture](./images/gloo-platform-arch.png)
+
 ## High Availability Managemnent Plane<a name="HA"></a>
 
 In production it's beneficial to run more than one managment server replica. Because data is cached in Redis, multiple manangement servers pods can run and serve agents at a time. Not only does this help provide higher availability, it also will be more performant with many clusters connected. The agent connections are long lived so simply scaling the management replicas will cause the agents to balance. To get a more balanced connection pool, enable `glooMeshMgmtServer.enableClusterLoadBalancing=true` which will tell the management replica pods to auto balance the connections.
+
+![HA Management Plane](./images/ha-mgmt-plane.png)
 
 * Upgrade the management plane to have 2 replias and enable agent load balancing.
 ```sh
@@ -733,7 +744,6 @@ helm upgrade --install gloo-platform gloo-platform/gloo-platform \
   --reuse-values \
   --kube-context ${MGMT} \
   --namespace gloo-mesh \
-  --devel \
   --set glooMgmtServer.enableClusterLoadBalancing=true \
   --set glooMgmtServer.deploymentOverrides.spec.replicas=2
 ```
@@ -762,6 +772,7 @@ spec:
     namespaces:
     - name: istio-ingress
     - name: gloo-mesh-addons
+    - name: bookinfo
 ---
 apiVersion: admin.gloo.solo.io/v2
 kind: WorkspaceSettings
@@ -860,7 +871,7 @@ echo "Gloo UI available at http://$GLOO_GATEWAY"
 
 Gloo Platform offers the best in class observability for communication between your services. By aggregating logging, tracing, and metrics, Gloo Platform combines telemetry from all environments to give you a complete picture of how your platform is performing. 
 
-![Gloo Platform Graph](../images/gloo-platform-graph.png)
+![Gloo Platform Graph](./images/gloo-platform-graph.png)
 
 Links:
 * [Exploying the Gloo UI](https://docs.solo.io/gloo-mesh-enterprise/latest/observability/tools/dashboard/ui-overview/)
@@ -869,7 +880,17 @@ Links:
 
 ### Metrics
 
-* Install prometheus in the mgmt plane
+When you install Gloo, you can choose how you want to collect metrics in your Gloo environment. Metrics provide important information about the performance and health of your service mesh, such as the time a request takes to be routed to your app, or the number of successful and failed requests that were sent to your apps. In addition, you can use the metrics to monitor the health of your Gloo Platform environment, such as the number of failed translations or workload clusters that experience issues with connecting to the Gloo management server. You can use these measures to detect failures and troubleshoot bottlenecks. Below is a common architecture for capturing service to service metrics. 
+
+* Deploy Bookinfo so we can generate some metrics
+```sh
+kubectl create namespace bookinfo
+kubectl label namespace bookinfo istio.io/rev=$ISTIO_REVISION
+
+kubectl apply -n bookinfo -f install/bookinfo
+```
+
+* Install prometheus in the `mgmt` cluster
 ```sh
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 helm repo update
@@ -889,10 +910,14 @@ helm upgrade --install gloo-platform gloo-platform/gloo-platform \
   --reuse-values \
   --kube-context ${MGMT} \
   --namespace gloo-mesh \
-  --devel \
   --set glooUi.prometheusUrl=http://prom-kube-prometheus-stack-prometheus.monitoring:9090
 ```
 
+* Open the Gloo UI and verify cluster information is no longer in error status
+```sh
+echo "Gloo UI available at http://$GLOO_GATEWAY"
+```
+![Gloo Platform UI](./images/gloo-platform-ui.png)
 
 ### Telemetry
 
@@ -939,7 +964,6 @@ helm upgrade --install gloo-telemetry-gateway gloo-platform/gloo-platform \
   --version=${GLOO_PLATFORM_VERSION} \
   --kube-context ${MGMT} \
   --namespace gloo-mesh \
-  --devel \
   -f install/gloo-platform/telemetry-gateway-values.yaml
 ```
 
@@ -957,7 +981,6 @@ helm upgrade --install gloo-telemetry-collector gloo-platform/gloo-platform \
   --kube-context ${CLUSTER1} \
   --set telemetryCollector.config.exporters.otlp.endpoint=$GLOO_TELEMETRY_GATEWAY \
   --namespace gloo-mesh \
-  --devel \
   -f install/gloo-platform/telemetry-collector-values.yaml
 ```
 
@@ -1028,7 +1051,7 @@ spec:
 EOF
 ```
 
-* Navigate to the Gloo UI to view that it correctly shows the clusters connected
+* Navigate to the Gloo UI and on the right hand side, click on `Graph`
 ```sh
 echo "Gloo UI available at http://$GLOO_GATEWAY"
 ```
@@ -1077,9 +1100,9 @@ EOF
 
 3. Open Jaeger and observe tracing
 ```sh
-kubectl port-forward --context $MGMT -n gloo-mesh svc/jaeger-query 16686:16686
+kubectl port-forward --context $MGMT -n monitoring svc/jaeger-query 16686:16686
 ```
 
 4. Open browser at http://localhost:16686
 
-5. Select service `istio-ingressgateway.istio-system` and then click `Find Traces`
+5. Select service `istio-ingressgateway-1-16.istio-ingress` and then click `Find Traces`
