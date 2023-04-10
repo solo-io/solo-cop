@@ -655,7 +655,7 @@ pilot:
 EOF
 ```
 
-* Verify that Istio is using the plugged in certs `kubectl logs --context ${MGMT} "deploy/istiod-${ISTIO_REVISION}" -n istio-system | grep x509`
+* Verify that Istio is using the plugged in certs `kubectl logs --context ${MGMT} deploy/istiod-${ISTIO_REVISION} -n istio-system | grep x509`
 ```sh
 2023-04-10T14:21:41.638520Z     info    x509 cert - Issuer: "CN=mgmt.solo.io", Subject: "", SN: d7c4889aa3e4dd3b53b02169f1dc9016, NotBefore: "2023-04-10T14:19:41Z", NotAfter: "2033-04-07T14:21:41Z"
 2023-04-10T14:21:41.638547Z     info    x509 cert - Issuer: "CN=Intermediate CA,O=Istio", Subject: "CN=mgmt.solo.io", SN: 60d431616502af501d1f3454e1a4a9f7d35ddd4e, NotBefore: "2023-04-10T14:20:45Z", NotAfter: "2023-05-10T14:21:15Z"
