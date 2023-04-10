@@ -582,6 +582,9 @@ helm upgrade --install istiod-${ISTIO_REVISION} istio/istiod \
   --namespace istio-system \
   --kube-context ${MGMT} \
   -f- <<EOF
+global:
+  multiCluster:
+    clusterName: $MGMT
 meshConfig:
   # The trust domain corresponds to the trust root of a system. 
   # For Gloo this should be the name of the cluster that cooresponds with the CA certificate CommonName identity
@@ -621,6 +624,9 @@ helm upgrade --install istiod-${ISTIO_REVISION} istio/istiod \
   --namespace istio-system \
   --kube-context ${CLUSTER1} \
   -f- <<EOF
+global:
+  multiCluster:
+    clusterName: $CLUSTER1
 meshConfig:
   # The trust domain corresponds to the trust root of a system. 
   # For Gloo this should be the name of the cluster that cooresponds with the CA certificate CommonName identity
@@ -994,6 +1000,10 @@ helm upgrade --install istiod-${ISTIO_REVISION} istio/istiod \
   --namespace istio-system \
   --kube-context ${CLUSTER1} \
   -f- <<EOF
+global:
+  multiCluster:
+    clusterName: $CLUSTER1
+
 meshConfig:
   enableTracing: true
   extensionProviders:
@@ -1055,6 +1065,9 @@ EOF
 ```sh
 echo "Gloo UI available at http://$GLOO_GATEWAY"
 ```
+
+* View the teletry data being displayed in the Gloo Platform Graph
+![Gloo Platform Graph](./images/gloo-platform-graph.png)
 
 Metrics provide important information about the health of the apps in your service mesh. You can use these measures to detect failures, troubleshoot bottlenecks, and to find ways to improve the performance and reliability of your service mesh.
 
