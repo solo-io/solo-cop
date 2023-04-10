@@ -655,7 +655,7 @@ pilot:
 EOF
 ```
 
-* Verify that Istio is using the plugged in certs `kubectl logs --context ${MGMT} -l app=istiod -n istio-system | grep x509`
+* Verify that Istio is using the plugged in certs `kubectl logs --context ${MGMT} "deploy/istiod-${ISTIO_REVISION}" -n istio-system | grep x509`
 ```sh
 2023-04-10T14:21:41.638520Z     info    x509 cert - Issuer: "CN=mgmt.solo.io", Subject: "", SN: d7c4889aa3e4dd3b53b02169f1dc9016, NotBefore: "2023-04-10T14:19:41Z", NotAfter: "2033-04-07T14:21:41Z"
 2023-04-10T14:21:41.638547Z     info    x509 cert - Issuer: "CN=Intermediate CA,O=Istio", Subject: "CN=mgmt.solo.io", SN: 60d431616502af501d1f3454e1a4a9f7d35ddd4e, NotBefore: "2023-04-10T14:20:45Z", NotAfter: "2023-05-10T14:21:15Z"
@@ -663,7 +663,7 @@ EOF
 2023-04-10T14:21:41.638598Z     info    x509 cert - Issuer: "CN=Root Certificate", Subject: "CN=Root Certificate", SN: 643b4f58d74689e0facc6318ab39d5a86c0c5d5f, NotBefore: "2023-04-10T14:14:01Z", NotAfter: "2033-04-07T14:14:01Z"
 ```
 
-* Verify that Istio is using the plugged in certs for cluster1 `kubectl logs --context ${CLUSTER1} -l app=istiod -n istio-system | grep x509`
+* Verify that Istio is using the plugged in certs for cluster1 `kubectl logs --context ${CLUSTER1} deploy/istiod-${ISTIO_REVISION} -n istio-system | grep x509`
 ```sh
 2023-04-10T14:24:59.559865Z     info    x509 cert - Issuer: "CN=cluster1.solo.io", Subject: "", SN: c848d01c8e0867395b850dc742afde71, NotBefore: "2023-04-10T14:22:59Z", NotAfter: "2033-04-07T14:24:59Z"
 2023-04-10T14:24:59.559882Z     info    x509 cert - Issuer: "CN=Intermediate CA,O=Istio", Subject: "CN=cluster1.solo.io", SN: 220eed6f615f2f4ffc1b9e625d6464e640c0a419, NotBefore: "2023-04-10T14:20:50Z", NotAfter: "2023-05-10T14:21:20Z"
