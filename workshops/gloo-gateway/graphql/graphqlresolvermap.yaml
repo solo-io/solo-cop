@@ -2,13 +2,13 @@ apiVersion: apimanagement.gloo.solo.io/v2
 kind: GraphQLResolverMap
 metadata:
   name: resolvers
-  namespace: dev-team
+  namespace: online-boutique
 spec:
   extensions:
     grpcSchemaSelector:
       name: hipster-schema
-      namespace: dev-team
-      cluster: mgmt-cluster
+      namespace: online-boutique
+      cluster: cluster-1
   types:
     Query:
       fields:
@@ -19,7 +19,7 @@ spec:
               - port:
                   number: 3550
                 ref:
-                  cluster: mgmt-cluster
+                  cluster: cluster-1
                   name: productcatalogservice
                   namespace: backend-apis
               request:
@@ -32,13 +32,13 @@ apiVersion: apimanagement.gloo.solo.io/v2
 kind: GraphQLResolverMap
 metadata:
   name: adservice
-  namespace: dev-team
+  namespace: online-boutique
 spec:
   extensions:
     grpcSchemaSelector:
       name: hipster-schema
-      namespace: dev-team
-      cluster: mgmt-cluster
+      namespace: online-boutique
+      cluster: cluster-1
   types:
     Query:
       fields:
@@ -49,7 +49,7 @@ spec:
               - port:
                   number: 9555
                 ref:
-                  cluster: mgmt-cluster
+                  cluster: cluster-1
                   name: adservice
                   namespace: backend-apis
               request:
@@ -62,13 +62,13 @@ apiVersion: apimanagement.gloo.solo.io/v2
 kind: GraphQLResolverMap
 metadata:
   name: cartservice
-  namespace: dev-team
+  namespace: online-boutique
 spec:
   extensions:
     grpcSchemaSelector:
       name: hipster-schema
-      namespace: dev-team
-      cluster: mgmt-cluster
+      namespace: online-boutique
+      cluster: cluster-1
   types:
     Query:
       fields:
@@ -82,7 +82,7 @@ spec:
               - port:
                   number: 7070
                 ref:
-                  cluster: mgmt-cluster
+                  cluster: cluster-1
                   name: cartservice
                   namespace: backend-apis
               request:

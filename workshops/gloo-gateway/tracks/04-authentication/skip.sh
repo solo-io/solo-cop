@@ -45,7 +45,7 @@ spec:
     server:
       name: ext-auth-server
       namespace: dev-team
-      cluster: mgmt-cluster
+      cluster: cluster-1
     glooAuth:
       configs:
       - apiKeyAuth:
@@ -112,7 +112,7 @@ spec:
             ref:
               name: auth0
               namespace: dev-team
-              cluster: mgmt-cluster
+              cluster: cluster-1
             kind: EXTERNAL_SERVICE
             port:
               number: 443

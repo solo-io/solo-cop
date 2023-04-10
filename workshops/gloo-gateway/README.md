@@ -48,12 +48,12 @@ Set these environment variables which will be used throughout the workshop.
 ```sh
 # Used to enable Gloo Gateway (please ask for a trail license key)
 export GLOO_GATEWAY_LICENSE_KEY=<licence_key>
-export GLOO_PLATFORM_VERSION=v2.2.0-rc2
+export GLOO_PLATFORM_VERSION=v2.3.0-rc1
 
 # Istio version information
 export ISTIO_IMAGE_REPO=us-docker.pkg.dev/gloo-mesh/istio-workshops
-export ISTIO_IMAGE_TAG=1.15.4-solo
-export ISTIO_VERSION=1.15.4
+export ISTIO_IMAGE_TAG=1.16.3-solo
+export ISTIO_VERSION=1.16.3
 ```
 
 ## Lab 1 - Configure/Deploy a Kubernetes cluster <a name="Lab-1"></a>
@@ -104,55 +104,46 @@ meshctl check
 ```
 You should see something similar to the following
 ```sh
-Checking Gloo Mesh Management Cluster Installation
---------------------------------------------
+🟢 License status
 
-🟢 Gloo Mgmt Server Deployment Status
+ INFO  gloo-gateway enterprise license expiration is 31 Oct 32 08:14 CDT
+ INFO  Valid GraphQL license module found
 
-🟢 Gloo Mgmt Server Connectivity to Agents
-+--------------+------------+--------------------------------------------------+
-|   CLUSTER    | REGISTERED |                  CONNECTED POD                   |
-+--------------+------------+--------------------------------------------------+
-| mgmt-cluster | true       | gloo-mesh/gloo-mesh-mgmt-server-6464cf4b99-8lfxj |
-+--------------+------------+--------------------------------------------------+
-```
+🟢 CRD version check
 
-## Lab 3 - Deploy Gloo API Gateway<a name="Lab-3"></a>
 
-![Gloo API Gateway](images/deploy.png)
+🟢 Gloo Platform deployment status
 
-The Gloo Platform can easily deploy and manage your API Gateways for you. You can even deploy them to many clusters with a single configuration. For this workshop we will be deploying an API gateway to the same cluster as the management platform.
+Namespace | Name                           | Ready | Status 
+gloo-mesh | gloo-mesh-agent                | 1/1   | Healthy
+gloo-mesh | gloo-mesh-redis                | 1/1   | Healthy
+gloo-mesh | gloo-mesh-mgmt-server          | 1/1   | Healthy
+gloo-mesh | gloo-telemetry-gateway         | 1/1   | Healthy
+gloo-mesh | gloo-mesh-ui                   | 1/1   | Healthy
+gloo-mesh | prometheus-server              | 1/1   | Healthy
+gloo-mesh | gloo-telemetry-collector-agent | 1/1   | Healthy
 
-1. Download [istioctl](https://istio.io/latest/docs/setup/getting-started/)
+🟢 Mgmt server connectivity to workload agents
 
-```sh
-curl -L https://istio.io/downloadIstio | ISTIO_VERSION=${ISTIO_VERSION} sh -
-export PATH=$PWD/istio-${ISTIO_VERSION}/bin:$PATH
-
-istioctl version
-```
-
-2. Install Gloo API gateway into the `gloo-gateway` namespace. We are using the Gloo Mesh `GatewayLifecycleManager` to install Istio Ingress Gateway. 
-
-```sh
-kubectl create ns gloo-gateway
-kubectl label namespace gloo-gateway istio-injection=enabled
-kubectl apply -f install/gloo-gateway/gm-gateway.yaml
+Cluster   | Registered | Connected Pod                                   
+cluster-1 | true       | gloo-mesh/gloo-mesh-mgmt-server-7f8855cc56-mgb94
 ```
 
 3. Wait for the Gloo Gateway LoadBalancer to become ready
 
 ```sh
-until kubectl get service/gloo-gateway -n gloo-gateway --output=jsonpath='{.status.loadBalancer}' | grep "ingress"; do : ; done
-export GLOO_GATEWAY=$(kubectl -n gloo-gateway get svc gloo-gateway -o jsonpath='{.status.loadBalancer.ingress[0].*}')
+until kubectl get service/istio-ingressgateway -n gloo-mesh-gateways --output=jsonpath='{.status.loadBalancer}' | grep "ingress"; do : ; done
+export GLOO_GATEWAY=$(kubectl -n gloo-mesh-gateways get svc istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].*}')
 printf "\n\nGloo Gateway available at http://$GLOO_GATEWAY\n"
 ```
 
 4. You need to setup your cluster environment to enable all the API gateway features. The below script deploys the optional `gloo-mesh-addons` features that enable features such as external authorization and rate limiting. Finally, you will also deploy your own OIDC provider `keycloak` which will allow you to secure your website with a user/pass login. 
 
 ```sh
-kubectl create namespace dev-team
-kubectl create namespace ops-team
+# remove the default workspace
+kubectl delete workspace cluster-1 -n gloo-mesh
+kubectl delete workspacesettings default -n gloo-mesh
+
 kubectl create namespace gloo-gateway-addons
 kubectl label namespace gloo-gateway-addons istio-injection=enabled
 
@@ -167,6 +158,7 @@ helm upgrade --install gloo-gateway-addons gloo-mesh-agent/gloo-mesh-agent \
   --version $GLOO_PLATFORM_VERSION
 
 kubectl apply -f install/gloo-gateway/addons-servers.yaml
+kubectl apply -f install/online-boutique/grpc2json.yaml
 
 ./install/keycloak/setup.sh
 
@@ -180,16 +172,11 @@ printf "\n\nKeycloak OIDC ClientID: $KEYCLOAK_CLIENTID\n\nKeycloak URL: $KEYCLOA
 
 ![Gloo Gateway Architecture](images/gloo-gateway-apps-arch.png)
 
-1. Deploy the Online Boutique backend microservices to the `backend-apis` namespace.
+1. Deploy the Online Boutique microservices to the `online-boutique` namespace.
 
 ```sh
-kubectl apply -f install/online-boutique/backend-apis.yaml
-```
-
-2. Deploy the frontend microservice to the `web-ui` namespace.
-
-```sh
-kubectl apply -f install/online-boutique/web-ui.yaml
+kubectl create namespace online-boutique
+kubectl apply -f install/online-boutique/deployment.yaml
 ```
 
 ## Lab 5 - Configure Gloo Platform Workspaces <a name="Lab-5"></a>
@@ -203,7 +190,7 @@ Imagine that you have the following teams. Each team represents a "tenant" in Gl
 * The Ops team, who is responsible for the platform and ingress traffic.
 * The Dev team, who is responsible for the frontend web application and backend apis that power the frontend.
 
-Also note that a dedicated namespace is created for each workspace to place their configuration (`ops-team`, `dev-team` namespaces). It is recommended that the configuration is separate from your deployments.
+Also note that a dedicated namespace is created for each workspace to place their configuration (`ops-team`, `app-team` namespaces). It is recommended that the configuration is separate from your deployments.
 
 ```yaml
 kubectl apply -f - <<EOF
@@ -216,22 +203,19 @@ spec:
   workloadClusters:
   - name: '*'
     namespaces:
-    - name: ops-team     ### Configuration Namespace
-    - name: gloo-gateway
+    - name: gloo-mesh-gateways
     - name: gloo-gateway-addons
 ---
 apiVersion: admin.gloo.solo.io/v2
 kind: Workspace
 metadata:
-  name: dev-team
+  name: app-team
   namespace: gloo-mesh
 spec:
   workloadClusters:
   - name: '*'
     namespaces:
-    - name: dev-team  ### Configuration Namespace
-    - name: web-ui
-    - name: backend-apis
+    - name: online-boutique
 EOF
 ```
 
@@ -257,21 +241,21 @@ RouteTables defines one or more hosts and a set of traffic route rules to handle
 
 This allows you to create a hierarchy of routing configuration and dynamically attach policies at various levels. 
 
-1. Let's start by assuming the role of a Ops team. Configure the Gateway to listen on port 80 and create a generic RouteTable that further delegates the traffic routing to RouteTables in the `dev-team` workspace.
+1. Let's start by assuming the role of a Ops team. Configure the Gateway to listen on port 80 and create a generic RouteTable that further delegates the traffic routing to RouteTables in the `app-team` workspace.
 
 ```yaml
 kubectl apply -f - <<EOF
 apiVersion: networking.gloo.solo.io/v2
 kind: VirtualGateway
 metadata:
-  name: north-south-gw
-  namespace: ops-team
+  name: ingress
+  namespace: gloo-mesh-gateways
 spec:
   workloads:
     - selector:
         labels:
-          istio: ingressgateway
-        namespace: gloo-gateway
+          app: istio-ingressgateway
+        namespace: gloo-mesh-gateways
   listeners: 
     - http: {}
       port:
@@ -285,21 +269,21 @@ apiVersion: networking.gloo.solo.io/v2
 kind: RouteTable
 metadata:
   name: ingress
-  namespace: ops-team
+  namespace: gloo-mesh-gateways
 spec:
   hosts:
     - '*'
   virtualGateways:
-    - name: north-south-gw
-      namespace: ops-team
+    - name: ingress
+      namespace: gloo-mesh-gateways
   workloadSelectors: []
   http:
-    - name: dev-team-ingress
+    - name: app-team-ingress
       labels:
         ingress: "true"
       delegate:
         routeTables:
-        - workspace: dev-team
+        - workspace: app-team
 EOF
 ```
 
@@ -311,7 +295,7 @@ apiVersion: networking.gloo.solo.io/v2
 kind: RouteTable
 metadata:
   name: frontend
-  namespace: dev-team
+  namespace: online-boutique
 spec:
   workloadSelectors: []
   http:
@@ -325,7 +309,7 @@ spec:
         destinations:
           - ref:
               name: frontend
-              namespace: web-ui
+              namespace: online-boutique
             port:
               number: 80
 EOF
@@ -345,7 +329,7 @@ You've successfully exposed the frontend application thru the Gloo Gateway.
 
 ### Routing to additional applications in the cluster
 
-Next, lets see how easy it is to expose another application. This time, we will match on URI `prefix: /hipstershop.CurrencyService/Convert` and send to the currencyservice application.
+Next, lets see how easy it is to expose another application. This time, we will match on URI `prefix: /currencies` and send to the currencyservice application.
 
 ```yaml
 kubectl apply -f - <<EOF
@@ -353,7 +337,7 @@ apiVersion: networking.gloo.solo.io/v2
 kind: RouteTable
 metadata:
   name: currency
-  namespace: dev-team
+  namespace: online-boutique
 spec:
   weight: 100
   workloadSelectors: []
@@ -361,6 +345,10 @@ spec:
     - matchers:
       - uri:
           prefix: /hipstershop.CurrencyService
+      - uri:
+          exact: /currencies
+      - uri:
+          prefix: /currencies
       name: currency
       labels:
         route: currency
@@ -368,43 +356,22 @@ spec:
         destinations:
           - ref:
               name: currencyservice
-              namespace: backend-apis
+              namespace: online-boutique
             port:
               number: 7000
 ---
 apiVersion: networking.gloo.solo.io/v2
 kind: RouteTable
 metadata:
-  name: schema
-  namespace: dev-team
+  name: shipping
+  namespace: online-boutique
 spec:
   weight: 100
   workloadSelectors: []
   http:
     - matchers:
       - uri:
-          prefix: /grpc.reflection.v1alpha.ServerReflection
-      name: reflection
-      labels:
-        route: reflection
-      forwardTo:
-        destinations:
-          - ref:
-              name: productcatalogservice
-              namespace: backend-apis
-            port:
-              number: 3550
----
-apiVersion: networking.gloo.solo.io/v2
-kind: RouteTable
-metadata:
-  name: shipping
-  namespace: dev-team
-spec:
-  weight: 100
-  workloadSelectors: []
-  http:
-    - matchers:
+          prefix: /shipping
       - uri:
           prefix: /hipstershop.ShippingService
       name: shipping
@@ -414,7 +381,7 @@ spec:
         destinations:
           - ref:
               name: shippingservice
-              namespace: backend-apis
+              namespace: online-boutique
             port:
               number: 50051
 ---
@@ -422,12 +389,16 @@ apiVersion: networking.gloo.solo.io/v2
 kind: RouteTable
 metadata:
   name: productcatalog
-  namespace: dev-team
+  namespace: online-boutique
 spec:
   weight: 100
   workloadSelectors: []
   http:
     - matchers:
+      - uri:
+          exact: /products
+      - uri:
+          prefix: /products
       - uri:
           prefix: /hipstershop.ProductCatalogService
       name: productcatalog
@@ -437,7 +408,7 @@ spec:
         destinations:
           - ref:
               name: productcatalogservice
-              namespace: backend-apis
+              namespace: online-boutique
             port:
               number: 3550
 ---
@@ -445,12 +416,14 @@ apiVersion: networking.gloo.solo.io/v2
 kind: RouteTable
 metadata:
   name: adservice
-  namespace: dev-team
+  namespace: online-boutique
 spec:
   weight: 100
   workloadSelectors: []
   http:
     - matchers:
+      - uri:
+          exact: /ads
       - uri:
           prefix: /hipstershop.AdService
       name: adservice
@@ -460,55 +433,9 @@ spec:
         destinations:
           - ref:
               name: adservice
-              namespace: backend-apis
+              namespace: online-boutique
             port:
               number: 9555
----
-apiVersion: networking.gloo.solo.io/v2
-kind: RouteTable
-metadata:
-  name: cartservice
-  namespace: dev-team
-spec:
-  weight: 100
-  workloadSelectors: []
-  http:
-    - matchers:
-      - uri:
-          prefix: /hipstershop.CartService
-      name: cartservice
-      labels:
-        route: cartservice
-      forwardTo:
-        destinations:
-          - ref:
-              name: cartservice
-              namespace: backend-apis
-            port:
-              number: 7070
----
-apiVersion: networking.gloo.solo.io/v2
-kind: RouteTable
-metadata:
-  name: paymentservice
-  namespace: dev-team
-spec:
-  weight: 100
-  workloadSelectors: []
-  http:
-    - matchers:
-      - uri:
-          prefix: /hipstershop.PaymentService
-      name: paymentservice
-      labels:
-        route: paymentservice
-      forwardTo:
-        destinations:
-          - ref:
-              name: paymentservice
-              namespace: backend-apis
-            port:
-              number: 50051
 EOF
 ```
 
@@ -516,45 +443,13 @@ The currencyservice converts units from one currency to another. Test the curren
 
 ```sh
 #currency service convert
-grpcurl --plaintext --proto ./install/online-boutique/online-boutique.proto -d '{ "from": { "currency_code": "USD", "nanos": 44637071, "units": "31" }, "to_code": "JPY" }' $GLOO_GATEWAY:80 hipstershop.CurrencyService/Convert
+curl -X POST -d '{ "from": { "currency_code": "USD", "nanos": 44637071, "units": "31" }, "to_code": "JPY" }' $GLOO_GATEWAY/currencies/convert
 
 # Product Catalog List Products
-grpcurl --plaintext --proto ./install/online-boutique/online-boutique.proto $GLOO_GATEWAY:8080 hipstershop.ProductCatalogService/ListProducts
+curl $GLOO_GATEWAY/products
 
 # Ad Service
-grpcurl --plaintext --proto ./install/online-boutique/online-boutique.proto -d '{ "context_keys": [ "OLJCESPC7Z" ] }' $GLOO_GATEWAY:8080 hipstershop.AdService/GetAds
-
-# Cart Service / Add Items
-grpcurl --plaintext --proto ./install/online-boutique/online-boutique.proto -d '{ "item": { "product_id": "OLJCESPC7Z", "quantity": 100 }, "user_id": "3f8b98ac-95e3-11ed-8acc-ae4af55644c2" }' $GLOO_GATEWAY:8080 hipstershop.CartService/AddItem
-
-# Cart Service / Get Items
-grpcurl --plaintext --proto ./install/online-boutique/online-boutique.proto -d '{"user_id": "3f8b98ac-95e3-11ed-8acc-ae4af55644c2"}' $GLOO_GATEWAY:8080 hipstershop.CartService/GetCart
-
-# Payment Service
-grpcurl --plaintext --proto ./install/online-boutique/online-boutique.proto -d '{ "amount": { "currency_code": "USD", "nanos": 0, "units": "20" }, "credit_card": { "credit_card_cvv": 123, "credit_card_expiration_month": 10, "credit_card_expiration_year": 2023, "credit_card_number": "4432-8015-6152-0454" } }' $GLOO_GATEWAY:8080 hipstershop.PaymentService/Charge
-```
-
-* We sent the following request:
-
-```json
-{
-    "from": {
-        "currency_code": "USD",
-        "nanos": 44637071,
-        "units": "31"
-    },
-    "to_code": "JPY"
-}
-```
-
-* The expected response:
-
-```json
-{
-  "currencyCode": "JPY",
-  "units": "3471",
-  "nanos": 67780486
-}
+curl -X GET -d '{"context_keys":["OLJCESPC7Z"]}' $GLOO_GATEWAY/ads
 ```
 
 ### Routing to External endpoints
@@ -571,7 +466,7 @@ apiVersion: networking.gloo.solo.io/v2
 kind: ExternalEndpoint
 metadata:
   name: httpbin
-  namespace: dev-team
+  namespace: online-boutique
   labels:
     external-service: httpbin
 spec:
@@ -586,7 +481,7 @@ apiVersion: networking.gloo.solo.io/v2
 kind: ExternalService
 metadata:
   name: httpbin
-  namespace: dev-team
+  namespace: online-boutique
 spec:
   selector:
     external-service: httpbin
@@ -611,7 +506,7 @@ apiVersion: networking.gloo.solo.io/v2
 kind: RouteTable
 metadata:
   name: httpbin
-  namespace: dev-team
+  namespace: online-boutique
 spec:
   weight: 150
   workloadSelectors: []
@@ -667,7 +562,7 @@ apiVersion: security.policy.gloo.solo.io/v2
 kind: WAFPolicy
 metadata:
   name: log4jshell
-  namespace: dev-team
+  namespace: online-boutique
 spec:
   applyToRoutes:
   - route:
@@ -718,7 +613,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: solo-admin
-  namespace: dev-team
+  namespace: online-boutique
   labels:
     api-keyset: httpbin-users
 type: extauth.solo.io/apikey
@@ -729,7 +624,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: solo-developer
-  namespace: dev-team
+  namespace: online-boutique
   labels:
     api-keyset: httpbin-users
 type: extauth.solo.io/apikey
@@ -746,7 +641,7 @@ apiVersion: security.policy.gloo.solo.io/v2
 kind: ExtAuthPolicy
 metadata:
   name: httpbin-apikey
-  namespace: dev-team
+  namespace: online-boutique
 spec:
   applyToRoutes:
   - route:
@@ -755,8 +650,8 @@ spec:
   config:
     server:
       name: ext-auth-server
-      namespace: dev-team
-      cluster: mgmt-cluster
+      namespace: online-boutique
+      cluster: cluster-1
     glooAuth:
       configs:
       - apiKeyAuth:
@@ -800,7 +695,7 @@ apiVersion: networking.gloo.solo.io/v2
 kind: ExternalEndpoint
 metadata:
   name: auth0
-  namespace: dev-team
+  namespace: online-boutique
   labels:
     external-service: auth0
 spec:
@@ -813,7 +708,7 @@ apiVersion: networking.gloo.solo.io/v2
 kind: ExternalService
 metadata:
   name: auth0
-  namespace: dev-team
+  namespace: online-boutique
 spec:
   selector:
     external-service: auth0
@@ -835,7 +730,7 @@ apiVersion: security.policy.gloo.solo.io/v2
 kind: JWTPolicy
 metadata:
   name: currency
-  namespace: dev-team
+  namespace: online-boutique
 spec:
   applyToRoutes:
   - route:
@@ -852,8 +747,8 @@ spec:
           destinationRef:
             ref:
               name: auth0
-              namespace: dev-team
-              cluster: mgmt-cluster
+              namespace: online-boutique
+              cluster: cluster-1
             kind: EXTERNAL_SERVICE
             port:
               number: 443
@@ -875,13 +770,13 @@ printf "\n\n Access Token: $ACCESS_TOKEN\n"
 4. Try calling currency service with no access token. You will need `grpcurl` installed and it can be downloaded here: [grpcurl installation](https://github.com/fullstorydev/grpcurl#installation)
 
 ```sh
-grpcurl --plaintext --proto ./install/online-boutique/online-boutique.proto -d '{ "from": { "currency_code": "USD", "nanos": 44637071, "units": "31" }, "to_code": "JPY" }' $GLOO_GATEWAY:80 hipstershop.CurrencyService/Convert
+curl -X POST -d '{ "from": { "currency_code": "USD", "nanos": 44637071, "units": "31" }, "to_code": "JPY" }' $GLOO_GATEWAY/currencies/convert
 ```
 
 5. Call currency service with an access token
 
 ```sh
-grpcurl -H "Authorization: Bearer ${ACCESS_TOKEN}" --plaintext --proto ./install/online-boutique/online-boutique.proto -d '{ "from": { "currency_code": "USD", "nanos": 44637071, "units": "31" }, "to_code": "JPY" }' $GLOO_GATEWAY:80 hipstershop.CurrencyService/Convert
+curl -H "Authorization: Bearer ${ACCESS_TOKEN}" -X POST -d '{ "from": { "currency_code": "USD", "nanos": 44637071, "units": "31" }, "to_code": "JPY" }' $GLOO_GATEWAY/currencies/convert
 ```
 
 ## Lab 11 - Authentication / OIDC<a name="Lab-11"></a>
@@ -896,7 +791,7 @@ Another valuable feature of API gateways is integration into your IdP (Identity 
 openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
    -keyout tls.key -out tls.crt -subj "/CN=*"
 
-kubectl -n gloo-gateway create secret generic tls-secret \
+kubectl -n gloo-mesh-gateways create secret generic tls-secret \
 --from-file=tls.key=tls.key \
 --from-file=tls.crt=tls.crt
 
@@ -910,15 +805,14 @@ kubectl apply -f - <<EOF
 apiVersion: networking.gloo.solo.io/v2
 kind: VirtualGateway
 metadata:
-  name: north-south-gw
-  namespace: ops-team
+  name: ingress
+  namespace: gloo-mesh-gateways
 spec:
   workloads:
     - selector:
         labels:
-          istio: ingressgateway
-        cluster: mgmt-cluster
-        namespace: gloo-gateway
+          app: istio-ingressgateway
+        namespace: gloo-mesh-gateways
   listeners:
     - http: {}
       port:
@@ -954,7 +848,7 @@ The `ExtAuthPolicy` defines the provider connectivity including any callback pat
 5. Apply the `ExtAuthPolicy`
 
 ```sh
-( echo "cat <<EOF" ; cat tracks/ext-auth-policy.yaml ; echo EOF ) | sh | kubectl apply -n dev-team -f -
+( echo "cat <<EOF" ; cat tracks/ext-auth-policy.yaml ; echo EOF ) | sh | kubectl apply -n online-boutique -f -
 ```
 
 Now if you refresh the application, you should be redirected to Keycloak to login.
@@ -990,7 +884,7 @@ apiVersion: trafficcontrol.policy.gloo.solo.io/v2
 kind: RateLimitClientConfig
 metadata:
   name: rate-limit-client-config
-  namespace: dev-team
+  namespace: online-boutique
 spec:
   raw:
     rateLimits:
@@ -1002,7 +896,7 @@ apiVersion: admin.gloo.solo.io/v2
 kind: RateLimitServerConfig
 metadata:
   name: rate-limit-server-config
-  namespace: ops-team
+  namespace: gloo-mesh-gateways
 spec:
   destinationServers:
   - ref:
@@ -1022,7 +916,7 @@ apiVersion: trafficcontrol.policy.gloo.solo.io/v2
 kind: RateLimitPolicy
 metadata:
   name: rate-limit-policy
-  namespace: dev-team
+  namespace: online-boutique
 spec:
   applyToRoutes:
   - route:
@@ -1031,13 +925,13 @@ spec:
   config:
     serverSettings:
       name: rate-limit-server-settings
-      namespace: dev-team
+      namespace: online-boutique
     ratelimitClientConfig:
       name: rate-limit-client-config
-      namespace: dev-team
+      namespace: online-boutique
     ratelimitServerConfig:
       name: rate-limit-server-config
-      namespace: ops-team
+      namespace: gloo-mesh-gateways
 EOF
 ```
 

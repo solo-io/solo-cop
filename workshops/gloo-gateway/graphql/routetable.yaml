@@ -2,7 +2,7 @@ apiVersion: networking.gloo.solo.io/v2
 kind: RouteTable
 metadata:
   name: products
-  namespace: dev-team
+  namespace: online-boutique
 spec:
   weight: 100
   workloadSelectors: []
@@ -12,8 +12,8 @@ spec:
         logSensitiveInfo: true
       schema:
         name: products
-        namespace: dev-team
-        clusterName: mgmt-cluster
+        namespace: online-boutique
+        clusterName: cluster-1
     matchers:
     - uri:
         prefix: /graphql

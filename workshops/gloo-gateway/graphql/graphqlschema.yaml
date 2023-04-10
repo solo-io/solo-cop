@@ -2,22 +2,22 @@ apiVersion: apimanagement.gloo.solo.io/v2
 kind: GraphQLSchema
 metadata:
   name: products
-  namespace: dev-team
+  namespace: online-boutique
 spec:
   resolved:
     options: 
       enableIntrospection: true
     resolverMapRefs:
     - name: resolvers
-      namespace: dev-team
-      clusterName: mgmt-cluster
+      namespace: online-boutique
+      clusterName: cluster-1
     - name: adservice
-      namespace: dev-team
-      clusterName: mgmt-cluster
+      namespace: online-boutique
+      clusterName: cluster-1
     - name: cartservice
-      namespace: dev-team
-      clusterName: mgmt-cluster
+      namespace: online-boutique
+      clusterName: cluster-1
   schemaRef:
     name: gql
-    namespace: dev-team
-    clusterName: mgmt-cluster
+    namespace: online-boutique
+    clusterName: cluster-1

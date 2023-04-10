@@ -1,7 +1,182 @@
 apiVersion: v1
-kind: Namespace
+kind: Service
 metadata:
-  name: backend-apis
+  name: frontend
+  namespace: online-boutique
+  labels:
+    app: frontend
+spec:
+  selector:
+    app: frontend
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8080
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: frontend
+  namespace: online-boutique
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: view-nodes
+rules:
+- apiGroups: [""]
+  resources: ["nodes"]
+  verbs: ["get","list","watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: read-nodes
+subjects:
+- kind: ServiceAccount
+  name: frontend
+  namespace: online-boutique
+roleRef:
+  kind: ClusterRole
+  name: view-nodes
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: online-boutique
+  labels:
+    app: frontend
+spec:
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+      annotations:
+        sidecar.istio.io/rewriteAppHTTPProbers: "true"
+    spec:
+      serviceAccountName: frontend
+      containers:
+        - name: server
+          image: gcr.io/solo-test-236622/frontend:solo-build
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            initialDelaySeconds: 10
+            httpGet:
+              path: "/_healthz"
+              port: 8080
+              httpHeaders:
+                - name: "Cookie"
+                  value: "shop_session-id=x-readiness-probe"
+          livenessProbe:
+            initialDelaySeconds: 10
+            httpGet:
+              path: "/_healthz"
+              port: 8080
+              httpHeaders:
+                - name: "Cookie"
+                  value: "shop_session-id=x-liveness-probe"
+          env:
+            - name: PORT
+              value: "8080"
+            - name: AD_SERVICE_ADDR
+              value: "adservice.online-boutique.svc.cluster.local:9555"
+            - name: CART_SERVICE_ADDR
+              value: "cartservice.online-boutique.svc.cluster.local:7070"
+            - name: RECOMMENDATION_SERVICE_ADDR
+              value: "recommendationservice.online-boutique.svc.cluster.local:8080"
+            - name: SHIPPING_SERVICE_ADDR
+              value: "shippingservice.online-boutique.svc.cluster.local:50051"
+            - name: CHECKOUT_SERVICE_ADDR
+              value: "checkoutservice.online-boutique.svc.cluster.local:5050"
+            - name: PRODUCT_CATALOG_SERVICE_ADDR
+              value: "productcatalogservice.online-boutique.svc.cluster.local:3550"
+            - name: CURRENCY_SERVICE_ADDR
+              value: "currencyservice.online-boutique.svc.cluster.local:7000"
+            # # ENV_PLATFORM: One of: local, gcp, aws, azure, onprem
+            # # When not set, defaults to "local" unless running in GKE, otherwies auto-sets to gcp 
+            - name: ENV_PLATFORM 
+              value: "onprem"
+            - name: DISABLE_TRACING
+              value: "1"
+            - name: DISABLE_PROFILER
+              value: "1"
+            - name: KUBERNETES_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: KUBERNETES_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: KUBERNETES_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: KUBERNETES_CLUSTER_NAME
+              value: cluster1
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata: 
+  name: loadgenerator
+  namespace: online-boutique
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: loadgenerator
+  namespace: online-boutique
+spec:
+  selector:
+    matchLabels:
+      app: loadgenerator
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: loadgenerator
+      annotations:
+        sidecar.istio.io/rewriteAppHTTPProbers: "true"
+    spec:
+      serviceAccountName: loadgenerator
+      terminationGracePeriodSeconds: 5
+      restartPolicy: Always
+      containers:
+      - name: main
+        image: gcr.io/google-samples/microservices-demo/loadgenerator:v0.3.5
+        env:
+        - name: FRONTEND_ADDR
+          value: "frontend.online-boutique.svc.cluster.local:80"
+        - name: USERS
+          value: "2"
+        resources:
+          requests:
+            cpu: 300m
+            memory: 256Mi
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: loadgenerator
+  namespace: online-boutique
+  labels:
+    app: loadgenerator
+spec:
+  type: ClusterIP
+  selector:
+    app: loadgenerator
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8080
 ---
 ###########################################################
 ## Services
@@ -11,7 +186,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: recommendationservice
-  namespace: backend-apis
+  namespace: online-boutique
   labels:
     app: recommendationservice
 spec:
@@ -27,7 +202,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: productcatalogservice
-  namespace: backend-apis
+  namespace: online-boutique
   labels:
     app: productcatalogservice
 spec:
@@ -42,7 +217,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: emailservice
-  namespace: backend-apis
+  namespace: online-boutique
   labels:
     app: emailservice
 spec:
@@ -57,7 +232,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: currencyservice
-  namespace: backend-apis
+  namespace: online-boutique
   labels:
     app: currencyservice
 spec:
@@ -72,7 +247,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: cartservice
-  namespace: backend-apis
+  namespace: online-boutique
   labels:
     app: cartservice
 spec:
@@ -87,7 +262,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: adservice
-  namespace: backend-apis
+  namespace: online-boutique
   labels:
     app: adservice
 spec:
@@ -102,7 +277,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: shippingservice
-  namespace: backend-apis
+  namespace: online-boutique
   labels:
     app: shippingservice
 spec:
@@ -118,7 +293,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: paymentservice
-  namespace: backend-apis
+  namespace: online-boutique
   labels:
     app: paymentservice
 spec:
@@ -133,7 +308,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: checkoutservice
-  namespace: backend-apis
+  namespace: online-boutique
   labels:
     app: checkoutservice
 spec:
@@ -148,13 +323,13 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: recommendation
-  namespace: backend-apis
+  namespace: online-boutique
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: recommendationservice
-  namespace: backend-apis
+  namespace: online-boutique
 spec:
   selector:
     matchLabels:
@@ -183,7 +358,7 @@ spec:
         - name: PORT
           value: "8080"
         - name: PRODUCT_CATALOG_SERVICE_ADDR
-          value: "productcatalogservice.backend-apis.svc.cluster.local:3550"
+          value: "productcatalogservice.online-boutique.svc.cluster.local:3550"
         - name: DISABLE_TRACING
           value: "1"
         - name: DISABLE_PROFILER
@@ -195,13 +370,13 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: productcatalogservice
-  namespace: backend-apis
+  namespace: online-boutique
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: productcatalogservice
-  namespace: backend-apis
+  namespace: online-boutique
 spec:
   selector:
     matchLabels:
@@ -238,13 +413,13 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: email
-  namespace: backend-apis
+  namespace: online-boutique
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: emailservice
-  namespace: backend-apis
+  namespace: online-boutique
 spec:
   selector:
     matchLabels:
@@ -280,13 +455,13 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: currency
-  namespace: backend-apis
+  namespace: online-boutique
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: currencyservice
-  namespace: backend-apis
+  namespace: online-boutique
 spec:
   selector:
     matchLabels:
@@ -324,13 +499,13 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: cart
-  namespace: backend-apis
+  namespace: online-boutique
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: cartservice
-  namespace: backend-apis
+  namespace: online-boutique
 spec:
   selector:
     matchLabels:
@@ -364,13 +539,13 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: ad
-  namespace: backend-apis
+  namespace: online-boutique
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: adservice
-  namespace: backend-apis
+  namespace: online-boutique
 spec:
   selector:
     matchLabels:
@@ -412,13 +587,13 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: shipping
-  namespace: backend-apis
+  namespace: online-boutique
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: shippingservice
-  namespace: backend-apis
+  namespace: online-boutique
 spec:
   selector:
     matchLabels:
@@ -461,13 +636,13 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: payment
-  namespace: backend-apis
+  namespace: online-boutique
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: paymentservice
-  namespace: backend-apis
+  namespace: online-boutique
 spec:
   selector:
     matchLabels:
@@ -509,13 +684,13 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: checkout
-  namespace: backend-apis
+  namespace: online-boutique
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: checkoutservice
-  namespace: backend-apis
+  namespace: online-boutique
 spec:
   selector:
     matchLabels:
@@ -542,17 +717,17 @@ spec:
             - name: PORT
               value: "5050"
             - name: PRODUCT_CATALOG_SERVICE_ADDR
-              value: "productcatalogservice.backend-apis.svc.cluster.local:3550"
+              value: "productcatalogservice.online-boutique.svc.cluster.local:3550"
             - name: SHIPPING_SERVICE_ADDR
-              value: "shippingservice.backend-apis.svc.cluster.local:50051"
+              value: "shippingservice.online-boutique.svc.cluster.local:50051"
             - name: PAYMENT_SERVICE_ADDR
-              value: "paymentservice.backend-apis.svc.cluster.local:50051"
+              value: "paymentservice.online-boutique.svc.cluster.local:50051"
             - name: EMAIL_SERVICE_ADDR
-              value: "emailservice.backend-apis.svc.cluster.local:5000"
+              value: "emailservice.online-boutique.svc.cluster.local:5000"
             - name: CURRENCY_SERVICE_ADDR
-              value: "currencyservice.backend-apis.svc.cluster.local:7000"
+              value: "currencyservice.online-boutique.svc.cluster.local:7000"
             - name: CART_SERVICE_ADDR
-              value: "cartservice.backend-apis.svc.cluster.local:7070"
+              value: "cartservice.online-boutique.svc.cluster.local:7070"
             - name: DISABLE_STATS
               value: "1"
             - name: DISABLE_TRACING

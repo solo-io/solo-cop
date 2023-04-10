@@ -2,7 +2,7 @@ apiVersion: apimanagement.gloo.solo.io/v2
 kind: ApiDoc
 metadata:
   name: gql
-  namespace: dev-team
+  namespace: online-boutique
 spec:
   graphql:
     schemaDefinition: |-
@@ -40,7 +40,7 @@ apiVersion: apimanagement.gloo.solo.io/v2
 kind: ApiDoc
 metadata:
   name: hipster-schema
-  namespace: dev-team
+  namespace: online-boutique
 spec:
   grpc:
     descriptors:
