@@ -739,7 +739,8 @@ EOF
 
 ## High Availability Managemnent Plane<a name="HA"></a>
 
-In production it's beneficial to run more than one managment server replica. Because data is cached in Redis, multiple manangement servers pods can run and serve agents at a time. Not only does this help provide higher availability, it also will be more performant with many clusters connected. The agent connections are long lived so simply scaling the management replicas will cause the agents to balance. To get a more balanced connection pool, enable `glooMeshMgmtServer.enableClusterLoadBalancing=true` which will tell the management replica pods to auto balance the connections.
+In production it's beneficial to run more than one managment server replica. Because data is cached in Redis, multiple manangement servers pods can run and serve agents at a time. Not only does this help provide higher availability, it also will be more performant with many clusters connected. The agent connections are long lived so simply scaling the management replicas will cause the agents to balance.
+Beta feature: To get a more balanced connection pool, enable `glooMeshMgmtServer.enableClusterLoadBalancing=true` which will tell the management replica pods to auto balance the connections.
 
 ![HA Management Plane](./images/ha-mgmt-plane.png)
 
@@ -880,7 +881,7 @@ Gloo Platform offers the best in class observability for communication between y
 ![Gloo Platform Graph](./images/gloo-platform-graph.png)
 
 Links:
-* [Exploying the Gloo UI](https://docs.solo.io/gloo-mesh-enterprise/latest/observability/tools/dashboard/ui-overview/)
+* [Exploring the Gloo UI](https://docs.solo.io/gloo-mesh-enterprise/latest/observability/tools/dashboard/ui-overview/)
 * [Prometheus](https://docs.solo.io/gloo-mesh-enterprise/latest/observability/tools/prometheus/)
 * [Gloo Platform Tracing/Metrics/Logs](https://docs.solo.io/gloo-mesh-enterprise/latest/observability/mesh/)
 
