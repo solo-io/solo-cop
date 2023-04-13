@@ -974,7 +974,7 @@ helm upgrade --install gloo-telemetry-gateway gloo-platform/gloo-platform \
 ```sh
 GLOO_TELEMETRY_GATEWAY=$(kubectl get svc -n gloo-mesh gloo-telemetry-gateway --context $MGMT -o jsonpath='{.status.loadBalancer.ingress[0].*}'):$(kubectl --context ${MGMT} -n gloo-mesh get svc gloo-telemetry-gateway -o jsonpath='{.spec.ports[?(@.port==4317)].port}')
 
-echo "Metrics Gateway Address: $GLOO_TELEMETRY_GATEWAY"
+echo "Telemetry Gateway Address: $GLOO_TELEMETRY_GATEWAY"
 ```
 
 * Install Gloo Telemetry Collector in the `cluster1` cluster
