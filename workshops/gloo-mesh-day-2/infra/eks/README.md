@@ -41,12 +41,13 @@ eksctl utils associate-iam-oidc-provider --region=us-west-2 --cluster=gloo-clust
 
 * Create service accounts for each cluster
 ```sh
+AWS_ACCOUNT_ID=[111111...]
 eksctl create iamserviceaccount \
   --cluster=gloo-mgmt \
   --region us-west-2 \
   --namespace=kube-system \
   --name=aws-load-balancer-controller \
-  --attach-policy-arn=arn:aws:iam::986112284769:policy/AWSLoadBalancerControllerIAMPolicy \
+  --attach-policy-arn="arn:aws:iam::${AWS_ACCOUNT_ID}:policy/AWSLoadBalancerControllerIAMPolicy" \
   --override-existing-serviceaccounts \
   --approve
 
@@ -55,7 +56,7 @@ eksctl create iamserviceaccount \
   --region us-west-2 \
   --namespace=kube-system \
   --name=aws-load-balancer-controller \
-  --attach-policy-arn=arn:aws:iam::986112284769:policy/AWSLoadBalancerControllerIAMPolicy \
+  --attach-policy-arn="arn:aws:iam::${AWS_ACCOUNT_ID}:policy/AWSLoadBalancerControllerIAMPolicy" \
   --override-existing-serviceaccounts \
   --approve
 ```
