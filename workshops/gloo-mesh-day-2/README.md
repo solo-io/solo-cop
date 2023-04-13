@@ -398,8 +398,6 @@ echo "Mgmt Plane Address: $MGMT_SERVER_NETWORKING_ADDRESS"
 * Install a Gloo agent on the management plane so we later can add and manage Gloo Gateway on it.
 
 ```sh
-# create a dummy token, gloo platform requires the token to exist
-kubectl create secret generic relay-identity-token-secret --from-literal=token=not-used -n gloo-mesh --context $MGMT
 helm upgrade --install gloo-agent gloo-platform/gloo-platform \
   --kube-context=${MGMT} \
   --namespace gloo-mesh \
@@ -419,8 +417,6 @@ helm upgrade --install gloo-platform-crds gloo-platform/gloo-platform-crds \
   --kube-context $CLUSTER1 \
   --create-namespace
 
-# create a dummy token, gloo platform requires the token to exist
-kubectl create secret generic relay-identity-token-secret --from-literal=token=not-used -n gloo-mesh --context $CLUSTER1
 helm upgrade --install gloo-agent gloo-platform/gloo-platform \
   --kube-context=${CLUSTER1} \
   --namespace gloo-mesh \
