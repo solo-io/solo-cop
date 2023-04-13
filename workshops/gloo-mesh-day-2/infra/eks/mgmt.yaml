@@ -4,7 +4,7 @@ kind: ClusterConfig
 metadata:
   name: gloo-mgmt
   region: us-west-2
-  version: "1.21"
+  version: "1.25"
 
 nodeGroups:
   - name: ng-1
