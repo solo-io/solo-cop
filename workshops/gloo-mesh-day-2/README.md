@@ -736,6 +736,7 @@ EOF
 ## High Availability Managemnent Plane<a name="HA"></a>
 
 In production it's beneficial to run more than one managment server replica. Because data is cached in Redis, multiple manangement servers pods can run and serve agents at a time. Not only does this help provide higher availability, it also will be more performant with many clusters connected. The agent connections are long lived so simply scaling the management replicas will cause the agents to balance.
+
 Beta feature: To get a more balanced connection pool, enable `glooMeshMgmtServer.enableClusterLoadBalancing=true` which will tell the management replica pods to auto balance the connections.
 
 ![HA Management Plane](./images/ha-mgmt-plane.png)
@@ -1076,7 +1077,7 @@ Metrics provide important information about the health of the apps in your servi
 kubectl port-forward svc/prom-kube-prometheus-stack-prometheus --context $MGMT -n monitoring 9090:9090
 ```
 
-2. Open browser at http://localhost:9080
+2. Open browser at http://localhost:9090
 
 3. Search for metrics prefixed with `istio_`, Example `istio_requests_total`
 
