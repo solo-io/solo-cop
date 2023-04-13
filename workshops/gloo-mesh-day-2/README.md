@@ -987,7 +987,7 @@ helm upgrade --install gloo-telemetry-collector gloo-platform/gloo-platform \
   -f install/gloo-platform/telemetry-collector-values.yaml
 ```
 
-* Update Istio installation and set teletry urls to the Gloo Telemetry Collector
+* Update Istio installation and set telemetry urls to the Gloo Telemetry Collector
 ```sh
 helm upgrade --install istiod-${ISTIO_REVISION} istio/istiod \
   --set revision=${ISTIO_REVISION} \
