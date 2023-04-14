@@ -48,7 +48,7 @@ Set these environment variables which will be used throughout the workshop.
 ```sh
 # Used to enable Gloo Gateway (please ask for a trail license key)
 export GLOO_GATEWAY_LICENSE_KEY=<licence_key>
-export GLOO_PLATFORM_VERSION=v2.3.0-rc1
+export GLOO_PLATFORM_VERSION=v2.3.0-rc2
 
 # Istio version information
 export ISTIO_IMAGE_REPO=us-docker.pkg.dev/gloo-mesh/istio-workshops
@@ -157,6 +157,7 @@ helm upgrade --install gloo-gateway-addons gloo-mesh-agent/gloo-mesh-agent \
   --set ext-auth-service.enabled=true \
   --version $GLOO_PLATFORM_VERSION
 
+kubectl create namespace online-boutique
 kubectl apply -f install/gloo-gateway/addons-servers.yaml
 kubectl apply -f install/online-boutique/grpc2json.yaml
 
@@ -175,7 +176,6 @@ printf "\n\nKeycloak OIDC ClientID: $KEYCLOAK_CLIENTID\n\nKeycloak URL: $KEYCLOA
 1. Deploy the Online Boutique microservices to the `online-boutique` namespace.
 
 ```sh
-kubectl create namespace online-boutique
 kubectl apply -f install/online-boutique/deployment.yaml
 ```
 

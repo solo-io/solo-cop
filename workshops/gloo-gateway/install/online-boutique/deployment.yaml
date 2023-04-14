@@ -197,6 +197,9 @@ spec:
   - name: grpc
     port: 8080
     targetPort: 8080
+  - name: http
+    port: 8085
+    targetPort: 8085
 ---
 apiVersion: v1
 kind: Service
@@ -212,6 +215,9 @@ spec:
   - name: grpc
     port: 3550
     targetPort: 3550
+  - name: http
+    port: 3555
+    targetPort: 3555
 ---
 apiVersion: v1
 kind: Service
@@ -227,6 +233,9 @@ spec:
   - name: grpc
     port: 5000
     targetPort: 8080
+  - name: http
+    port: 5005
+    targetPort: 8085
 ---
 apiVersion: v1
 kind: Service
@@ -242,6 +251,9 @@ spec:
   - name: grpc
     port: 7000
     targetPort: 7000
+  - name: http
+    port: 7005
+    targetPort: 7005
 ---
 apiVersion: v1
 kind: Service
@@ -272,6 +284,9 @@ spec:
   - name: grpc
     port: 9555
     targetPort: 9555
+  - name: http
+    port: 9560
+    targetPort: 9560
 ---
 apiVersion: v1
 kind: Service
@@ -288,6 +303,9 @@ spec:
   - name: grpc
     port: 50051
     targetPort: 50051
+  - name: http
+    port: 50056
+    targetPort: 50056
 ---
 apiVersion: v1
 kind: Service
@@ -303,6 +321,9 @@ spec:
   - name: grpc
     port: 50051
     targetPort: 50051
+  - name: http
+    port: 50056
+    targetPort: 50056
 ---
 apiVersion: v1
 kind: Service
@@ -318,6 +339,9 @@ spec:
   - name: grpc
     port: 5050
     targetPort: 5050
+  - name: http
+    port: 5055
+    targetPort: 5055
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -343,9 +367,10 @@ spec:
       terminationGracePeriodSeconds: 5
       containers:
       - name: server
-        image: gcr.io/solo-test-236622/recommendationservice:solo-build
+        image: gcr.io/solo-test-236622/recommendationservice:1.3-http-test
         ports:
         - containerPort: 8080
+        - containerPort: 8085
         readinessProbe:
           periodSeconds: 5
           exec:
@@ -357,6 +382,8 @@ spec:
         env:
         - name: PORT
           value: "8080"
+        - name: HTTP_PORT
+          value: "8085"
         - name: PRODUCT_CATALOG_SERVICE_ADDR
           value: "productcatalogservice.online-boutique.svc.cluster.local:3550"
         - name: DISABLE_TRACING
@@ -390,11 +417,14 @@ spec:
       terminationGracePeriodSeconds: 5
       containers:
       - name: server
-        image: gcr.io/solo-test-236622/productcatalogservice:solo-build
+        image: gcr.io/solo-test-236622/productcatalogservice:1.3-http-test
         ports:
         - containerPort: 3550
+        - containerPort: 3555
         env:
         - name: PORT
+          value: "3550"
+        - name: HTTP_PORT
           value: "3550"
         - name: DISABLE_STATS
           value: "1"
@@ -432,12 +462,15 @@ spec:
       serviceAccountName: email
       containers:
       - name: server
-        image: gcr.io/solo-test-236622/emailservice:solo-build
+        image: gcr.io/solo-test-236622/emailservice:1.3-http-test
         ports:
         - containerPort: 8080
+        - containerPort: 8085
         env:
         - name: PORT
           value: "8080"
+        - name: HTTP_PORT
+          value: "8085"
         - name: DISABLE_TRACING
           value: "1"
         - name: DISABLE_PROFILER
@@ -475,13 +508,17 @@ spec:
       terminationGracePeriodSeconds: 5
       containers:
       - name: server
-        image: gcr.io/solo-test-236622/currencyservice:solo-build
+        image: gcr.io/solo-test-236622/currencyservice:1.3-http-test
         ports:
         - name: grpc
           containerPort: 7000
+        - name: http
+          containerPort: 7005
         env:
         - name: PORT
           value: "7000"
+        - name: HTTP_PORT
+          value: "7005"
         - name: DISABLE_TRACING
           value: "1"
         - name: DISABLE_PROFILER
@@ -519,7 +556,7 @@ spec:
       terminationGracePeriodSeconds: 5
       containers:
       - name: server
-        image: gcr.io/solo-test-236622/cartservice:solo-build
+        image: gcr.io/solo-test-236622/cartservice:1.3-http-test
         ports:
         - containerPort: 7070
         env:
@@ -559,12 +596,15 @@ spec:
       terminationGracePeriodSeconds: 5
       containers:
         - name: server
-          image: gcr.io/solo-test-236622/adservice:solo-build
+          image: gcr.io/solo-test-236622/adservice:1.3-http-test
           ports:
             - containerPort: 9555
+            - containerPort: 9560
           env:
             - name: PORT
               value: "9555"
+            - name: HTTP_PORT
+              value: "9560"
             - name: DISABLE_STATS
               value: "1"
             - name: DISABLE_TRACING
@@ -606,12 +646,15 @@ spec:
       serviceAccountName: shipping
       containers:
       - name: server
-        image: gcr.io/solo-test-236622/shippingservice:solo-build
+        image: gcr.io/solo-test-236622/shippingservice:1.3-http-test
         ports:
         - containerPort: 50051
+        - containerPort: 50056
         env:
         - name: PORT
           value: "50051"
+        - name: HTTP_PORT
+          value: "50056"
         - name: DISABLE_STATS
           value: "1"
         - name: DISABLE_TRACING
@@ -656,12 +699,15 @@ spec:
       terminationGracePeriodSeconds: 5
       containers:
       - name: server
-        image: gcr.io/solo-test-236622/paymentservice:solo-build
+        image: gcr.io/solo-test-236622/paymentservice:1.3-http-test
         ports:
         - containerPort: 50051
+        - containerPort: 50056
         env:
         - name: PORT
           value: "50051"
+        - name: HTTP_PORT
+          value: "50056"
         - name: DISABLE_TRACING
           value: "1"
         - name: DISABLE_PROFILER
@@ -703,10 +749,11 @@ spec:
       serviceAccountName: checkout
       containers:
         - name: server
-          image: gcr.io/solo-test-236622/checkoutservice:solo-build
+          image: gcr.io/solo-test-236622/checkoutservice:1.3-http-test
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5050
+            - containerPort: 5055
           readinessProbe:
             exec:
               command: ["/bin/grpc_health_probe", "-addr=:5050"]
@@ -716,6 +763,8 @@ spec:
           env:
             - name: PORT
               value: "5050"
+            - name: HTTP_PORT
+              value: "5055"
             - name: PRODUCT_CATALOG_SERVICE_ADDR
               value: "productcatalogservice.online-boutique.svc.cluster.local:3550"
             - name: SHIPPING_SERVICE_ADDR
