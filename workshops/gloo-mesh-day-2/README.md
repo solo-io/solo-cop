@@ -398,8 +398,6 @@ echo "Mgmt Plane Address: $MGMT_SERVER_NETWORKING_ADDRESS"
 * Install a Gloo agent on the management plane so we later can add and manage Gloo Gateway on it.
 
 ```sh
-# create a dummy token, gloo platform requires the token to exist
-kubectl create secret generic relay-identity-token-secret --from-literal=token=not-used -n gloo-mesh --context $MGMT
 helm upgrade --install gloo-agent gloo-platform/gloo-platform \
   --kube-context=${MGMT} \
   --namespace gloo-mesh \
@@ -419,8 +417,6 @@ helm upgrade --install gloo-platform-crds gloo-platform/gloo-platform-crds \
   --kube-context $CLUSTER1 \
   --create-namespace
 
-# create a dummy token, gloo platform requires the token to exist
-kubectl create secret generic relay-identity-token-secret --from-literal=token=not-used -n gloo-mesh --context $CLUSTER1
 helm upgrade --install gloo-agent gloo-platform/gloo-platform \
   --kube-context=${CLUSTER1} \
   --namespace gloo-mesh \
@@ -655,7 +651,7 @@ pilot:
 EOF
 ```
 
-* Verify that Istio is using the plugged in certs `kubectl logs --context ${MGMT} -l app=istiod -n istio-system | grep x509`
+* Verify that Istio is using the plugged in certs `kubectl logs --context ${MGMT} deploy/istiod-${ISTIO_REVISION} -n istio-system | grep x509`
 ```sh
 2023-04-10T14:21:41.638520Z     info    x509 cert - Issuer: "CN=mgmt.solo.io", Subject: "", SN: d7c4889aa3e4dd3b53b02169f1dc9016, NotBefore: "2023-04-10T14:19:41Z", NotAfter: "2033-04-07T14:21:41Z"
 2023-04-10T14:21:41.638547Z     info    x509 cert - Issuer: "CN=Intermediate CA,O=Istio", Subject: "CN=mgmt.solo.io", SN: 60d431616502af501d1f3454e1a4a9f7d35ddd4e, NotBefore: "2023-04-10T14:20:45Z", NotAfter: "2023-05-10T14:21:15Z"
@@ -663,7 +659,7 @@ EOF
 2023-04-10T14:21:41.638598Z     info    x509 cert - Issuer: "CN=Root Certificate", Subject: "CN=Root Certificate", SN: 643b4f58d74689e0facc6318ab39d5a86c0c5d5f, NotBefore: "2023-04-10T14:14:01Z", NotAfter: "2033-04-07T14:14:01Z"
 ```
 
-* Verify that Istio is using the plugged in certs for cluster1 `kubectl logs --context ${CLUSTER1} -l app=istiod -n istio-system | grep x509`
+* Verify that Istio is using the plugged in certs for cluster1 `kubectl logs --context ${CLUSTER1} deploy/istiod-${ISTIO_REVISION} -n istio-system | grep x509`
 ```sh
 2023-04-10T14:24:59.559865Z     info    x509 cert - Issuer: "CN=cluster1.solo.io", Subject: "", SN: c848d01c8e0867395b850dc742afde71, NotBefore: "2023-04-10T14:22:59Z", NotAfter: "2033-04-07T14:24:59Z"
 2023-04-10T14:24:59.559882Z     info    x509 cert - Issuer: "CN=Intermediate CA,O=Istio", Subject: "CN=cluster1.solo.io", SN: 220eed6f615f2f4ffc1b9e625d6464e640c0a419, NotBefore: "2023-04-10T14:20:50Z", NotAfter: "2023-05-10T14:21:20Z"
@@ -739,7 +735,9 @@ EOF
 
 ## High Availability Managemnent Plane<a name="HA"></a>
 
-In production it's beneficial to run more than one managment server replica. Because data is cached in Redis, multiple manangement servers pods can run and serve agents at a time. Not only does this help provide higher availability, it also will be more performant with many clusters connected. The agent connections are long lived so simply scaling the management replicas will cause the agents to balance. To get a more balanced connection pool, enable `glooMeshMgmtServer.enableClusterLoadBalancing=true` which will tell the management replica pods to auto balance the connections.
+In production it's beneficial to run more than one managment server replica. Because data is cached in Redis, multiple manangement servers pods can run and serve agents at a time. Not only does this help provide higher availability, it also will be more performant with many clusters connected. The agent connections are long lived so simply scaling the management replicas will cause the agents to balance.
+
+Beta feature: To get a more balanced connection pool, enable `glooMeshMgmtServer.enableClusterLoadBalancing=true` which will tell the management replica pods to auto balance the connections.
 
 ![HA Management Plane](./images/ha-mgmt-plane.png)
 
@@ -880,7 +878,7 @@ Gloo Platform offers the best in class observability for communication between y
 ![Gloo Platform Graph](./images/gloo-platform-graph.png)
 
 Links:
-* [Exploying the Gloo UI](https://docs.solo.io/gloo-mesh-enterprise/latest/observability/tools/dashboard/ui-overview/)
+* [Exploring the Gloo UI](https://docs.solo.io/gloo-mesh-enterprise/latest/observability/tools/dashboard/ui-overview/)
 * [Prometheus](https://docs.solo.io/gloo-mesh-enterprise/latest/observability/tools/prometheus/)
 * [Gloo Platform Tracing/Metrics/Logs](https://docs.solo.io/gloo-mesh-enterprise/latest/observability/mesh/)
 
@@ -977,7 +975,7 @@ helm upgrade --install gloo-telemetry-gateway gloo-platform/gloo-platform \
 ```sh
 GLOO_TELEMETRY_GATEWAY=$(kubectl get svc -n gloo-mesh gloo-telemetry-gateway --context $MGMT -o jsonpath='{.status.loadBalancer.ingress[0].*}'):$(kubectl --context ${MGMT} -n gloo-mesh get svc gloo-telemetry-gateway -o jsonpath='{.spec.ports[?(@.port==4317)].port}')
 
-echo "Metrics Gateway Address: $GLOO_TELEMETRY_GATEWAY"
+echo "Telemetry Gateway Address: $GLOO_TELEMETRY_GATEWAY"
 ```
 
 * Install Gloo Telemetry Collector in the `cluster1` cluster
@@ -990,7 +988,7 @@ helm upgrade --install gloo-telemetry-collector gloo-platform/gloo-platform \
   -f install/gloo-platform/telemetry-collector-values.yaml
 ```
 
-* Update Istio installation and set teletry urls to the Gloo Telemetry Collector
+* Update Istio installation and set telemetry urls to the Gloo Telemetry Collector
 ```sh
 helm upgrade --install istiod-${ISTIO_REVISION} istio/istiod \
   --set revision=${ISTIO_REVISION} \
@@ -1079,7 +1077,7 @@ Metrics provide important information about the health of the apps in your servi
 kubectl port-forward svc/prom-kube-prometheus-stack-prometheus --context $MGMT -n monitoring 9090:9090
 ```
 
-2. Open browser at http://localhost:9080
+2. Open browser at http://localhost:9090
 
 3. Search for metrics prefixed with `istio_`, Example `istio_requests_total`
 

@@ -4,3 +4,8 @@ glooAgent:
   relay: 
     clientTlsSecret:
       name: gloo-agent-tls-cert
+    # With this override, we don't have to create a mock relay-identity-token-secret
+    tokenSecret:
+      key: null
+      name: null
+      namespace: null
