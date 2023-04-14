@@ -159,7 +159,6 @@ helm upgrade --install gloo-gateway-addons gloo-mesh-agent/gloo-mesh-agent \
 
 kubectl create namespace online-boutique
 kubectl apply -f install/gloo-gateway/addons-servers.yaml
-kubectl apply -f install/online-boutique/grpc2json.yaml
 
 ./install/keycloak/setup.sh
 
@@ -344,8 +343,6 @@ spec:
   http:
     - matchers:
       - uri:
-          prefix: /hipstershop.CurrencyService
-      - uri:
           exact: /currencies
       - uri:
           prefix: /currencies
@@ -358,7 +355,7 @@ spec:
               name: currencyservice
               namespace: online-boutique
             port:
-              number: 7000
+              number: 7005
 ---
 apiVersion: networking.gloo.solo.io/v2
 kind: RouteTable
@@ -372,8 +369,6 @@ spec:
     - matchers:
       - uri:
           prefix: /shipping
-      - uri:
-          prefix: /hipstershop.ShippingService
       name: shipping
       labels:
         route: shipping
@@ -383,7 +378,7 @@ spec:
               name: shippingservice
               namespace: online-boutique
             port:
-              number: 50051
+              number: 50056
 ---
 apiVersion: networking.gloo.solo.io/v2
 kind: RouteTable
@@ -399,8 +394,6 @@ spec:
           exact: /products
       - uri:
           prefix: /products
-      - uri:
-          prefix: /hipstershop.ProductCatalogService
       name: productcatalog
       labels:
         route: productcatalog
@@ -410,7 +403,7 @@ spec:
               name: productcatalogservice
               namespace: online-boutique
             port:
-              number: 3550
+              number: 3555
 ---
 apiVersion: networking.gloo.solo.io/v2
 kind: RouteTable
@@ -424,8 +417,6 @@ spec:
     - matchers:
       - uri:
           exact: /ads
-      - uri:
-          prefix: /hipstershop.AdService
       name: adservice
       labels:
         route: adservice
@@ -435,7 +426,7 @@ spec:
               name: adservice
               namespace: online-boutique
             port:
-              number: 9555
+              number: 9560
 EOF
 ```
 
@@ -443,13 +434,30 @@ The currencyservice converts units from one currency to another. Test the curren
 
 ```sh
 #currency service convert
-curl -X POST -d '{ "from": { "currency_code": "USD", "nanos": 44637071, "units": "31" }, "to_code": "JPY" }' $GLOO_GATEWAY/currencies/convert
+curl --location "$GLOO_GATEWAY/currencies/convert" \
+--header 'Content-Type: application/json' \
+--header 'Accept: application/json' \
+--data '{
+  "from": {
+    "currency_code": "USD",
+    "nanos": 0,
+    "units": 8
+  },
+  "to_code": "EUR"
+}'
 
 # Product Catalog List Products
 curl $GLOO_GATEWAY/products
 
 # Ad Service
-curl -X GET -d '{"context_keys":["OLJCESPC7Z"]}' $GLOO_GATEWAY/ads
+curl --location "$GLOO_GATEWAY/ads" \
+--header 'Content-Type: application/json' \
+--header 'Accept: application/json' \
+--data '{
+  "context_keys": [
+    "footwear"
+  ]
+}'
 ```
 
 ### Routing to External endpoints

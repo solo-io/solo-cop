@@ -425,7 +425,7 @@ spec:
         - name: PORT
           value: "3550"
         - name: HTTP_PORT
-          value: "3550"
+          value: "3555"
         - name: DISABLE_STATS
           value: "1"
         - name: DISABLE_TRACING
