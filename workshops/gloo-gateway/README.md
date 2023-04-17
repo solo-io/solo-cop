@@ -368,29 +368,6 @@ spec:
 apiVersion: networking.gloo.solo.io/v2
 kind: RouteTable
 metadata:
-  name: shipping
-  namespace: online-boutique
-spec:
-  weight: 100
-  workloadSelectors: []
-  http:
-    - matchers:
-      - uri:
-          prefix: /shipping
-      name: shipping
-      labels:
-        route: shipping
-      forwardTo:
-        destinations:
-          - ref:
-              name: shippingservice
-              namespace: online-boutique
-            port:
-              number: 50056
----
-apiVersion: networking.gloo.solo.io/v2
-kind: RouteTable
-metadata:
   name: productcatalog
   namespace: online-boutique
 spec:
