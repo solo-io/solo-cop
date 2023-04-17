@@ -1,0 +1,29 @@
+apiVersion: networking.gloo.solo.io/v2
+kind: RouteTable
+metadata:
+  name: graphql-routes
+  namespace: online-boutique
+spec:
+  weight: 100
+  workloadSelectors: []
+  http:
+  - graphql:
+      options:
+        logSensitiveInfo: true
+      schema:
+        name: adservice
+        namespace: online-boutique
+        clusterName: cluster-1
+    matchers:
+    - uri:
+        prefix: /graphql-ads
+  - graphql:
+      options:
+        logSensitiveInfo: true
+      schema:
+        name: products
+        namespace: online-boutique
+        clusterName: cluster-1
+    matchers:
+    - uri:
+        prefix: /graphql-products

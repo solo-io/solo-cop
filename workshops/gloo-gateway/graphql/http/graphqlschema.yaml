@@ -1,0 +1,35 @@
+apiVersion: apimanagement.gloo.solo.io/v2
+kind: GraphQLSchema
+metadata:
+  name: adservice
+  namespace: online-boutique
+spec:
+  resolved:
+    options: 
+      enableIntrospection: true
+    resolverMapRefs:
+    - name: adservice
+      namespace: online-boutique
+      clusterName: cluster-1
+  schemaRef:
+    name: adservice
+    namespace: online-boutique
+    clusterName: cluster-1
+---
+apiVersion: apimanagement.gloo.solo.io/v2
+kind: GraphQLSchema
+metadata:
+  name: products
+  namespace: online-boutique
+spec:
+  resolved:
+    options: 
+      enableIntrospection: true
+    resolverMapRefs:
+    - name: products
+      namespace: online-boutique
+      clusterName: cluster-1
+  schemaRef:
+    name: products
+    namespace: online-boutique
+    clusterName: cluster-1

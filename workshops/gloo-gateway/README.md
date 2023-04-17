@@ -972,3 +972,28 @@ x-envoy-upstream-service-time: 7
 ```
 
 ## Lab 12 - Graphql<a name="graphql"></a>
+
+
+* Query for Ads
+```graphql
+{
+  GetAds{
+    ads {
+      redirectUrl
+      text
+    }
+  }
+}
+```
+
+* Get ads for the supplied context
+```graphql
+{
+  GetAds(context_keys: ["footwear"]){
+    ads {
+      redirectUrl
+      text
+    }
+  }
+}
+```
