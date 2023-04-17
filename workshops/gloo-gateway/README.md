@@ -69,7 +69,7 @@ This workshop can run on many different Kubernetes distributions such as EKS, GK
 * Set the Kubernetes cluster as your current context.
 
 ```sh
-kubectl config use-context <context> 
+kubectl config use-context <context>
 ```
 
 ## Lab 2 - Deploy Gloo Platform <a name="glooplatform"></a>
@@ -182,7 +182,7 @@ helm upgrade --install online-boutique oci://us-central1-docker.pkg.dev/solo-tes
   --set images.tag=1.3-http-test \
   --set frontend.externalService=false \
   --set frontend.platform=onprem
- ```
+```
 
 ## Lab 4 - Configure Gloo Platform Workspaces <a name="workspaces"></a>
 
@@ -335,6 +335,8 @@ You've successfully exposed the frontend application thru the Gloo Gateway.
 ### Routing to additional applications in the cluster
 
 Next, lets see how easy it is to expose another application. This time, we will match on URI `prefix: /currencies` and send to the currencyservice application.
+
+* Note: you may notice the `wight: 100` configuration. This tells Gloo gateway to place this RouteTable before the frontend RouteTable with the `/` prefix route which doesnt have a weight. Higher integer values are considered higher priority. The default value is 0.
 
 ```yaml
 kubectl apply -f - <<EOF
@@ -535,7 +537,7 @@ server: istio-envoy
 Log4Shell malicious payload
 ```
 
-Your frontend app is no longer susceptible to `log4j` attacks, nice!
+Your applications are no longer susceptible to `log4j` attacks, nice!
 
 ## Lab 8 - Authentication / API Key <a name="apikey"></a>
 
@@ -789,7 +791,17 @@ printf "\n\n Access Token: $ACCESS_TOKEN\n"
 4. Try calling currency service with no access token. You will need `grpcurl` installed and it can be downloaded here: [grpcurl installation](https://github.com/fullstorydev/grpcurl#installation)
 
 ```sh
-curl -X POST -d '{ "from": { "currency_code": "USD", "nanos": 44637071, "units": "31" }, "to_code": "JPY" }' $GLOO_GATEWAY/currencies/convert
+curl --location "$GLOO_GATEWAY/currencies/convert" \
+--header 'Content-Type: application/json' \
+--header 'Accept: application/json' \
+--data '{
+  "from": {
+    "currency_code": "USD",
+    "nanos": 0,
+    "units": 8
+  },
+  "to_code": "EUR"
+}'
 ```
 
 5. Call currency service with an access token
@@ -863,7 +875,9 @@ EOF
 3. Test out the new HTTPS endpoint (you may need to allow insecure traffic in your browser. Chrome: Advanced -> Proceed)
 
 ```sh
-echo "Secure Online Boutique URL: https://$GLOO_GATEWAY"
+export GLOO_GATEWAY_HTTPS=$(kubectl -n gloo-mesh-gateways get svc istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].*}'):443
+
+echo "Secure Online Boutique URL: https://$GLOO_GATEWAY_HTTPS"
 ```
 
 The `ExtAuthPolicy` defines the provider connectivity including any callback paths that we need to configure on our application.
@@ -950,7 +964,7 @@ spec:
   applyToRoutes:
   - route:
       labels:
-        route: "httpbin" ##### NOTE
+        route: products ##### NOTE
   config:
     serverSettings:
       name: rate-limit-server-settings
@@ -967,7 +981,7 @@ EOF
 2. Test Rate Limiting
 
 ```sh
-for i in {1..6}; do curl -iksS -H "x-api-key: developer" -X GET https://$GLOO_GATEWAY/httpbin/get | tail -n 10; done
+for i in {1..6}; do curl -iksS -H "x-api-key: developer" -X GET https://$GLOO_GATEWAY_HTTPS/products | tail -n 10; done
 ```
 
 3. Expected Response
@@ -979,6 +993,5 @@ date: Sun, 05 Jun 2022 18:50:53 GMT
 server: istio-envoy
 x-envoy-upstream-service-time: 7
 ```
-
 
 ## Lab 12 - Graphql<a name="graphql"></a>
