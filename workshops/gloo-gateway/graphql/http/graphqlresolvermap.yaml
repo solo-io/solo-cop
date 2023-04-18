@@ -42,7 +42,7 @@ spec:
   types:
     Query:
       fields:
-        GetProducts:
+        ListProducts:
           variables:
             productVar:
               graphqlArg: context_keys
@@ -65,6 +65,13 @@ spec:
                     json: /products
             resolverResultTransform:
               jq: '{}'
+        GetProduct:
+          variables:
+            productVar:
+              graphqlArg: id
+            resolverResultVar:
+              resolverResult: {}
+          resolvers:
           - restResolver:
               destinations:
               - port:
@@ -80,4 +87,4 @@ spec:
                   :path:
                     jq: '"/products/id/" + (.productVar | tostring)'
             resolverResultTransform:
-              jq: '{}'
+              jq: '{products: .resolverResultVar.products}'

@@ -24,15 +24,14 @@ You can find more information about Gloo Gateway in the official documentation:
 * [Lab 1 - Deploy Kubernetes cluster](#k8s)
 * [Lab 2 - Deploy Gloo Platform](#glooplatform)
 * [Lab 3 - Deploy Online Boutique Sample Application](#onlineboutique)
-* [Lab 4 - Configure Gloo Platform](#workspaces)
-* [Lab 5 - Expose Online Boutique](#expose)
-* [Lab 6 - Routing](#routing)
-* [Lab 7 - Web Application Firewall](#waf)
-* [Lab 8 - Authentication / API Key](#apikey)
-* [Lab 9 - Authentication / JWT + JWKS](#jwt)
-* [Lab 10 - Authentication / OIDC](#oidc)
-* [Lab 11 - Rate Limiting](#ratelimiting)
-* [Lab 12 - GraphQL](#graphql)
+* [Lab 4 - Expose Online Boutique](#expose)
+* [Lab 5 - Routing](#routing)
+* [Lab 6 - Web Application Firewall](#waf)
+* [Lab 7 - Authentication / API Key](#apikey)
+* [Lab 8 - Authentication / JWT + JWKS](#jwt)
+* [Lab 9 - Authentication / OIDC](#oidc)
+* [Lab 10 - Rate Limiting](#ratelimiting)
+* [Lab 11 - GraphQL](#graphql)
 
 ## Begin
 
@@ -48,7 +47,7 @@ Set these environment variables which will be used throughout the workshop.
 ```sh
 # Used to enable Gloo Gateway (please ask for a trail license key)
 export GLOO_GATEWAY_LICENSE_KEY=<licence_key>
-export GLOO_PLATFORM_VERSION=v2.3.0-rc2
+export GLOO_PLATFORM_VERSION=v2.3.0
 
 # Istio version information
 export ISTIO_IMAGE_REPO=us-docker.pkg.dev/gloo-mesh/istio-workshops
@@ -96,12 +95,14 @@ meshctl version
 3. Install Gloo Platform using `meshctl`
 
 ```sh
-meshctl install --license $GLOO_GATEWAY_LICENSE_KEY --register --version $GLOO_PLATFORM_VERSION
+meshctl install --license $GLOO_GATEWAY_LICENSE_KEY --version $GLOO_PLATFORM_VERSION --profiles gloo-gateway-demo --set common.addonNamespace=gloo-gateway-addons
 ```
+
 4. Check the installation to verify it's healthy
 ```sh
 meshctl check
 ```
+
 You should see something similar to the following
 ```sh
 🟢 License status
@@ -129,113 +130,19 @@ Cluster   | Registered | Connected Pod
 cluster-1 | true       | gloo-mesh/gloo-mesh-mgmt-server-7f8855cc56-mgb94
 ```
 
-3. Wait for the Gloo Gateway LoadBalancer to become ready
-
-```sh
-until kubectl get service/istio-ingressgateway -n gloo-mesh-gateways --output=jsonpath='{.status.loadBalancer}' | grep "ingress"; do : ; done
-export GLOO_GATEWAY=$(kubectl -n gloo-mesh-gateways get svc istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].*}')
-printf "\n\nGloo Gateway available at http://$GLOO_GATEWAY\n"
-```
-
-4. You need to setup your cluster environment to enable all the API gateway features. The below script deploys the optional `gloo-mesh-addons` features that enable features such as external authorization and rate limiting. Finally, you will also deploy your own OIDC provider `keycloak` which will allow you to secure your website with a user/pass login. 
-
-```sh
-# remove the default workspace
-kubectl delete workspace cluster-1 -n gloo-mesh
-kubectl delete workspacesettings default -n gloo-mesh
-
-kubectl create namespace gloo-gateway-addons
-kubectl label namespace gloo-gateway-addons istio-injection=enabled
-
-helm repo add gloo-platform https://storage.googleapis.com/gloo-platform/helm-charts
-helm repo update
-
-helm upgrade --install gloo-platform-addons gloo-platform/gloo-platform \
-  --namespace gloo-gateway-addons \
-  --set common.addonNamespace=gloo-gateway-addons \
-  --set common.cluster=cluster-1 \
-  --set rateLimiter.enabled=true \
-  --set extAuthService.enabled=true \
-  --version $GLOO_PLATFORM_VERSION
-
-kubectl create namespace online-boutique
-kubectl apply -f install/gloo-gateway/addons-servers.yaml
-
-./install/keycloak/setup.sh
-
-export KEYCLOAK_CLIENTID=$(kubectl get configmap -n gloo-mesh keycloak-info -o json | jq -r '.data."client-id"')
-export KEYCLOAK_URL=http://$(kubectl -n keycloak get service keycloak -o jsonpath='{.status.loadBalancer.ingress[0].*}'):9000/auth
-
-printf "\n\nKeycloak OIDC ClientID: $KEYCLOAK_CLIENTID\n\nKeycloak URL: $KEYCLOAK_URL\n"
-```
-
-## Lab 3 - Deploy Online Boutique Sample Application<a name="onlineboutique"></a>
+## Lab 2 - Deploy Online Boutique Sample Application<a name="onlineboutique"></a>
 
 ![Gloo Gateway Architecture](images/gloo-gateway-apps-arch.png)
 
 1. Deploy the Online Boutique microservices to the `online-boutique` namespace.
 
 ```sh
-helm upgrade --install online-boutique oci://us-central1-docker.pkg.dev/solo-test-236622/solo-demos/onlineboutique \
+helm upgrade --install online-boutique --version "5.0.0" oci://us-central1-docker.pkg.dev/solo-test-236622/solo-demos/onlineboutique \
   --create-namespace \
-  --namespace online-boutique \
-  --set images.repository=gcr.io/solo-test-236622 \
-  --set images.tag=1.3-http-test \
-  --set frontend.externalService=false \
-  --set frontend.platform=onprem
+  --namespace online-boutique
 ```
 
-## Lab 4 - Configure Gloo Platform Workspaces <a name="workspaces"></a>
-
-![Workspaces](images/gloo-workspaces.png)
-
-In this section, you'll learn about the Gloo **Workspaces** feature. Workspaces bring multi-tenancy isolation to your cluster. With Workspaces, you can explore how multiple personas can work independently without conflicting with each others configuration.
-
-Imagine that you have the following teams. Each team represents a "tenant" in Gloo.
-
-* The Ops team, who is responsible for the platform and ingress traffic.
-* The Dev team, who is responsible for the frontend web application and backend apis that power the frontend.
-
-Also note that a dedicated namespace is created for each workspace to place their configuration (`ops-team`, `app-team` namespaces). It is recommended that the configuration is separate from your deployments.
-
-```yaml
-kubectl apply -f - <<EOF
-apiVersion: admin.gloo.solo.io/v2
-kind: Workspace
-metadata:
-  name: ops-team
-  namespace: gloo-mesh
-spec:
-  workloadClusters:
-  - name: '*'
-    namespaces:
-    - name: gloo-mesh-gateways
-    - name: gloo-gateway-addons
----
-apiVersion: admin.gloo.solo.io/v2
-kind: Workspace
-metadata:
-  name: app-team
-  namespace: gloo-mesh
-spec:
-  workloadClusters:
-  - name: '*'
-    namespaces:
-    - name: online-boutique
-EOF
-```
-
-3. Apply the settings for each workspace. These `WorkspaceSettings` objects are used to tune each indiviual workspace as well as import/export resources from other workspaces. 
-
-```sh
-kubectl apply -f tracks/workspace-settings.yaml
-```
-
-The `WorkspaceSettings` custom resource lets each team define the services and gateways that they want other workspaces from other teams to be able to access. This way, you can control the discovery of services in your service mesh and enable each team to access only what they need. To view the configuration, run `cat ./tracks/workspace-settings.yaml`
-
-Each workspace can have only one WorkspaceSettings resource.
-
-## Lab 5 - Expose the Online Boutique <a name="expose"></a>
+## Lab 3 - Expose the Online Boutique <a name="expose"></a>
 
 ![Expose Online Boutique](images/expose-apps.png)
 
@@ -247,7 +154,7 @@ RouteTables defines one or more hosts and a set of traffic route rules to handle
 
 This allows you to create a hierarchy of routing configuration and dynamically attach policies at various levels. 
 
-1. Let's start by assuming the role of a Ops team. Configure the Gateway to listen on port 80 and create a generic RouteTable that further delegates the traffic routing to RouteTables in the `app-team` workspace.
+1. Let's start by assuming the role of a Ops team. Configure the Gateway to listen on port 80 and create a generic RouteTable that further delegates the traffic routing to RouteTables in other namespaces.
 
 ```yaml
 kubectl apply -f - <<EOF
@@ -269,7 +176,7 @@ spec:
       allowedRouteTables:
         - host: '*'
           selector:
-            workspace: ops-team
+            namespace: gloo-mesh-gateways
 ---
 apiVersion: networking.gloo.solo.io/v2
 kind: RouteTable
@@ -284,12 +191,12 @@ spec:
       namespace: gloo-mesh-gateways
   workloadSelectors: []
   http:
-    - name: app-team-ingress
+    - name: application-ingress
       labels:
         ingress: all
       delegate:
         routeTables:
-        - workspace: app-team
+        - namespace: online-boutique
 EOF
 ```
 
@@ -321,15 +228,15 @@ spec:
 EOF
 ```
 
-* Open browser
-
+3. Wait for the Gloo Gateway LoadBalancer to become ready
 ```sh
-printf "\n\nOnline Boutique available at http://$GLOO_GATEWAY\n"
+export GLOO_GATEWAY=$(kubectl -n gloo-mesh-gateways get svc istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].*}')
+printf "\n\nGloo Gateway available at http://$GLOO_GATEWAY\n"
 ```
 
 You've successfully exposed the frontend application thru the Gloo Gateway.
 
-## Lab 6 - Routing <a name="routing"></a>
+## Lab 4 - Routing <a name="routing"></a>
 
 ![Routing](images/routing.png)
 
@@ -416,13 +323,10 @@ spec:
 EOF
 ```
 
-The currencyservice converts units from one currency to another. Test the currencyservice by using the [`grpcurl`](https://github.com/fullstorydev/grpcurl/releases) utility to send traffic:
-
+* Test the Currency API
 ```sh
-#currency service convert
-curl --location "$GLOO_GATEWAY/currencies/convert" \
+curl "$GLOO_GATEWAY/currencies/convert" \
 --header 'Content-Type: application/json' \
---header 'Accept: application/json' \
 --data '{
   "from": {
     "currency_code": "USD",
@@ -431,14 +335,17 @@ curl --location "$GLOO_GATEWAY/currencies/convert" \
   },
   "to_code": "EUR"
 }'
+```
 
-# Product Catalog List Products
+* Get products from the Product Catalog API
+```sh
 curl $GLOO_GATEWAY/products
+```
 
-# Ad Service
-curl --location "$GLOO_GATEWAY/ads" \
+* Get Ads for product catagories
+```sh
+curl "$GLOO_GATEWAY/ads" \
 --header 'Content-Type: application/json' \
---header 'Accept: application/json' \
 --data '{
   "context_keys": [
     "footwear"
@@ -446,7 +353,468 @@ curl --location "$GLOO_GATEWAY/ads" \
 }'
 ```
 
-## Lab 7 - Web Application Firewall (WAF)<a name="waf"></a>
+## Lab 5 - Authentication / API Key <a name="apikey"></a>
+
+API key authentication is one of the easiest forms of authentication to implement. Simply create a Kubernetes secret that contains the key and reference it from the `ExtAuthPolicy`. It is recommended to label the secrets so that multiple can be selected and more can be added later. You can select any header to validate against.
+
+1. Create two secrets that Gloo will validate against. One with the api-key `admin` and the other `developer`.
+
+```yaml
+kubectl apply -f - <<EOF
+apiVersion: v1
+kind: Secret
+metadata:
+  name: solo-admin
+  namespace: online-boutique
+  labels:
+    api-keyset: httpbin-users
+type: extauth.solo.io/apikey
+data:
+  api-key: $(echo -n "admin" | base64)
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: solo-developer
+  namespace: online-boutique
+  labels:
+    api-keyset: httpbin-users
+type: extauth.solo.io/apikey
+data:
+  api-key: $(echo -n "developer" | base64)
+EOF
+```
+
+2. Create the API key `ExtAuthPolicy` that will match header `x-api-key` values againt the secrets created above. The `ExtAuthServer` resource configures where authorization checks will be performed
+
+```yaml
+kubectl apply -f - <<EOF
+apiVersion: admin.gloo.solo.io/v2
+kind: ExtAuthServer
+metadata:
+  name: ext-auth-server
+  namespace: online-boutique
+spec:
+  destinationServer:
+    ref:
+      cluster: cluster-1
+      name: ext-auth-service
+      namespace: gloo-gateway-addons
+    port:
+      name: grpc
+---
+apiVersion: security.policy.gloo.solo.io/v2
+kind: ExtAuthPolicy
+metadata:
+  name: products-apikey
+  namespace: online-boutique
+spec:
+  applyToRoutes:
+  - route:
+      labels:
+        route: products
+  config:
+    server:
+      name: ext-auth-server
+      namespace: online-boutique
+      cluster: cluster-1
+    glooAuth:
+      configs:
+      - apiKeyAuth:
+          headerName: x-api-key
+          labelSelector:
+            api-keyset: httpbin-users
+EOF
+```
+
+3. Call httpbin without an api key and you will get a 401 unauthorized message.
+
+```sh
+curl -i http://$GLOO_GATEWAY/products
+```
+
+4. Call httpbin with the developer api key `x-api-key: developer`
+
+```sh
+curl -H "x-api-key: developer" http://$GLOO_GATEWAY/products
+```
+
+5. Call httpbin with the admin api key `x-api-key: admin`
+
+```sh
+curl -H "x-api-key: admin" http://$GLOO_GATEWAY/products
+```
+
+
+### Routing to External endpoints
+
+Next, lets route to an endpoint (http://httpbin.org) that is external to the cluster. `ExternalService` resource defines a service that exists outside of the mesh. ExternalServices provide a mechanism to tell Gloo Platform about its existance and how it should be communicated with. 
+
+Once an ExternalService is created, a RouteTable can be used to send traffic to it. In this example, we will send traffic on URI `prefix: /httpbin` to this external service.
+
+1. Create a reference to the httpbin.org. The `ExternalService` is a Gloo internal reference that the `RouteTable` can utilize.
+
+```yaml
+kubectl apply -f - <<EOF
+apiVersion: networking.gloo.solo.io/v2
+kind: ExternalService
+metadata:
+  name: httpbin
+  namespace: online-boutique
+spec:
+  hosts:
+  - httpbin.org
+  ports:
+  - name: https
+    number: 443
+    protocol: HTTPS
+    clientsideTls: {}   ### upgrade outbound call to HTTPS
+EOF
+```
+
+2. Create a new `RouteTable` that will match on requests containing the prefix `/httpbin` and route it to the httpbin `ExternalService`. You may have also noticed that we are rewriting the path using `pathRewrite: /` because httpbin.org is listening for `/get`.
+
+```yaml
+kubectl apply -f - <<'EOF'
+apiVersion: networking.gloo.solo.io/v2
+kind: RouteTable
+metadata:
+  name: httpbin
+  namespace: online-boutique
+spec:
+  weight: 150
+  workloadSelectors: []
+  http:
+    - matchers:
+      - uri:
+          prefix: /httpbin
+      name: httpbin-all
+      labels:
+        route: httpbin
+      forwardTo:
+        pathRewrite: /
+        destinations:
+        - ref:
+            name: httpbin
+          port: 
+            number: 443
+          kind: EXTERNAL_SERVICE
+EOF
+```
+
+3. Let's test it.
+
+```sh
+curl -v $GLOO_GATEWAY/httpbin/get
+```
+
+## Lab 8 - Authentication / JWT + JWKS<a name="jwt"></a>
+
+JWT authentication using JSON web key sets (JWKS) is a much more robust mechanism for authentication as keys can be shorter lived / rotated and the validation is done against rotating keys. Also more information can be stored in JWTs vs API keys. In this example Auth0 is used as the JWT signer and JWKS provider. 
+
+To create your own Auth0 Tokens, create an Auth0 `Application` and the JWKS will be located at `"https://<Auth0 Server>/.well-known/jwks.json"` and tokens can be generated calling the `https://<Auth0 Server>/oauth/token` endpoint.
+
+![Auth0 Application](images/auth0.png)
+
+1. First create and `ExternalEndpoint` and `ExternalService` to reference the `Auth0` server.
+
+```yaml
+kubectl apply -f - <<EOF
+apiVersion: networking.gloo.solo.io/v2
+kind: ExternalService
+metadata:
+  name: auth0
+  namespace: online-boutique
+spec:
+  hosts:
+  - dev-64ktibmv.us.auth0.com
+  ports:
+  - name: https
+    number: 443
+    protocol: HTTPS
+    clientsideTls: {}
+EOF
+```
+
+2. Create the `JWTPolicy` to authenticate JWT tokens.
+
+```yaml
+kubectl apply -f - <<EOF
+apiVersion: security.policy.gloo.solo.io/v2
+kind: JWTPolicy
+metadata:
+  name: currency
+  namespace: online-boutique
+spec:
+  applyToRoutes:
+  - route:
+      labels:
+        route: currency
+  config:
+    providers:
+      auth0:
+        issuer: "https://dev-64ktibmv.us.auth0.com/"
+        audiences:
+        - "https://httpbin/api"
+        remote:
+          url: "https://dev-64ktibmv.us.auth0.com/.well-known/jwks.json"
+          destinationRef:
+            ref:
+              name: auth0
+              namespace: online-boutique
+              cluster: cluster-1
+            kind: EXTERNAL_SERVICE
+            port:
+              number: 443
+          enableAsyncFetch: true
+EOF
+```
+
+3. Call `Auth0` to generate a temporary JWT token
+
+```sh
+ACCESS_TOKEN=$(curl -sS --request POST \
+  --url https://dev-64ktibmv.us.auth0.com/oauth/token \
+  --header 'content-type: application/json' \
+  --data '{"client_id":"1QEVhZ2ERqZOpTQnHChK1TUSKRBduO72","client_secret":"J_vl_qgu0pvudTfGppm_PJcQjkgy-kmy5KRCQDj5XHZbo5eFtxmSbpmqYT5ITv2h","audience":"https://httpbin/api","grant_type":"client_credentials"}' | jq -r '.access_token')
+
+printf "\n\n Access Token: $ACCESS_TOKEN\n"
+```
+
+4. Try calling currency service with no access token. You will need `grpcurl` installed and it can be downloaded here: [grpcurl installation](https://github.com/fullstorydev/grpcurl#installation)
+
+```sh
+curl "$GLOO_GATEWAY/currencies/convert" \
+--header 'Content-Type: application/json' \
+--data '{
+  "from": {
+    "currency_code": "USD",
+    "nanos": 0,
+    "units": 8
+  },
+  "to_code": "EUR"
+}'
+```
+
+5. Call currency service with an access token
+
+```sh
+curl -H "Authorization: Bearer ${ACCESS_TOKEN}" "$GLOO_GATEWAY/currencies/convert" \
+--header 'Content-Type: application/json' \
+--data '{
+  "from": {
+    "currency_code": "USD",
+    "nanos": 0,
+    "units": 8
+  },
+  "to_code": "EUR"
+}'
+```
+
+## Lab 9 - Authentication / OIDC<a name="oidc"></a>
+
+![Keycloak](images/keycloak.png)
+
+Another valuable feature of API gateways is integration into your IdP (Identity Provider). In this section of the lab, we see how Gloo Gateway can be configured to redirect unauthenticated users via OIDC.  We will use Keycloak as our IdP, but you could use other OIDC-compliant providers in your production clusters.
+
+1. First, install Keycloak to use as our OIDC server.
+
+```sh
+./install/keycloak/setup.sh
+
+export KEYCLOAK_CLIENTID=$(kubectl get configmap -n gloo-mesh keycloak-info -o json | jq -r '.data."client-id"')
+export KEYCLOAK_URL=http://$(kubectl -n keycloak get service keycloak -o jsonpath='{.status.loadBalancer.ingress[0].*}'):9000/auth
+
+printf "\n\nKeycloak OIDC ClientID: $KEYCLOAK_CLIENTID\n\nKeycloak URL: $KEYCLOAK_URL\n"
+```
+
+2. In order for OIDC to work we need to enable HTTPS on our gateway. For this demo, we will create and upload a self-signed certificate which will be used in the gateway for TLS termination.
+
+```sh
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+   -keyout tls.key -out tls.crt -subj "/CN=*"
+
+kubectl -n gloo-mesh-gateways create secret generic tls-secret \
+--from-file=tls.key=tls.key \
+--from-file=tls.crt=tls.crt
+
+rm tls.crt tls.key
+```
+
+3. Adding HTTPS to our gateway is simple as updating the virtual gateway to use our ssl certificate.
+
+```yaml
+kubectl apply -f - <<EOF
+apiVersion: networking.gloo.solo.io/v2
+kind: VirtualGateway
+metadata:
+  name: ingress
+  namespace: gloo-mesh-gateways
+spec:
+  workloads:
+    - selector:
+        labels:
+          app: istio-ingressgateway
+        namespace: gloo-mesh-gateways
+  listeners:
+    - http: {}
+      port:
+        number: 80
+    - http: {}
+      port:
+        number: 443
+      tls:
+        mode: SIMPLE
+        secretName: tls-secret # NOTE
+      allowedRouteTables:
+        - host: '*'
+          selector:
+            namespace: online-boutique
+EOF
+```
+
+4. Test out the new HTTPS endpoint (you may need to allow insecure traffic in your browser. Chrome: Advanced -> Proceed)
+
+```sh
+export GLOO_GATEWAY_HTTPS=$(kubectl -n gloo-mesh-gateways get svc istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].*}'):443
+
+echo "Secure Online Boutique URL: https://$GLOO_GATEWAY_HTTPS"
+```
+
+The `ExtAuthPolicy` defines the provider connectivity including any callback paths that we need to configure on our application.
+
+5. View the `ExtAuthPolicy` with environment variables replaced.
+
+```sh
+( echo "cat <<EOF" ; cat tracks/ext-auth-policy.yaml ; echo EOF ) | sh
+```
+
+6. Apply the `ExtAuthPolicy`
+
+```sh
+( echo "cat <<EOF" ; cat tracks/ext-auth-policy.yaml ; echo EOF ) | sh | kubectl apply -n online-boutique -f -
+```
+
+Now if you refresh the application, you should be redirected to Keycloak to login.
+
+7. Login using the following credentials
+
+```sh
+user: gloo-gateway
+password: solo.io
+```
+
+And the application is now accessible.
+
+8. When you are finished, click the 'logout' button in the top right corner of the screen.
+
+## Lab 10 - Rate Limiting<a name="ratelimiting"></a>
+
+![Rate Limiting](images/rate-limiter.png)
+
+Secondly, we will look at rate limiting with Gloo Gateway.  The rate limiting feature relies on a rate limit server that has been installed in our gloo-mesh-addons namespace.
+
+For rate limiting, we need to create three CRs.  Let's start with the `RateLimitClientConfig`.
+
+The `RateLimitClientConfig` defines the conditions in the request that will invoke rate limiting.  In this case, we will define a key coming from the header `X-Organization`.
+
+The `RateLimitPolicy` pulls together the `RateLimitClientConfig`, `RateLimitServerConfig` and sets the label selector to use in the `RouteTable`.
+
+1. Configure the rate limiting API. 
+```yaml
+kubectl apply -f - <<EOF
+apiVersion: trafficcontrol.policy.gloo.solo.io/v2
+kind: RateLimitClientConfig
+metadata:
+  name: rate-limit-client-config
+  namespace: online-boutique
+spec:
+  raw:
+    rateLimits:
+    - actions:
+      - genericKey:
+          descriptorValue: counter
+---
+apiVersion: admin.gloo.solo.io/v2
+kind: RateLimitServerSettings
+metadata:
+  name: rate-limit-server-settings
+  namespace: online-boutique
+spec:
+  destinationServer:
+    port:
+      number: 8083
+    ref:
+      name: rate-limiter
+      namespace: gloo-gateway-addons
+      cluster: cluster-1
+EOF
+```
+
+1. Configure the RateLimitPolicy
+
+```yaml
+kubectl apply -f - <<EOF
+apiVersion: admin.gloo.solo.io/v2
+kind: RateLimitServerConfig
+metadata:
+  name: rate-limit-server-config
+  namespace: gloo-mesh-gateways
+spec:
+  destinationServers:
+  - ref:
+      name: rate-limiter
+      namespace: gloo-gateway-addons
+    port:
+      name: grpc
+  raw:
+    descriptors:
+    - key: generic_key
+      rateLimit:
+        requestsPerUnit: 3 # 3 requests per minute
+        unit: MINUTE
+      value: counter
+---
+apiVersion: trafficcontrol.policy.gloo.solo.io/v2
+kind: RateLimitPolicy
+metadata:
+  name: rate-limit-policy
+  namespace: online-boutique
+spec:
+  applyToRoutes:
+  - route:
+      labels:
+        route: products ##### NOTE
+  config:
+    serverSettings:
+      name: rate-limit-server-settings
+      namespace: online-boutique
+    ratelimitClientConfig:
+      name: rate-limit-client-config
+      namespace: online-boutique
+    ratelimitServerConfig:
+      name: rate-limit-server-config
+      namespace: gloo-mesh-gateways
+EOF
+```
+
+2. Test Rate Limiting
+
+```sh
+for i in {1..6}; do curl -iksS -H "x-api-key: developer" -X GET https://$GLOO_GATEWAY_HTTPS/products | tail -n 10; done
+```
+
+3. Expected Response
+
+```sh
+HTTP/2 429
+x-envoy-ratelimited: true
+date: Sun, 05 Jun 2022 18:50:53 GMT
+server: istio-envoy
+x-envoy-upstream-service-time: 7
+```
+
+## Lab 11 - Web Application Firewall (WAF)<a name="waf"></a>
 
 ![Security](images/security.png)
 
@@ -517,459 +885,6 @@ Log4Shell malicious payload
 
 Your applications are no longer susceptible to `log4j` attacks, nice!
 
-## Lab 8 - Authentication / API Key <a name="apikey"></a>
-
-API key authentication is one of the easiest forms of authentication to implement. Simply create a Kubernetes secret that contains the key and reference it from the `ExtAuthPolicy`. It is recommended to label the secrets so that multiple can be selected and more can be added later. You can select any header to validate against.
-
-1. Create two secrets that Gloo will validate against. One with the api-key `admin` and the other `developer`.
-
-```yaml
-kubectl apply -f - <<EOF
-apiVersion: v1
-kind: Secret
-metadata:
-  name: solo-admin
-  namespace: online-boutique
-  labels:
-    api-keyset: httpbin-users
-type: extauth.solo.io/apikey
-data:
-  api-key: $(echo -n "admin" | base64)
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: solo-developer
-  namespace: online-boutique
-  labels:
-    api-keyset: httpbin-users
-type: extauth.solo.io/apikey
-data:
-  api-key: $(echo -n "developer" | base64)
-EOF
-```
-
-2. Create the API key `ExtAuthPolicy` that will match header `x-api-key` values againt the secrets created above.
-
-```yaml
-kubectl apply -f - <<EOF
-apiVersion: security.policy.gloo.solo.io/v2
-kind: ExtAuthPolicy
-metadata:
-  name: products-apikey
-  namespace: online-boutique
-spec:
-  applyToRoutes:
-  - route:
-      labels:
-        route: products
-  config:
-    server:
-      name: ext-auth-server
-      namespace: online-boutique
-      cluster: cluster-1
-    glooAuth:
-      configs:
-      - apiKeyAuth:
-          headerName: x-api-key
-          labelSelector:
-            api-keyset: httpbin-users
-EOF
-```
-
-3. Call httpbin without an api key and you will get a 401 unauthorized message.
-
-```sh
-curl -v http://$GLOO_GATEWAY/products
-```
-
-4. Call httpbin with the developer api key `x-api-key: developer`
-
-```sh
-curl -H "x-api-key: developer" -v http://$GLOO_GATEWAY/products
-```
-
-5. Call httpbin with the admin api key `x-api-key: admin`
-
-```sh
-curl -H "x-api-key: admin" -v http://$GLOO_GATEWAY/products
-```
-
-
-### Routing to External endpoints
-
-Next, lets route to an endpoint (http://httpbin.org) that is external to the cluster. `ExternalEndpoint` resource defines a static IP for routing which exist outside the mesh. ExternalEndpoints provide a mechanism for direct resolution of the addresses backing ExternalServices.
-
-Once an ExternalEndpoint is created, a RouteTable can be used to send traffic to it. In this example, we will send traffic on URI prefix: /httpbin to this external service.
-
-1. Create a reference to the httpbin.org. The `ExternalEndpoint` is a definition of where you can reach the external application. The `ExternalService` is a Gloo internal reference that the `RouteTable` can utilize. In certain use cases, you can assign many `ExternalEndpoints` to a single `ExternalService`
-
-```yaml
-kubectl apply -f - <<EOF
-apiVersion: networking.gloo.solo.io/v2
-kind: ExternalEndpoint
-metadata:
-  name: httpbin
-  namespace: online-boutique
-  labels:
-    external-service: httpbin
-spec:
-  address: httpbin.org
-  ports:
-    - name: http
-      number: 80
-    - name: https
-      number: 443
----
-apiVersion: networking.gloo.solo.io/v2
-kind: ExternalService
-metadata:
-  name: httpbin
-  namespace: online-boutique
-spec:
-  selector:
-    external-service: httpbin
-  hosts:
-  - httpbin.org
-  ports:
-  - name: http
-    number: 80
-    protocol: HTTP
-  - name: https
-    number: 443
-    protocol: HTTPS
-    clientsideTls: {}   ### upgrade outbound call to HTTPS
-EOF
-```
-
-2. Create a new `RouteTable` that will match on requests containing the prefix `/httpbin` and route it to the httpbin `ExternalService`
-
-```yaml
-kubectl apply -f - <<'EOF'
-apiVersion: networking.gloo.solo.io/v2
-kind: RouteTable
-metadata:
-  name: httpbin
-  namespace: online-boutique
-spec:
-  weight: 150
-  workloadSelectors: []
-  http:
-    - matchers:
-      - uri:
-          prefix: /httpbin
-      name: httpbin-all
-      labels:
-        route: httpbin
-      forwardTo:
-        pathRewrite: /
-        destinations:
-        - ref:
-            name: httpbin
-          port: 
-            number: 443
-          kind: EXTERNAL_SERVICE
-EOF
-```
-
-3. Let's test it.
-
-```sh
-curl -v $GLOO_GATEWAY/httpbin/get
-```
-
-## Lab 9 - Authentication / JWT + JWKS<a name="jwt"></a>
-
-JWT authentication using JSON web key sets (JWKS) is a much more robust mechanism for authentication as keys can be shorter lived / rotated and the validation is done against rotating keys. Also more information can be stored in JWTs vs API keys. In this example Auth0 is used as the JWT signer and JWKS provider. 
-
-To create your own Auth0 Tokens, create an Auth0 `Application` and the JWKS will be located at `"https://<Auth0 Server>/.well-known/jwks.json"` and tokens can be generated calling the `https://<Auth0 Server>/oauth/token` endpoint.
-
-![Auth0 Application](images/auth0.png)
-
-1. First create and `ExternalEndpoint` and `ExternalService` to reference the `Auth0` server.
-
-```yaml
-kubectl apply -f - <<EOF
-apiVersion: networking.gloo.solo.io/v2
-kind: ExternalEndpoint
-metadata:
-  name: auth0
-  namespace: online-boutique
-  labels:
-    external-service: auth0
-spec:
-  address: dev-64ktibmv.us.auth0.com
-  ports:
-    - name: https
-      number: 443
----
-apiVersion: networking.gloo.solo.io/v2
-kind: ExternalService
-metadata:
-  name: auth0
-  namespace: online-boutique
-spec:
-  selector:
-    external-service: auth0
-  hosts:
-  - dev-64ktibmv.us.auth0.com
-  ports:
-  - name: https
-    number: 443
-    protocol: HTTPS
-    clientsideTls: {}
-EOF
-```
-
-2. Create the `JWTPolicy` to authenticate JWT tokens.
-
-```yaml
-kubectl apply -f - <<EOF
-apiVersion: security.policy.gloo.solo.io/v2
-kind: JWTPolicy
-metadata:
-  name: currency
-  namespace: online-boutique
-spec:
-  applyToRoutes:
-  - route:
-      labels:
-        route: currency
-  config:
-    providers:
-      auth0:
-        issuer: "https://dev-64ktibmv.us.auth0.com/"
-        audiences:
-        - "https://httpbin/api"
-        remote:
-          url: "https://dev-64ktibmv.us.auth0.com/.well-known/jwks.json"
-          destinationRef:
-            ref:
-              name: auth0
-              namespace: online-boutique
-              cluster: cluster-1
-            kind: EXTERNAL_SERVICE
-            port:
-              number: 443
-          enableAsyncFetch: true
-EOF
-```
-
-3. Call `Auth0` to generate a temporary JWT token
-
-```sh
-ACCESS_TOKEN=$(curl -sS --request POST \
-  --url https://dev-64ktibmv.us.auth0.com/oauth/token \
-  --header 'content-type: application/json' \
-  --data '{"client_id":"1QEVhZ2ERqZOpTQnHChK1TUSKRBduO72","client_secret":"J_vl_qgu0pvudTfGppm_PJcQjkgy-kmy5KRCQDj5XHZbo5eFtxmSbpmqYT5ITv2h","audience":"https://httpbin/api","grant_type":"client_credentials"}' | jq -r '.access_token')
-
-printf "\n\n Access Token: $ACCESS_TOKEN\n"
-```
-
-4. Try calling currency service with no access token. You will need `grpcurl` installed and it can be downloaded here: [grpcurl installation](https://github.com/fullstorydev/grpcurl#installation)
-
-```sh
-curl --location "$GLOO_GATEWAY/currencies/convert" \
---header 'Content-Type: application/json' \
---header 'Accept: application/json' \
---data '{
-  "from": {
-    "currency_code": "USD",
-    "nanos": 0,
-    "units": 8
-  },
-  "to_code": "EUR"
-}'
-```
-
-5. Call currency service with an access token
-
-```sh
-curl -H "Authorization: Bearer ${ACCESS_TOKEN}" --location "$GLOO_GATEWAY/currencies/convert" \
---header 'Content-Type: application/json' \
---header 'Accept: application/json' \
---data '{
-  "from": {
-    "currency_code": "USD",
-    "nanos": 0,
-    "units": 8
-  },
-  "to_code": "EUR"
-}'
-```
-
-## Lab 10 - Authentication / OIDC<a name="oidc"></a>
-
-![Keycloak](images/keycloak.png)
-
-Another valuable feature of API gateways is integration into your IdP (Identity Provider). In this section of the lab, we see how Gloo Gateway can be configured to redirect unauthenticated users via OIDC.  We will use Keycloak as our IdP, but you could use other OIDC-compliant providers in your production clusters.
-
-1. In order for OIDC to work we need to enable HTTPS on our gateway. For this demo, we will create and upload a self-signed certificate which will be used in the gateway for TLS termination.
-
-```sh
-openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-   -keyout tls.key -out tls.crt -subj "/CN=*"
-
-kubectl -n gloo-mesh-gateways create secret generic tls-secret \
---from-file=tls.key=tls.key \
---from-file=tls.crt=tls.crt
-
-rm tls.crt tls.key
-```
-
-2. Adding HTTPS to our gateway is simple as updating the virtual gateway to use our ssl certificate.
-
-```yaml
-kubectl apply -f - <<EOF
-apiVersion: networking.gloo.solo.io/v2
-kind: VirtualGateway
-metadata:
-  name: ingress
-  namespace: gloo-mesh-gateways
-spec:
-  workloads:
-    - selector:
-        labels:
-          app: istio-ingressgateway
-        namespace: gloo-mesh-gateways
-  listeners:
-    - http: {}
-      port:
-        number: 80
-    - http: {}
-      port:
-        number: 443
-      tls:
-        mode: SIMPLE
-        secretName: tls-secret # NOTE
-      allowedRouteTables:
-        - host: '*'
-          selector:
-            workspace: ops-team
-EOF
-```
-
-3. Test out the new HTTPS endpoint (you may need to allow insecure traffic in your browser. Chrome: Advanced -> Proceed)
-
-```sh
-export GLOO_GATEWAY_HTTPS=$(kubectl -n gloo-mesh-gateways get svc istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].*}'):443
-
-echo "Secure Online Boutique URL: https://$GLOO_GATEWAY_HTTPS"
-```
-
-The `ExtAuthPolicy` defines the provider connectivity including any callback paths that we need to configure on our application.
-
-4. View the `ExtAuthPolicy` with environment variables replaced.
-
-```sh
-( echo "cat <<EOF" ; cat tracks/ext-auth-policy.yaml ; echo EOF ) | sh
-```
-
-5. Apply the `ExtAuthPolicy`
-
-```sh
-( echo "cat <<EOF" ; cat tracks/ext-auth-policy.yaml ; echo EOF ) | sh | kubectl apply -n online-boutique -f -
-```
-
-Now if you refresh the application, you should be redirected to Keycloak to login.
-
-6. Login using the following credentials
-
-```sh
-user: gloo-gateway
-password: solo.io
-```
-
-And the application is now accessible.
-
-7. When you are finished, click the 'logout' button in the top right corner of the screen.
-
-## Lab 11 - Rate Limiting<a name="ratelimiting"></a>
-
-![Rate Limiting](images/rate-limiter.png)
-
-Secondly, we will look at rate limiting with Gloo Gateway.  The rate limiting feature relies on a rate limit server that has been installed in our gloo-mesh-addons namespace.
-
-For rate limiting, we need to create three CRs.  Let's start with the `RateLimitClientConfig`.
-
-The `RateLimitClientConfig` defines the conditions in the request that will invoke rate limiting.  In this case, we will define a key coming from the header `X-Organization`.
-
-The `RateLimitPolicy` pulls together the `RateLimitClientConfig`, `RateLimitServerConfig` and sets the label selector to use in the `RouteTable`.
-
-1. Apply the `RateLimitPolicy`
-
-```yaml
-kubectl apply -f - <<EOF
-apiVersion: trafficcontrol.policy.gloo.solo.io/v2
-kind: RateLimitClientConfig
-metadata:
-  name: rate-limit-client-config
-  namespace: online-boutique
-spec:
-  raw:
-    rateLimits:
-    - actions:
-      - genericKey:
-          descriptorValue: counter
----
-apiVersion: admin.gloo.solo.io/v2
-kind: RateLimitServerConfig
-metadata:
-  name: rate-limit-server-config
-  namespace: gloo-mesh-gateways
-spec:
-  destinationServers:
-  - ref:
-      name: rate-limiter
-      namespace: gloo-gateway-addons
-    port:
-      name: grpc
-  raw:
-    descriptors:
-    - key: generic_key
-      rateLimit:
-        requestsPerUnit: 3
-        unit: MINUTE
-      value: counter
----
-apiVersion: trafficcontrol.policy.gloo.solo.io/v2
-kind: RateLimitPolicy
-metadata:
-  name: rate-limit-policy
-  namespace: online-boutique
-spec:
-  applyToRoutes:
-  - route:
-      labels:
-        route: products ##### NOTE
-  config:
-    serverSettings:
-      name: rate-limit-server-settings
-      namespace: online-boutique
-    ratelimitClientConfig:
-      name: rate-limit-client-config
-      namespace: online-boutique
-    ratelimitServerConfig:
-      name: rate-limit-server-config
-      namespace: gloo-mesh-gateways
-EOF
-```
-
-2. Test Rate Limiting
-
-```sh
-for i in {1..6}; do curl -iksS -H "x-api-key: developer" -X GET https://$GLOO_GATEWAY_HTTPS/products | tail -n 10; done
-```
-
-3. Expected Response
-
-```sh
-HTTP/2 429
-x-envoy-ratelimited: true
-date: Sun, 05 Jun 2022 18:50:53 GMT
-server: istio-envoy
-x-envoy-upstream-service-time: 7
-```
 
 ## Lab 12 - Graphql<a name="graphql"></a>
 
