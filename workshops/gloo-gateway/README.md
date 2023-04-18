@@ -365,7 +365,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: solo-admin
-  namespace: online-boutique
+  namespace: gloo-mesh-gateways
   labels:
     api-keyset: httpbin-users
 type: extauth.solo.io/apikey
@@ -376,7 +376,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: solo-developer
-  namespace: online-boutique
+  namespace: gloo-mesh-gateways
   labels:
     api-keyset: httpbin-users
 type: extauth.solo.io/apikey
@@ -393,7 +393,7 @@ apiVersion: admin.gloo.solo.io/v2
 kind: ExtAuthServer
 metadata:
   name: ext-auth-server
-  namespace: online-boutique
+  namespace: gloo-mesh-gateways
 spec:
   destinationServer:
     ref:
@@ -407,7 +407,7 @@ apiVersion: security.policy.gloo.solo.io/v2
 kind: ExtAuthPolicy
 metadata:
   name: products-apikey
-  namespace: online-boutique
+  namespace: gloo-mesh-gateways
 spec:
   applyToRoutes:
   - route:
@@ -416,7 +416,7 @@ spec:
   config:
     server:
       name: ext-auth-server
-      namespace: online-boutique
+      namespace: gloo-mesh-gateways
       cluster: cluster-1
     glooAuth:
       configs:
@@ -524,7 +524,7 @@ apiVersion: networking.gloo.solo.io/v2
 kind: ExternalService
 metadata:
   name: auth0
-  namespace: online-boutique
+  namespace: gloo-mesh-gateways
 spec:
   hosts:
   - dev-64ktibmv.us.auth0.com
@@ -544,7 +544,7 @@ apiVersion: security.policy.gloo.solo.io/v2
 kind: JWTPolicy
 metadata:
   name: currency
-  namespace: online-boutique
+  namespace: gloo-mesh-gateways
 spec:
   applyToRoutes:
   - route:
@@ -561,7 +561,7 @@ spec:
           destinationRef:
             ref:
               name: auth0
-              namespace: online-boutique
+              namespace: gloo-mesh-gateways
               cluster: cluster-1
             kind: EXTERNAL_SERVICE
             port:
@@ -669,7 +669,7 @@ spec:
       allowedRouteTables:
         - host: '*'
           selector:
-            namespace: online-boutique
+            namespace: gloo-mesh-gateways
 EOF
 ```
 
@@ -692,7 +692,7 @@ The `ExtAuthPolicy` defines the provider connectivity including any callback pat
 6. Apply the `ExtAuthPolicy`
 
 ```sh
-( echo "cat <<EOF" ; cat tracks/ext-auth-policy.yaml ; echo EOF ) | sh | kubectl apply -n online-boutique -f -
+( echo "cat <<EOF" ; cat tracks/ext-auth-policy.yaml ; echo EOF ) | sh | kubectl apply -f -
 ```
 
 Now if you refresh the application, you should be redirected to Keycloak to login.
@@ -727,7 +727,7 @@ apiVersion: trafficcontrol.policy.gloo.solo.io/v2
 kind: RateLimitClientConfig
 metadata:
   name: rate-limit-client-config
-  namespace: online-boutique
+  namespace: gloo-mesh-gateways
 spec:
   raw:
     rateLimits:
@@ -739,7 +739,7 @@ apiVersion: admin.gloo.solo.io/v2
 kind: RateLimitServerSettings
 metadata:
   name: rate-limit-server-settings
-  namespace: online-boutique
+  namespace: gloo-mesh-gateways
 spec:
   destinationServer:
     port:
@@ -779,7 +779,7 @@ apiVersion: trafficcontrol.policy.gloo.solo.io/v2
 kind: RateLimitPolicy
 metadata:
   name: rate-limit-policy
-  namespace: online-boutique
+  namespace: gloo-mesh-gateways
 spec:
   applyToRoutes:
   - route:
@@ -788,10 +788,10 @@ spec:
   config:
     serverSettings:
       name: rate-limit-server-settings
-      namespace: online-boutique
+      namespace: gloo-mesh-gateways
     ratelimitClientConfig:
       name: rate-limit-client-config
-      namespace: online-boutique
+      namespace: gloo-mesh-gateways
     ratelimitServerConfig:
       name: rate-limit-server-config
       namespace: gloo-mesh-gateways
@@ -842,7 +842,7 @@ apiVersion: security.policy.gloo.solo.io/v2
 kind: WAFPolicy
 metadata:
   name: log4jshell
-  namespace: online-boutique
+  namespace: gloo-mesh-gateways
 spec:
   applyToRoutes:
   - route:

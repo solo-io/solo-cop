@@ -2,7 +2,7 @@ apiVersion: security.policy.gloo.solo.io/v2
 kind: ExtAuthPolicy
 metadata:
   name: frontend-login
-  namespace: online-boutique
+  namespace: gloo-mesh-gateways
 spec:
   applyToRoutes: # Dynamically gets applied to all Routes with this label
   - route:
