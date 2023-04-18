@@ -30,8 +30,6 @@ spec:
                     json: /ads
                 body:
                   jq: '{ context_keys: .context_keys }'
-            resolverResultTransform:
-              jq: '{ads: .resolverResultVar.ads}'
 ---
 apiVersion: apimanagement.gloo.solo.io/v2
 kind: GraphQLResolverMap
@@ -63,8 +61,6 @@ spec:
                     json: GET
                   :path:
                     json: /products
-            resolverResultTransform:
-              jq: '{}'
         GetProduct:
           variables:
             productVar:
@@ -86,5 +82,3 @@ spec:
                     json: GET
                   :path:
                     jq: '"/products/id/" + (.productVar | tostring)'
-            resolverResultTransform:
-              jq: '{products: .resolverResultVar.products}'

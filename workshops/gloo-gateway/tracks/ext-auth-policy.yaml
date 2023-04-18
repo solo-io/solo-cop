@@ -11,7 +11,7 @@ spec:
   config:
     server: # Points at the `ExtAuthServer` config that should be used.
       name: ext-auth-server
-      namespace: online-boutique
+      namespace: gloo-mesh-gateways
       cluster: cluster-1
     glooAuth:
       configs:

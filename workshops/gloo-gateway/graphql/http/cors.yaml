@@ -12,7 +12,6 @@ spec:
     allowCredentials: true
     allowHeaders:
     - content-type
-    - x-apollo-tracing
     allowMethods:
     - POST
     allowOrigins:
