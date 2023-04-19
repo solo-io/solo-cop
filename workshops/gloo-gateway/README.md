@@ -1044,17 +1044,6 @@ spec:
     matchers:
     - uri:
         prefix: /graphql-products
-  - name: currencies
-    graphql:
-      options:
-        logSensitiveInfo: true
-      schema:
-        name: currencies
-        namespace: online-boutique
-        clusterName: cluster-1
-    matchers:
-    - uri:
-        prefix: /graphql-currencies
 EOF
 ```
 
