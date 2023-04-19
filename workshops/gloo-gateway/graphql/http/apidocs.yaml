@@ -24,7 +24,7 @@ spec:
     schemaDefinition: |-
       type Price { currency_code: String units: String nanos: Int }
 
-      type Product { 
+      type Product {
         id: String
         name: String
         description: String
@@ -51,17 +51,23 @@ spec:
       type CurrencyCodes { currency_codes: [String] }
 
       type Currency {
-        currency_code: String
-        nanos: Int
-        units: Int
+          currency_code: String
+          nanos: Int
+          units: Int
       }
 
-      type CurrencyConversion {
-        from: Currency
-        to_code: String
+      input InputCurrency {
+          currency_code: String
+          nanos: Int
+          units: Int
+      }
+
+      input CurrencyConversion {
+          from: InputCurrency
+          to_code: String
       }
 
       type Query {
-        GetCurrencies: [CurrencyCodes]
-        ConvertCurrency(request CurrencyConversion): Currency
+          GetCurrencies: CurrencyCodes
+          ConvertCurrency(request: CurrencyConversion): Currency
       }

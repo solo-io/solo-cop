@@ -82,3 +82,45 @@ spec:
                     json: GET
                   :path:
                     jq: '"/products/id/" + (.productVar | tostring)'
+---
+apiVersion: apimanagement.gloo.solo.io/v2
+kind: GraphQLResolverMap
+metadata:
+  name: currencies
+  namespace: online-boutique
+spec:
+  types:
+    Query:
+      fields:
+        GetCurrencies:
+          resolvers:
+          - restResolver:
+              destinations:
+              - port:
+                  number: 7005
+                ref:
+                  cluster: cluster-1
+                  name: currencyservice
+                  namespace: online-boutique
+              request:
+                headers:
+                  :method:
+                    json: GET
+                  :path:
+                    json: /currencies
+        ConvertCurrency:
+          resolvers:
+          - restResolver:
+              destinations:
+              - port:
+                  number: 7005
+                ref:
+                  cluster: cluster-1
+                  name: currencyservice
+                  namespace: online-boutique
+              request:
+                headers:
+                  :method:
+                    json: POST
+                  :path:
+                    json: /currencies/convert

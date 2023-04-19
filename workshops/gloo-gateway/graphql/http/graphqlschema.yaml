@@ -33,3 +33,39 @@ spec:
     name: products
     namespace: online-boutique
     clusterName: cluster-1
+---
+apiVersion: apimanagement.gloo.solo.io/v2
+kind: GraphQLSchema
+metadata:
+  name: currencies
+  namespace: online-boutique
+spec:
+  resolved:
+    options: 
+      enableIntrospection: true
+    resolverMapRefs:
+    - name: currencies
+      namespace: online-boutique
+      clusterName: cluster-1
+  schemaRef:
+    name: currencies
+    namespace: online-boutique
+    clusterName: cluster-1
+---
+apiVersion: apimanagement.gloo.solo.io/v2
+kind: GraphQLSchema
+metadata:
+  name: ads
+  namespace: online-boutique
+spec:
+  resolved:
+    options: 
+      enableIntrospection: true
+    resolverMapRefs:
+    - name: ads
+      namespace: online-boutique
+      clusterName: cluster-1
+  schemaRef:
+    name: ads
+    namespace: online-boutique
+    clusterName: cluster-1

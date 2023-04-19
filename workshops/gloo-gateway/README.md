@@ -517,7 +517,7 @@ To create your own Auth0 Tokens, create an Auth0 `Application` and the JWKS will
 
 ![Auth0 Application](images/auth0.png)
 
-1. First create and `ExternalEndpoint` and `ExternalService` to reference the `Auth0` server.
+1. First create an `ExternalService` to reference the `Auth0` server.
 
 ```yaml
 kubectl apply -f - <<EOF
@@ -984,7 +984,7 @@ spec:
   graphql:
     schemaDefinition: |-
       type Price { currency_code: String units: String nanos: Int }
-
+      
       type Product { 
         id: String
         name: String
@@ -1027,7 +1027,7 @@ spec:
 apiVersion: networking.gloo.solo.io/v2
 kind: RouteTable
 metadata:
-  name: graphql-routes
+  name: graphql-products
   namespace: online-boutique
 spec:
   weight: 50
@@ -1044,6 +1044,17 @@ spec:
     matchers:
     - uri:
         prefix: /graphql-products
+  - name: currencies
+    graphql:
+      options:
+        logSensitiveInfo: true
+      schema:
+        name: currencies
+        namespace: online-boutique
+        clusterName: cluster-1
+    matchers:
+    - uri:
+        prefix: /graphql-currencies
 EOF
 ```
 
@@ -1062,6 +1073,26 @@ meshctl dashboard
 
 7. Run the following queries to query data
 
+* List all products
+
+```graphql
+query ListProductsQuery {
+  ListProducts {
+    products {
+      price_usd {
+        currency_code
+        units
+        nanos
+      }
+      name
+      id
+    }
+  }
+}
+```
+
+* Get a specific product
+
 ```graphql
 query GetProductQuery {
   GetProduct(id: "66VCHSJNUP") {
@@ -1079,16 +1110,7 @@ query GetProductQuery {
 }
 ```
 
-```graphql
-query ListProductsQuery {
-  ListProducts {
-    products {
-      categories
-      id
-    }
-  }
-}
-```
+
 
 8. Combine the queries to fetch the data all together
 ```graphql
@@ -1105,27 +1127,347 @@ query CombinedQuery {
 }
 ```
 
+## Custom Resolvers
 
-* Query for Ads
-```graphql
+The Online Boutique is going international. There is a problem through, all prices are currently in USD only. We need to call the currency conversion to translate the price into different denominations. This lab will shop the power of custom resolvers and how they can significantly increase the benefit to using this style of API.
+
+* Current response with price_usd
+```json
 {
-  GetAds{
-    ads {
-      redirectUrl
-      text
+  "data": {
+    "GetProduct": {
+      "categories": [
+        "accessories"
+      ],
+      "description": "Add a modern touch to your outfits with these sleek aviator sunglasses.",
+      "id": "OLJCESPC7Z",
+      "name": "Sunglasses",
+      "picture": "/static/img/products/sunglasses.jpg",
+      "price_usd": {
+        "currency_code": "USD",
+        "nanos": 990000000,
+        "units": "19"
+      }
     }
   }
 }
 ```
 
-* Get ads for the supplied context
+1. First lets add the currency GraphQL API
+
+```yaml
+kubectl apply -f -<<EOF
+apiVersion: apimanagement.gloo.solo.io/v2
+kind: ApiDoc
+metadata:
+  name: currencies
+  namespace: online-boutique
+spec:
+  graphql:
+    schemaDefinition: |-
+      type CurrencyCodes { currency_codes: [String] }
+
+      type Currency {
+          currency_code: String
+          nanos: Int
+          units: Int
+      }
+
+      input InputCurrency {
+          currency_code: String
+          nanos: Int
+          units: Int
+      }
+
+      input CurrencyConversion {
+          from: InputCurrency
+          to_code: String
+      }
+
+      type Query {
+          GetCurrencies: CurrencyCodes
+          ConvertCurrency(request: CurrencyConversion): Currency
+      }
+EOF
+```
+
+2. Now lets create the resolvers
+
+```yaml
+kubectl apply -f -<<EOF
+apiVersion: apimanagement.gloo.solo.io/v2
+kind: GraphQLResolverMap
+metadata:
+  name: currencies
+  namespace: online-boutique
+spec:
+  types:
+    Query:
+      fields:
+        GetCurrencies:
+          resolvers:
+          - restResolver:
+              destinations:
+              - port:
+                  number: 7005
+                ref:
+                  cluster: cluster-1
+                  name: currencyservice
+                  namespace: online-boutique
+              request:
+                headers:
+                  :method:
+                    json: GET
+                  :path:
+                    json: /currencies
+        ConvertCurrency:
+          resolvers:
+          - restResolver:
+              destinations:
+              - port:
+                  number: 7005
+                ref:
+                  cluster: cluster-1
+                  name: currencyservice
+                  namespace: online-boutique
+              request:
+                headers:
+                  :method:
+                    json: POST
+                  :path:
+                    json: /currencies/convert
+EOF
+```
+
+3. Create the GraphQLSchema object and add routing for this API.
+```yaml
+kubectl apply -f -<<EOF
+apiVersion: apimanagement.gloo.solo.io/v2
+kind: GraphQLSchema
+metadata:
+  name: currencies
+  namespace: online-boutique
+spec:
+  resolved:
+    options: 
+      enableIntrospection: true
+    resolverMapRefs:
+    - name: currencies
+      namespace: online-boutique
+      clusterName: cluster-1
+  schemaRef:
+    name: currencies
+    namespace: online-boutique
+    clusterName: cluster-1
+---
+apiVersion: networking.gloo.solo.io/v2
+kind: RouteTable
+metadata:
+  name: graphql-currencies
+  namespace: online-boutique
+spec:
+  weight: 150
+  workloadSelectors: []
+  http:
+  - name: currencies
+    graphql:
+      options:
+        logSensitiveInfo: true
+      schema:
+        name: currencies
+        namespace: online-boutique
+        clusterName: cluster-1
+    matchers:
+    - uri:
+        prefix: /graphql-currencies
+EOF
+```
+
+5. Test the query in the Gloo Platform APIs UI
+
+* Get list of currencies
+
 ```graphql
-{
-  GetAds(context_keys: ["footwear"]){
-    ads {
-      redirectUrl
-      text
-    }
+query MyQuery {
+  GetCurrencies {
+    currency_codes
   }
 }
+```
+
+* Convert USD to EUR
+```graphql
+query ConvertCurrency {
+  ConvertCurrency(
+    request: {from: {currency_code: "USD", nanos: 0, units: 10}, to_code: "EUR"}
+  ) {
+    nanos
+    currency_code
+    units
+  }
+}
+```
+
+6. Having the client convert all the prices could put a lot of strain on the network and client. Instead we can add a new resolver called `price` that will tell Gloo Platform to convert it and return the response. First a new field needs to be added to the query. 
+
+* Update the API to include a new field `price` that will be in the desired currency. `price(currency_code: String): Price`
+```yaml
+kubectl apply -f -<<EOF
+apiVersion: apimanagement.gloo.solo.io/v2
+kind: ApiDoc
+metadata:
+  name: products
+  namespace: online-boutique
+spec:
+  graphql:
+    schemaDefinition: |-
+      type Price { currency_code: String units: String nanos: Int }
+      
+      type Product { 
+        id: String
+        name: String
+        description: String
+        picture: String
+        categories: [String]
+        price_usd: Price
+        price(currency_code: String): Price
+      }
+
+      type ProductList { products: [Product] }
+
+      type Query {
+        ListProducts: ProductList
+        GetProduct(id: String): Product
+      }
+EOF
+```
+
+7. `price` currently does not resolve to anything. We will create a new resolver for price that feeds the USD currency to the currency service and convert it to the desired currency. 
+
+* Update the resolver map and add a resolver for the `price` field
+```yaml
+kubectl apply -f -<<EOF
+apiVersion: apimanagement.gloo.solo.io/v2
+kind: GraphQLResolverMap
+metadata:
+  name: products
+  namespace: online-boutique
+spec:
+  types:
+    Product:
+      fields:
+        ## Add a resolver for price 
+        price:
+          resolvers:
+          - restResolver:
+              destinations:
+              - port:
+                  number: 7005
+                ref:
+                  cluster: cluster-1
+                  name: currencyservice
+                  namespace: online-boutique
+              request:
+                headers:
+                  :method:
+                    json: POST
+                  :path:
+                    json: /currencies/convert
+                # Use the USD price and a new curency as input
+                body:
+                  jq: '{from: .parentProduct.price_usd, to_code: .currencyCodeVar}'
+          variables:
+            parentProduct: # parent product reference
+              graphqlParent: {} # Grab the Product object
+            currencyCodeVar: # GraphQL currencyCode variable
+              graphqlArg: "currency_code"
+    Query:
+      fields:
+        ListProducts:
+          resolvers:
+          - restResolver:
+              destinations:
+              - port:
+                  number: 3555
+                ref:
+                  cluster: cluster-1
+                  name: productcatalogservice
+                  namespace: online-boutique
+              request:
+                headers:
+                  :method:
+                    json: GET
+                  :path:
+                    json: /products
+        GetProduct:
+          variables:
+            productVar:
+              graphqlArg: id
+            resolverResultVar:
+              resolverResult: {}
+          resolvers:
+          - restResolver:
+              destinations:
+              - port:
+                  number: 3555
+                ref:
+                  cluster: cluster-1
+                  name: productcatalogservice
+                  namespace: online-boutique
+              request:
+                headers:
+                  :method:
+                    json: GET
+                  :path:
+                    jq: '"/products/id/" + (.productVar | tostring)'
+EOF
+```
+
+8. Go to the Gloo Portal UI and update the query to include this new price. The below example will convert the USD price to EUR
+```graphql
+query CustomResolver {
+  GetProduct(id: "OLJCESPC7Z") {
+    categories
+    description
+    id
+    name
+    picture
+    price_usd {
+      currency_code
+      nanos
+      units
+    }
+    price(currency_code: "EUR") {
+      currency_code
+      nanos
+      units
+    }
+  }
+```
+
+9. Using `aliases` you can convert the currency to multiple denominations at the same time
+```graphql
+query UsingAliases {
+  GetProduct(id: "OLJCESPC7Z") {
+    categories
+    description
+    id
+    name
+    picture
+    price_usd {
+      currency_code
+      nanos
+      units
+    }
+    eur:price(currency_code: "EUR") {
+      currency_code
+      nanos
+      units
+    }
+    inr:price(currency_code: "INR") {
+      currency_code
+      nanos
+      units
+    }
+  }
 ```

@@ -27,3 +27,13 @@ spec:
     matchers:
     - uri:
         prefix: /graphql-products
+  - graphql:
+      options:
+        logSensitiveInfo: true
+      schema:
+        name: currencies
+        namespace: online-boutique
+        clusterName: cluster-1
+    matchers:
+    - uri:
+        prefix: /graphql-currencies
