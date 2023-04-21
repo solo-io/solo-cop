@@ -5,11 +5,11 @@ apiVersion: admin.gloo.solo.io/v2
 kind: WorkspaceSettings
 metadata:
   name: ops-team
-  namespace: ops-team
+  namespace: gloo-mesh-gateways
 spec:
   importFrom:
   - workspaces:
-    - name: dev-team # Need to pick up the RouteTables from dev-team
+    - name: app-team # Need to pick up the RouteTables from app-team
   exportTo:
   - workspaces:
     - name: "*"
@@ -17,12 +17,12 @@ spec:
     - kind: SERVICE # Workloads need to talk to ext-auth and rate-limit pods
       namespace: gloo-gateway-addons
 ---
-# WorkspaceSettings for dev-team:
+# WorkspaceSettings for app-team:
 apiVersion: admin.gloo.solo.io/v2
 kind: WorkspaceSettings
 metadata:
-  name: dev-team
-  namespace: dev-team
+  name: app-team
+  namespace: online-boutique
 spec:
   importFrom:
   - workspaces:

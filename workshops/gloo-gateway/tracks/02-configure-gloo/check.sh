@@ -4,7 +4,7 @@ set -e
 
 kubectl get namespace backend-apis || fail-message "Could not find the backend-apis namespace, was the backend APIs deployed?"
 
-kubectl get namespace web-ui || fail-message "Could not find the web-ui namespace, was the frontend deployed?"
+kubectl get namespace online-boutique || fail-message "Could not find the online-boutique namespace, was the frontend deployed?"
 
 kubectl get Workspace ops-team -n gloo-mesh || fail-message "Could not find the ops-team Workspace in the gloo-mesh namespace."
 
