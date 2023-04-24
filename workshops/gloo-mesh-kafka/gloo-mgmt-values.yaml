@@ -1,0 +1,48 @@
+common:
+  # Name of the cluster. Be sure to modify this value to match your cluster's name.
+  cluster: "mgmt-cluster"
+
+# Configuration for the Gloo management server.
+glooMgmtServer:
+  enabled: true
+
+# Configuration for the Gloo UI.
+glooUi:
+  enabled: true
+
+# Gloo Platform Redis configuration options.
+redis:
+  deployment:
+    enabled: true
+
+# Helm values for configuring Prometheus. See the [Prometheus Helm chart](https://github.com/prometheus-community/helm-charts/blob/main/charts/prometheus/values.yaml) for the complete set of values.
+prometheus:
+  enabled: true
+
+# OTLP collector for workload cluster collectors
+telemetryGateway:
+  enabled: true
+
+# Optional customization for the Gloo Platform Telemetry Collector.
+telemetryGatewayCustomization:
+  extraExporters:
+    otlp/tracing:
+      endpoint: jaeger-collector.gloo-mesh.svc.cluster.local:4317
+      tls:
+        insecure: true
+  extraPipelines:
+    metrics/same:
+      receivers:
+      - otlp
+      processors:
+      - memory_limiter
+      - batch
+      exporters:
+      - prometheus
+    traces/gloo-mesh:
+      receivers:
+      - otlp
+      processors: 
+      - batch
+      exporters: 
+      - otlp/tracing

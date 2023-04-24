@@ -1,0 +1,64 @@
+# Configuration for the Gloo agent.
+glooAgent:
+  enabled: true
+
+# Configuration for the Gloo Platform Telemetry Collector. See the [OpenTelemetry Helm chart](https://github.com/open-telemetry/opentelemetry-helm-charts/blob/main/charts/opentelemetry-collector/values.yaml) for the complete set of values.
+telemetryCollector:
+  enabled: true
+  replicaCount: 1
+  mode: deployment
+  service: 
+    type: ClusterIP
+
+# Optional customization for the Gloo Platform Telemetry Collector.
+telemetryCollectorCustomization:
+  extraPipelines:
+    logs/gloo-mesh:
+      receivers: [otlp/gloo-mesh]
+      processors: [batch]
+      exporters: 
+        - logging/gloo-mesh
+        # - <Add here your exporter>
+    traces/gloo-mesh: 
+      receivers: [zipkin/gloo-mesh]
+      processors: [batch]
+      exporters:
+        - otlp
+        # - <Add here your exporter>
+    metrics/gloo-mesh:
+      receivers: [prometheus]
+# The following filters are part of the default pipeline we ship by default, and should be removed if the user is interested in forwarding everything to an observability backend.
+# - filter/min
+# - attributes/drop_extra_istio_labels
+# - attributes/drop_extra_otel_labels
+      processors:
+        - memory_limiter
+        - filter/min # Add this, if you want to filter for the Minimum Metrics Set, required for Gloo Mesh UI.
+        - batch
+        - attributes/drop_extra_istio_labels # Add this to drop labels not needed for Gloo Mesh UI.
+        - attributes/drop_extra_otel_labels # Add this to drop some labels from the OTel collector itself.
+        - gloo_metrics_processor
+      exporters:
+        - otlp
+        # - <Add here your exporter>
+  extraExporters:
+    # dynatrace/gloo-mesh: # This exporter seems to only for metrics https://www.dynatrace.com/support/help/extend-dynatrace/opentelemetry/basics/collector#tabgroup--dynatrace-docs--metrics-via-the-dynatrace-exporter
+    #   endpoint: "https://my-environement.live.dynatrace.com/api/v2/metrics/ingest"
+    #   api_token: "<API_TOKEN>"
+    # otlphttp/gloo-mesh: # This exporter seems to be for traces and metrics 
+    #   endpoint: "https://my-environement.live.dynatrace.com/api/v2/otlp"
+    #   headers:
+    #     Authorization: "Api-Token <API_TOKEN>"
+    logging/gloo-mesh:
+      verbosity: normal
+      sampling_initial: 5
+      sampling_thereafter: 200
+  extraReceivers:
+    zipkin/gloo-mesh:
+        endpoint: 0.0.0.0:9411
+    otlp/gloo-mesh:
+      protocols:
+        grpc:
+          endpoint: 0.0.0.0:4317
+        http:
+          endpoint: 0.0.0.0:4318
