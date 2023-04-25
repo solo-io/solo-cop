@@ -81,7 +81,7 @@ helm upgrade --install gloo-agent gloo-platform/gloo-platform \
   --set glooAgent.relay.serverAddress=$MGMT_SERVER_NETWORKING_ADDRESS \
   --set common.cluster=$CLUSTER1 \
   --set telemetryCollector.config.exporters.otlp.endpoint=$GLOO_TELEMETRY_GATEWAY \
-  -f 01-install-gloo-platform/gloo-agent-values.yaml
+  -f gloo-agent-values.yaml
 
 
 # Gloo Mesh Agent cluster2 
@@ -106,7 +106,7 @@ helm upgrade --install gloo-agent gloo-platform/gloo-platform \
   --set glooAgent.relay.serverAddress=$MGMT_SERVER_NETWORKING_ADDRESS \
   --set common.cluster=$CLUSTER2 \
   --set telemetryCollector.config.exporters.otlp.endpoint=$GLOO_TELEMETRY_GATEWAY \
-  -f 01-install-gloo-platform/gloo-agent-values.yaml
+  -f gloo-agent-values.yaml
 
 # Install Istio
 kubectl apply -f istio.yaml --context $MGMT
