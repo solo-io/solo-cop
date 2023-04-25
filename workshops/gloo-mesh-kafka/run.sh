@@ -109,7 +109,7 @@ helm upgrade --install gloo-agent gloo-platform/gloo-platform \
   -f 01-install-gloo-platform/gloo-agent-values.yaml
 
 # Install Istio
-kubectl apply -f istio.yaml -n ops-team --context $MGMT
+kubectl apply -f istio.yaml --context $MGMT
 
 # Root Trust Policy
 kubectl apply -n gloo-mesh --context $MGMT -f -<<EOF
