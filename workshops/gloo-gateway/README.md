@@ -20,18 +20,16 @@ You can find more information about Gloo Gateway in the official documentation:
 
 ## Table of Contents
 
-* [Introduction](#introduction)
 * [Lab 1 - Deploy Kubernetes cluster](#k8s)
 * [Lab 2 - Deploy Gloo Platform](#glooplatform)
 * [Lab 3 - Deploy Online Boutique Sample Application](#onlineboutique)
 * [Lab 4 - Expose Online Boutique](#expose)
 * [Lab 5 - Routing](#routing)
-* [Lab 6 - Global Policies](#policies)
-* [Lab 7 - Authentication / API Key](#apikey)
-* [Lab 8 - Authentication / JWT + JWKS](#jwt)
-* [Lab 9 - Authentication / OIDC](#oidc)
-* [Lab 10 - Rate Limiting](#ratelimiting)
-* [Lab 11 - Web Application Firewall](#waf)
+* [Lab 6 - Authentication / API Key](#apikey)
+* [Lab 7 - Authentication / JWT + JWKS](#jwt)
+* [Lab 8 - Authentication / OIDC](#oidc)
+* [Lab 9 - Rate Limiting](#ratelimiting)
+* [Lab 10 - Web Application Firewall](#waf)
 * [Lab 11 - GraphQL](#graphql)
 
 ## Begin

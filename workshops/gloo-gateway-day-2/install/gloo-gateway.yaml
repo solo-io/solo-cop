@@ -5,11 +5,11 @@ metadata:
   namespace: gloo-mesh
 spec:
   installations:
-      # The revision for this installation, such as 1-15
-    - revision: 1-15
+      # The revision for this installation, such as 1-16
+    - revision: 1-16
       # List all workload clusters to install Istio into
       clusters:
-      - name: mgmt-cluster
+      - name: cluster-1
         # If set to true, the spec for this revision is applied in the cluster
         defaultRevision: true
       istioOperatorSpec:
@@ -20,7 +20,7 @@ spec:
         # You get the repo key from your Solo Account Representative.
         hub: us-docker.pkg.dev/gloo-mesh/istio-workshops
         # Any Solo.io Gloo Istio tag
-        tag: 1.15.4-solo
+        tag: 1.16.3-solo
         namespace: istio-system
         # Mesh configuration
         meshConfig:
@@ -33,12 +33,6 @@ spec:
           defaultConfig:
             # Wait for the istio-proxy to start before starting application pods
             holdApplicationUntilProxyStarts: true
-            # Enable Gloo metrics service. Required for Gloo UI
-            envoyMetricsService:
-              address: gloo-mesh-agent.gloo-mesh:9977
-            # Enable Gloo accesslog service. Required for Gloo Access Logging
-            envoyAccessLogService:
-              address: gloo-mesh-agent.gloo-mesh:9977
             proxyMetadata:
               # Enable Istio agent to handle DNS requests for known hosts
               # Unknown hosts are automatically resolved using upstream DNS servers
@@ -71,11 +65,11 @@ metadata:
   namespace: gloo-mesh
 spec:
   installations:
-      # The revision for this installation, such as 1-15
-    - gatewayRevision: 1-15
+      # The revision for this installation, such as 1-16
+    - gatewayRevision: 1-16
       # List all workload clusters to install Istio into
       clusters:
-      - name: mgmt-cluster
+      - name: cluster-1
         # If set to true, the spec for this revision is applied in the cluster
         activeGateway: true
       istioOperatorSpec:
@@ -85,7 +79,7 @@ spec:
         # You get the repo key from your Solo Account Representative.
         hub: us-docker.pkg.dev/gloo-mesh/istio-workshops
         # The Solo.io Gloo Istio tag
-        tag: 1.15.4-solo
+        tag: 1.16.3-solo
         components:
           ingressGateways:
             - enabled: true
