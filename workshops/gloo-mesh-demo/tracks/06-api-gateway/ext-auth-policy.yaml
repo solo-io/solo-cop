@@ -12,7 +12,7 @@ spec:
     server:
       name: ext-auth-server
       namespace: web-team
-      cluster: mgmt-cluster
+      cluster: mgmt
     glooAuth:
       configs:
       - oauth2:

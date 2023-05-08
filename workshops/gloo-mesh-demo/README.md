@@ -269,7 +269,7 @@ metadata:
   namespace: gloo-mesh
 spec:
   workloadClusters:
-  - name: 'mgmt-cluster'
+  - name: 'mgmt'
     namespaces:
     - name: ops-team
   - name: '*'
@@ -285,7 +285,7 @@ metadata:
   namespace: gloo-mesh
 spec:
   workloadClusters:
-  - name: 'mgmt-cluster'
+  - name: 'mgmt'
     namespaces:
     - name: web-team
   - name: '*'
@@ -299,7 +299,7 @@ metadata:
   namespace: gloo-mesh
 spec:
   workloadClusters:
-  - name: 'mgmt-cluster'
+  - name: 'mgmt'
     namespaces:
     - name: backend-apis-team
   - name: '*'
@@ -369,7 +369,7 @@ spec:
   virtualGateways:
     - name: north-south-gw
       namespace: ops-team
-      cluster: mgmt-cluster
+      cluster: mgmt
   workloadSelectors: []
   http:
     - name: frontend
@@ -584,7 +584,7 @@ spec:
   virtualGateways:
     - name: north-south-gw
       namespace: ops-team
-      cluster: mgmt-cluster
+      cluster: mgmt
   workloadSelectors: []
   http:
     - name: frontend
@@ -942,15 +942,15 @@ spec:
     serverSettings:
       name: rate-limit-server-settings
       namespace: web-team
-      cluster: mgmt-cluster
+      cluster: mgmt
     ratelimitClientConfig:
       name: rate-limit-client-config
       namespace: web-team
-      cluster: mgmt-cluster
+      cluster: mgmt
     ratelimitServerConfig:
       name: rate-limit-server-config
       namespace: ops-team
-      cluster: mgmt-cluster
+      cluster: mgmt
     phase:
       preAuthz: { }
 EOF
