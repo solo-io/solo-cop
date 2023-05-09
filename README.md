@@ -25,7 +25,7 @@ Each section below contains it's own README and associated links, please feel fr
 
 - [Useful Tools](tools/)
     - [Image List for Air-gap Install of Gloo Mesh Enterprise](tools/airgap-install/README.md)
-    - [Istio Bug-report CRD Parser](tools/crd_parser/README.md)
+    - [Istio Bug-report CRD Parser](tools/ibrp/README.md)
     - [Datadog Integration](tools/datadog/README.md)
     - [Istio Performance Grafana Dashboard Example](tools/grafana/README.md)
     - [Bombardier Load Generator](tools/loadgenerator/bombardier-loadgen)
