@@ -28,9 +28,30 @@ def parse_crs(yaml_input):
             write_to_file(cr)
 
 
+def parse_nodes(node_input):
+    print('Parsing ' + node_input)
+    file = open(node_input, 'r')
+    lines = file.readlines()
+
+    for line in lines:
+        if line.startswith("Name: "):
+            name = line[-1]
+        if line.startswith("Roles: "):
+            roles = line.split(' ', 1)[1].trim()
+        if line.startswith('  cpu:'):
+            cpu = line[1]
+            print(name + ' ' + roles + ' ' + cpu)
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("file", help="File containing CRs that you want to parse")
+    parser.add_argument("op", help="Operation you want.  One of crparse or nodeparse")
+    parser.add_argument("file", help="File containing information that you want to parse")
     args = parser.parse_args()
-    parse_crs(args.file)
+    if args.op == 'crparse':
+        parse_crs(args.file)
+    elif args.op == 'nodeparse':
+        parse_nodes(args.file)
+    else:
+        print('Sorry, you need to ask for either crparse or nodeparse.')
 
