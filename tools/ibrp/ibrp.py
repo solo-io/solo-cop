@@ -32,15 +32,19 @@ def parse_nodes(node_input):
     print('Parsing ' + node_input)
     file = open(node_input, 'r')
     lines = file.readlines()
+    capacity = False
 
     for line in lines:
         if line.startswith("Name: "):
-            name = line[-1]
+            name = line.split(' ', 1)[1].strip()
         if line.startswith("Roles: "):
-            roles = line.split(' ', 1)[1].trim()
-        if line.startswith('  cpu:'):
-            cpu = line[1]
+            roles = line.split(' ', 1)[1].strip()
+        if line.startswith("Capacity"):
+            capacity = True
+        if capacity and line.startswith('  cpu:'):
+            cpu = line.split('  cpu:', 1)[1].strip()
             print(name + ' ' + roles + ' ' + cpu)
+            capacity = False
 
 
 if __name__ == '__main__':
