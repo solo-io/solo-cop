@@ -809,6 +809,8 @@ echo "Secure Online Boutique URL: https://$GLOO_GATEWAY"
 
 4. Finally, we need to deploy our OIDC server keycloak. We provided you with a script to deploy and configure keycloak for our workshop. 
 
+**Note:** If you're running this demo using a Mac M4 processor, you'll need to use a keycloak image that was compilied on arm64.  Therefore, please update `/install/keycloak/keycloak.yaml` to use `sleighzy/keycloak:12.0.4-arm64` as the container image.
+
 * Deploy and configure Keycloak
 
 ```sh
