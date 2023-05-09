@@ -5,7 +5,7 @@ LOCAL_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 # Deploy apps
 kubectl apply -f $LOCAL_DIR/../../install/online-boutique/backend-apis.yaml
 
-kubectl apply -f $LOCAL_DIR/../../install/online-boutique/web-ui.yaml
+kubectl apply -f $LOCAL_DIR/../../install/online-boutique/online-boutique.yaml
 
 # Deploy workspaces
 kubectl apply -f - <<'EOF'
@@ -32,7 +32,7 @@ spec:
   - name: '*'
     namespaces:
     - name: dev-team  ### Configuration Namespace
-    - name: web-ui
+    - name: online-boutique
     - name: backend-apis
 EOF
 
@@ -47,13 +47,13 @@ apiVersion: networking.gloo.solo.io/v2
 kind: VirtualGateway
 metadata:
   name: north-south-gw
-  namespace: ops-team
+  namespace: gloo-mesh-gateways
 spec:
   workloads:
     - selector:
         labels:
-          istio: ingressgateway
-        namespace: gloo-gateway
+          app: istio-ingressgateway
+        namespace: gloo-mesh-gateways
   listeners:
     - http: {}
       port:
@@ -69,13 +69,13 @@ apiVersion: networking.gloo.solo.io/v2
 kind: RouteTable
 metadata:
   name: ingress
-  namespace: ops-team
+  namespace: gloo-mesh-gateways
 spec:
   hosts:
     - '*'
   virtualGateways:
     - name: north-south-gw
-      namespace: ops-team
+      namespace: gloo-mesh-gateways
   workloadSelectors: []
   http:
     - name: dev-team-ingress
@@ -105,7 +105,7 @@ spec:
         destinations:
           - ref:
               name: frontend
-              namespace: web-ui
+              namespace: online-boutique
             port:
               number: 80
 EOF
@@ -124,7 +124,7 @@ apiVersion: networking.gloo.solo.io/v2
 kind: VirtualGateway
 metadata:
   name: north-south-gw
-  namespace: ops-team
+  namespace: gloo-mesh-gateways
   labels:
     ingress: ssl-enabled
 spec:
