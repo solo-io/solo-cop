@@ -1,0 +1,565 @@
+{{- if and (not .Values.telemetryCollector.configMap.create) (.Values.telemetryCollector.enabled) -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.telemetryCollector.fullnameOverride }}-config
+  namespace: {{ .Release.Namespace }}
+data:
+  relay: |
+    receivers:
+      prometheus:
+        config:
+          global:
+            evaluation_interval: 1m
+            scrape_interval: 15s
+            scrape_timeout: 15s
+          scrape_configs:
+          # Scrape the collector itself
+          - job_name: otel-collector
+            scrape_interval: 15s
+            static_configs:
+            - labels:
+                collector_name: ${KUBE_POD_NAME}
+                cluster: {{ $.Values.common.cluster  }}
+              targets:
+                - 0.0.0.0:8888
+
+          # Scrape workload metrics
+          - job_name: mesh-workloads
+            honor_labels: true
+            kubernetes_sd_configs:
+            - role: pod
+              selectors:
+              - role: pod
+                field: "spec.nodeName=${KUBE_NODE_NAME}"
+            relabel_configs:
+            - source_labels: [__meta_kubernetes_pod_container_port_name]
+              action: keep
+              regex: '.*-envoy-prom'
+            - action: keep
+              regex: true
+              source_labels:
+              - __meta_kubernetes_pod_annotation_prometheus_io_scrape
+            - action: replace
+              regex: (https?)
+              source_labels:
+              - __meta_kubernetes_pod_annotation_prometheus_io_scheme
+              target_label: __scheme__
+            - action: replace
+              regex: (.+)
+              source_labels:
+              - __meta_kubernetes_pod_annotation_prometheus_io_path
+              target_label: __metrics_path__
+            - action: replace
+              regex: ([^:]+)(?::\d+)?;(\d+)
+              replacement: $$1:$$2
+              source_labels:
+              - __address__
+              - __meta_kubernetes_pod_annotation_prometheus_io_port
+              target_label: __address__
+            - action: labelmap
+              regex: __meta_kubernetes_pod_annotation_prometheus_io_param_(.+)
+              replacement: __param_$$1
+            - action: labelmap
+              regex: __meta_kubernetes_pod_label_(.+)
+            - action: replace
+              source_labels:
+              - __meta_kubernetes_namespace
+              target_label: namespace
+            - action: replace
+              source_labels:
+              - __meta_kubernetes_pod_name
+              target_label: pod_name
+            - action: replace
+              replacement: {{ $.Values.common.cluster  }}
+              target_label: cluster
+            - action: drop
+              regex: Pending|Succeeded|Failed|Completed
+              source_labels:
+              - __meta_kubernetes_pod_phase
+            metric_relabel_configs:
+            - action: replace
+              regex: (.+):(?:\d+);(\d+)
+              replacement: $$1:$$2
+              source_labels:
+              - __address__
+              - __meta_kubernetes_pod_annotation_prometheus_io_port
+              target_label: __address__
+            - action: labelmap
+              regex: __meta_kubernetes_service_label_(.+)
+            - action: replace
+              source_labels:
+              - __meta_kubernetes_service_name
+              target_label: service
+            - source_labels:
+              - source_workload
+              - source_workload_namespace
+              - source_cluster
+              target_label: workload_id
+              separator: '.'
+            - source_labels:
+              - destination_workload
+              - destination_workload_namespace
+              - destination_cluster
+              target_label: destination_workload_id
+              separator: '.'
+            # if both workload id and destination service are unknown
+            # set the label to ".." which will be handled by a later rule
+            - source_labels:
+              - destination_workload_id
+              - destination_service
+              separator: ";"
+              target_label: destination_workload_id
+              replacement: ".."
+              regex: "unknown.unknown.unknown;unknown"
+            # if workload id is unknown but we have a destination
+            # service, use it
+            - source_labels:
+              - destination_workload_id
+              - destination_service
+              separator: ";"
+              target_label: destination_workload_id
+              replacement: $$2.<unknown>.<unknown>
+              regex: "(unknown.unknown.unknown);(.*)"
+            # replace with unknown if missing
+            - source_labels:
+              - destination_workload_id
+              target_label: destination_workload_id
+              replacement: "unknown.unknown.unknown"
+              regex: ".."
+            - source_labels:
+              - workload_id
+              target_label: workload_id
+              replacement: "unknown.unknown.unknown"
+              regex: ".."
+
+          # Scrape istiod metrics
+          - job_name: istiod-metrics
+            honor_labels: true
+            kubernetes_sd_configs:
+            - role: pod
+              selectors:
+              - role: pod
+                field: "spec.nodeName=${KUBE_NODE_NAME}"
+                label: "operator.istio.io/component"
+            relabel_configs:
+            - action: keep
+              regex: pilot|istiod
+              source_labels:
+                - __meta_kubernetes_pod_label_istio
+            - action: keep
+              regex: true
+              source_labels:
+              - __meta_kubernetes_pod_annotation_prometheus_io_scrape
+            - action: replace
+              regex: (https?)
+              source_labels:
+              - __meta_kubernetes_pod_annotation_prometheus_io_scheme
+              target_label: __scheme__
+            - action: replace
+              regex: (.+)
+              source_labels:
+              - __meta_kubernetes_pod_annotation_prometheus_io_path
+              target_label: __metrics_path__
+            - action: replace
+              regex: ([^:]+)(?::\d+)?;(\d+)
+              replacement: $$1:$$2
+              source_labels:
+              - __address__
+              - __meta_kubernetes_pod_annotation_prometheus_io_port
+              target_label: __address__
+            - action: labelmap
+              regex: __meta_kubernetes_pod_annotation_prometheus_io_param_(.+)
+              replacement: __param_$$1
+            - action: labelmap
+              regex: __meta_kubernetes_pod_label_(.+)
+            - action: replace
+              source_labels:
+              - __meta_kubernetes_namespace
+              target_label: namespace
+            - action: replace
+              source_labels:
+              - __meta_kubernetes_pod_name
+              target_label: pod_name
+            - action: replace
+              replacement: {{ $.Values.common.cluster  }}
+              target_label: cluster
+            - action: drop
+              regex: Pending|Succeeded|Failed|Completed
+              source_labels:
+              - __meta_kubernetes_pod_phase
+
+          # Scrape cilium metrics
+          - job_name: cilium-pods
+            honor_labels: true
+            kubernetes_sd_configs:
+            - role: pod
+              selectors:
+              - role: pod
+                field: "spec.nodeName=${KUBE_NODE_NAME}"
+            relabel_configs:
+            - source_labels: [__meta_kubernetes_pod_container_port_name]
+              action: keep
+              regex: 'hubble-metrics'
+            - source_labels: [ __meta_kubernetes_pod_ip, __meta_kubernetes_pod_container_port_number]
+              action: replace
+              regex: (.+):(?:\d+);(\d+)
+              replacement: $${1}:$${2}
+              target_label: __address__
+            - action: drop
+              regex: Pending|Succeeded|Failed|Completed
+              source_labels:
+              - __meta_kubernetes_pod_phase
+            - action: replace
+              source_labels:
+              - __meta_kubernetes_namespace
+              target_label: namespace
+            - action: replace
+              source_labels:
+              - __meta_kubernetes_pod_name
+              target_label: pod_name
+            - action: replace
+              replacement: {{ $.Values.common.cluster }}
+              target_label: cluster
+
+          # Scrape the gloo platform pods
+          - job_name: gloo-platform-pods
+            honor_labels: true
+            kubernetes_sd_configs:
+            - role: pod
+              namespaces:
+                names:
+                - gloo-mesh
+              selectors:
+              - role: pod
+                field: "spec.nodeName=${KUBE_NODE_NAME}"
+            relabel_configs:
+            - action: keep
+              regex: gloo-mesh-agent
+              source_labels:
+              - __meta_kubernetes_pod_label_app
+            - action: keep
+              regex: true
+              source_labels:
+              - __meta_kubernetes_pod_annotation_prometheus_io_scrape
+            - action: replace
+              regex: (https?)
+              source_labels:
+              - __meta_kubernetes_pod_annotation_prometheus_io_scheme
+              target_label: __scheme__
+            - action: replace
+              regex: (.+)
+              source_labels:
+              - __meta_kubernetes_pod_annotation_prometheus_io_path
+              target_label: __metrics_path__
+            - action: replace
+              regex: ([^:]+)(?::\d+)?;(\d+)
+              replacement: $$1:$$2
+              source_labels:
+              - __address__
+              - __meta_kubernetes_pod_annotation_prometheus_io_port
+              target_label: __address__
+            - action: labelmap
+              regex: __meta_kubernetes_pod_annotation_prometheus_io_param_(.+)
+              replacement: __param_$$1
+            - action: labelmap
+              regex: __meta_kubernetes_pod_label_(.+)
+            - action: replace
+              source_labels:
+              - __meta_kubernetes_namespace
+              target_label: namespace
+            - action: drop
+              regex: Pending|Succeeded|Failed|Completed
+              source_labels:
+              - __meta_kubernetes_pod_phase
+
+          # Scrape the ambient ztunnels
+          - job_name: ambient-ztunnels
+            honor_labels: true
+            kubernetes_sd_configs:
+            - role: pod
+              selectors:
+              - role: pod
+                field: "spec.nodeName=${KUBE_NODE_NAME}"
+            relabel_configs:
+            - action: keep
+              regex: ztunnel
+              source_labels:
+              - __meta_kubernetes_pod_label_app
+            - source_labels: [__meta_kubernetes_pod_ip]
+              action: replace
+              regex: (.*)
+              replacement: "$${1}:15020"
+              target_label: __address__
+            - action: replace
+              replacement: "http"
+              target_label: __schema__
+            - action: labelmap
+              regex: __meta_kubernetes_pod_label_(.+)
+            - action: replace
+              source_labels:
+              - __meta_kubernetes_namespace
+              target_label: namespace
+            - action: drop
+              regex: Pending|Succeeded|Failed|Completed
+              source_labels:
+              - __meta_kubernetes_pod_phase
+            metric_relabel_configs:
+            - target_label: ambient
+              replacement: "ztunnel"
+            - action: labelmap
+              regex: __meta_kubernetes_service_label_(.+)
+            - action: replace
+              source_labels:
+              - __meta_kubernetes_service_name
+              target_label: service
+            - source_labels:
+              - source_workload
+              - source_workload_namespace
+              - source_cluster
+              target_label: workload_id
+              separator: '.'
+            - source_labels:
+              - destination_workload
+              - destination_workload_namespace
+              - destination_cluster
+              target_label: destination_workload_id
+              separator: '.'
+            # replace with unknown if missing
+            - source_labels:
+              - destination_workload_id
+              target_label: destination_workload_id
+              replacement: "unknown.unknown.unknown"
+              regex: ".."
+            - source_labels:
+              - workload_id
+              target_label: workload_id
+              replacement: "unknown.unknown.unknown"
+              regex: ".."
+
+          # Scrape the ambient waypoints
+          - job_name: ambient-waypoints
+            honor_labels: true
+            kubernetes_sd_configs:
+            - role: pod
+              selectors:
+              - role: pod
+                field: "spec.nodeName=${KUBE_NODE_NAME}"
+            relabel_configs:
+            - action: keep
+              regex: ".+"
+              source_labels:
+              - __meta_kubernetes_pod_annotation_istio_io_for_service_account
+            - source_labels: [__meta_kubernetes_pod_ip]
+              action: replace
+              regex: (.*)
+              replacement: "$${1}:15020"
+              target_label: __address__
+            - action: replace
+              replacement: "http"
+              target_label: __schema__
+            - action: labelmap
+              regex: __meta_kubernetes_pod_label_(.+)
+            - action: replace
+              source_labels:
+              - __meta_kubernetes_namespace
+              target_label: namespace
+            - action: drop
+              regex: Pending|Succeeded|Failed|Completed
+              source_labels:
+              - __meta_kubernetes_pod_phase
+            metric_relabel_configs:
+            - target_label: ambient
+              replacement: "waypoint"
+            - action: labelmap
+              regex: __meta_kubernetes_service_label_(.+)
+            - action: replace
+              source_labels:
+              - __meta_kubernetes_service_name
+              target_label: service
+            - source_labels:
+              - source_workload
+              - source_workload_namespace
+              - source_cluster
+              target_label: workload_id
+              separator: '.'
+            - source_labels:
+              - destination_workload
+              - destination_workload_namespace
+              - destination_cluster
+              target_label: destination_workload_id
+              separator: '.'
+            # replace with unknown if missing
+            - source_labels:
+              - destination_workload_id
+              target_label: destination_workload_id
+              replacement: "unknown.unknown.unknown"
+              regex: ".."
+            - source_labels:
+              - workload_id
+              target_label: workload_id
+              replacement: "unknown.unknown.unknown"
+              regex: ".."
+      {{- if .Values.telemetryCollectorCustomization.extraReceivers }}
+      # Custom receivers
+      {{- .Values.telemetryCollectorCustomization.extraReceivers | toYaml | nindent 6 }}
+      {{- end }}
+
+    processors:
+      gloo_metrics_processor:
+        clusterName: {{ $.Values.common.cluster  }}
+        enableCiliumProcessor: true
+      filter/min:
+        metrics:
+          include:
+            match_type: strict
+            metric_names:
+              # istio gateway, sidecar, ztunnel, and waypoint metrics
+              - istio_requests_total
+              - istio_request_duration_milliseconds
+              - istio_request_duration_milliseconds_bucket
+              - istio_request_duration_milliseconds_count
+              - istio_request_duration_milliseconds_sum
+              - istio_tcp_sent_bytes_total
+              - istio_tcp_received_bytes_total
+              - istio_tcp_connections_opened_total
+              # istiod metrics
+              - pilot_proxy_convergence_time
+              # required for e2e tests
+              - gloo_mesh_reconciler_time_sec
+              # required for meshctl
+              - relay_pull_clients_connected
+              - relay_push_clients_connected
+              - relay_push_clients_warmed
+              # cilium hubble metrics
+              - hubble_flows_processed_total
+              - hubble_drop_total
+              # Keep otel-collector metrics that show how its working
+              - otelcol_processor_refused_metric_points
+              - otelcol_processor_dropped_metric_points
+      attributes/drop_extra_istio_labels:
+        include:
+          match_type: regexp
+          metric_names: ["istio.*"]
+        actions:
+        - key: app
+          action: delete
+        - key: app_kubernetes_io_instance
+          action: delete
+        - key: app_kubernetes_io_name
+          action: delete
+        - key: component
+          action: delete
+        - key: destination_app
+          action: delete
+        - key: destination_canonical_revision
+          action: delete
+        - key: destination_canonical_service
+          action: delete
+        - key: destination_cluster
+          action: delete
+        - key: destination_service
+          action: delete
+        - key: destination_service_name
+          action: delete
+        - key: destination_service_namespace
+          action: delete
+        - key: destination_version
+          action: delete
+        - key: destination_workload
+          action: delete
+        - key: destination_workload_namespace
+          action: delete
+        - key: instance
+          action: delete
+        - key: job
+          action: delete
+        - key: pod
+          action: delete
+        - key: pod_template_hash
+          action: delete
+        - key: request_protocol
+          action: delete
+        - key: response_flags
+          action: delete
+        - key: security_istio_io_tlsMode
+          action: delete
+        - key: service_istio_io_canonical_name
+          action: delete
+        - key: service_istio_io_canonical_revision
+          action: delete
+        - key: source_app
+          action: delete
+        - key: source_canonical_revision
+          action: delete
+        - key: source_canonical_service
+          action: delete
+        - key: source_cluster
+          action: delete
+        - key: source_version
+          action: delete
+        - key: source_workload
+          action: delete
+        - key: source_workload_namespace
+          action: delete
+        - key: topology_istio_io_network
+          action: delete
+      attributes/drop_extra_otel_labels:
+        include:
+          match_type: regexp
+          metric_names: ["otelcol.*"]
+        actions:
+        - key: service_instance_id
+          action: delete
+        - key: connection_security_policy
+          action: delete
+        - key: service_name
+          action: delete
+      {{- if .Values.telemetryCollectorCustomization.extraProcessors }}
+      # Custom processors
+      {{- .Values.telemetryCollectorCustomization.extraProcessors | toYaml | nindent 6 }}
+      {{- end }}
+
+    exporters:
+      otlp:
+        endpoint: {{ .Values.telemetryCollector.config.exporters.otlp.endpoint }}
+        tls:
+          ca_file: /etc/otel-certs/ca.crt
+          server_name_override: {{ .Values.telemetryCollectorCustomization.serverName }}
+      {{- if .Values.telemetryCollectorCustomization.extraExporters }}
+      # Custom exporters
+      {{- .Values.telemetryCollectorCustomization.extraExporters | toYaml | nindent 6 }}
+      {{- end }}
+
+    extensions:
+      health_check: {}
+      memory_ballast: {}
+
+    service:
+      telemetry:
+        {{- .Values.telemetryCollectorCustomization.telemetry | toYaml | nindent 8 }}
+      extensions:
+        - health_check
+        - memory_ballast
+      pipelines:
+    
+        {{- if not .Values.telemetryCollectorCustomization.disableDefaultPipeline }}
+        metrics:
+          receivers:
+            - prometheus
+          processors:
+            - memory_limiter
+            - filter/min
+            - batch
+            - attributes/drop_extra_istio_labels
+            - attributes/drop_extra_otel_labels
+            - gloo_metrics_processor
+          exporters:
+            - otlp
+        {{- end }}
+    
+        {{- if .Values.telemetryCollectorCustomization.extraPipelines }}
+        # Custom pipelines
+        {{- .Values.telemetryCollectorCustomization.extraPipelines | toYaml | nindent 8 }}
+        {{- end }}
+  {{- end -}}

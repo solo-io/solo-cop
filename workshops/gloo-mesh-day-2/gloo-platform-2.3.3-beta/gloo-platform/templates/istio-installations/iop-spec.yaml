@@ -1,0 +1,28 @@
+{{- if $.Values.istioInstallations.enabled }}
+{{- if $.Values.istioInstallations.controlPlane.enabled }}
+apiVersion: admin.gloo.solo.io/v2
+kind: IstioLifecycleManager
+metadata:
+  name: {{ $.Release.Name }}
+  namespace: {{ $.Release.Namespace }}
+spec:
+  installations:
+    # control plane installation
+{{- range $install := $.Values.istioInstallations.controlPlane.installations }}
+    - revision: {{ $install.revision }}
+    {{- if $install.clusters }}
+    {{- range $cluster := $install.clusters }}
+      clusters: 
+        - name: {{ $cluster.name }}
+          defaultRevision: {{ $cluster.defaultRevision }}
+    {{- end }}
+    {{- else }}
+      clusters: 
+        - name: {{ $.Values.common.cluster }}
+          defaultRevision: true
+    {{- end }}
+      istioOperatorSpec:
+{{ mergeOverwrite (include "controlPlane.iopSpec" (dict "Values" $.Values  "Release" $.Release "installation" $install) | fromYaml) $install.istioOperatorSpec | toYaml | indent 8 }}
+{{- end }}
+{{- end }}  {{/* if Values.controlPlane.enabled */}}
+{{- end }}

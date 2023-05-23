@@ -5,6 +5,8 @@ common:
 # Configuration for the Gloo management server.
 glooMgmtServer:
   enabled: true
+  image:
+    tag: 2.3.3
   relay:
     disableTokenGeneration: true
     disableCa: true
@@ -15,7 +17,15 @@ glooMgmtServer:
 # Configuration for the Gloo UI.
 glooUi:
   enabled: true
-
+  image:
+    tag: 2.3.3
+  sidecars:
+    console:
+      image: 
+        tag: 2.3.3
+    envoy:
+      image: 
+        tag: 2.3.3
 # Gloo Platform Redis configuration options.
 redis:
   deployment:

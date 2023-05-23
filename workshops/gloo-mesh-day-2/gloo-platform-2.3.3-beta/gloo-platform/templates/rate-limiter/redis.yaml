@@ -1,0 +1,87 @@
+{{- $rateLimiter := $.Values.rateLimiter }}
+{{- if and $rateLimiter.redis.enabled $rateLimiter.enabled}}
+{{- $image := $rateLimiter.redis.image }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: rate-limiter
+  {{- include "rate-limiter.extraLabels" . | nindent 4 }}
+  name: redis
+  namespace: {{ $.Values.common.addonNamespace | default $.Release.Namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rate-limiter
+      rate-limiter: redis
+  template:
+    metadata:
+      labels:
+        app: rate-limiter
+        rate-limiter: redis
+    spec:
+      containers:
+      - image: {{ printf "%v/%v:%v" $image.registry $image.repository $image.tag | quote }}
+        imagePullPolicy:  {{ $image.pullPolicy }}
+        name: redis
+        args:
+        {{- if $rateLimiter.redis.certs.enabled }}
+          - "--tls-port {{ $rateLimiter.redis.service.port }}"
+          - "--port 0"  
+          - "--tls-cert-file {{ $rateLimiter.redis.certs.mountPoint }}/{{ $rateLimiter.redis.certs.caCert}}"
+          - "--tls-ca-cert-file {{ $rateLimiter.redis.certs.mountPoint }}/{{ $rateLimiter.redis.certs.caCert }}"
+          - "--tls-key-file {{ $rateLimiter.redis.certs.mountPoint }}/{{ $rateLimiter.redis.certs.signingKey }}"
+          - "--tls-auth-clients no"
+        {{- end }}
+        {{- if $rateLimiter.redis.auth.enabled }}
+          - "--requirepass '$(REDIS_PASSWORD)'"
+        {{- end }}
+        ports:
+        - containerPort: {{ $rateLimiter.redis.service.port }}
+        env:
+        - name: MASTER
+          value: "true"
+        {{- if $rateLimiter.redis.auth.enabled }}
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ $rateLimiter.redis.auth.secretName}}
+              key:  {{ $rateLimiter.redis.auth.passwordKey }}
+        {{- end}}
+        volumeMounts:
+        - mountPath: /redis-master-data
+          name: data
+        {{- if $rateLimiter.redis.certs.enabled }}
+        - mountPath: /etc/tls
+          name: tls-volume
+        {{- end}}
+      volumes:
+      - name: data
+        emptyDir: {}
+      {{- if $rateLimiter.redis.certs.enabled }}
+      - name: tls-volume
+        secret:
+          secretName: {{ $rateLimiter.redis.certs.secretName }}
+      {{- end }}
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: rate-limiter
+  {{- include "rate-limiter.extraLabels" . | nindent 4 }}
+  name: {{ $rateLimiter.redis.service.name }}
+  namespace: {{ $.Values.common.addonNamespace | default $.Release.Namespace }}
+spec:
+  ports:
+  - name: redis
+    port: {{ $rateLimiter.redis.service.port }}
+    protocol: TCP
+  selector:
+    app: rate-limiter
+    rate-limiter: redis
+
+{{- end }}

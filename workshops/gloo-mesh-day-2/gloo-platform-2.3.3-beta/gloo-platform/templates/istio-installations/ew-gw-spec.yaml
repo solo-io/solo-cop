@@ -1,0 +1,33 @@
+{{- if $.Values.istioInstallations.enabled }}
+{{- range $index, $gateway := $.Values.istioInstallations.eastWestGateways }}
+{{- if $gateway.enabled }}
+{{- if ne $index 0 }}
+---
+{{- end }} 
+apiVersion: admin.gloo.solo.io/v2
+kind: GatewayLifecycleManager
+metadata:
+  name: {{ $gateway.name }}
+  namespace: {{ $.Release.Namespace }}
+spec:
+  installations:
+    # ew gateway installation
+{{- range $install := $gateway.installations }}
+    - gatewayRevision: {{ $install.gatewayRevision }}
+    {{- if $install.clusters }}
+    {{- range $cluster := $install.clusters }}
+      clusters: 
+        - name: {{ $cluster.name }}
+          activeGateway: {{ $cluster.activeGateway }}
+    {{- end }}
+    {{- else }}
+      clusters: 
+        - name: {{ $.Values.common.cluster }}
+          activeGateway: true
+    {{- end }}
+      istioOperatorSpec:
+{{ mergeOverwrite (include "eastWestGateways.iopSpec" (dict "Values" $.Values  "Release" $.Release "gateway" $gateway) | fromYaml) $install.istioOperatorSpec | toYaml | indent 8 }}
+{{- end }}
+{{- end }}  {{/* if Values.eastWestGateways.enabled */}}
+{{- end }}  {{/* range */}}
+{{- end }} 

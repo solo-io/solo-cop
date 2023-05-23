@@ -9,3 +9,5 @@ glooAgent:
       key: null
       name: null
       namespace: null
+  image:
+    tag: 2.3.3

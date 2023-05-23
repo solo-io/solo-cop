@@ -1,0 +1,28 @@
+{{- $glooMeshPortalServer := $.Values.glooPortalServer}}
+{{- if $glooMeshPortalServer.enabled }}
+---
+apiVersion: v1
+kind: Secret
+type: Opaque
+metadata:
+  labels:
+    app: gloo-mesh-portal-server
+    gloo-mesh: gloo-mesh-portal
+  name: portal-storage-config
+  namespace: {{ .Release.Namespace }}
+data:
+  config.yaml: {{ $glooMeshPortalServer.apiKeyStorage.config | toYaml | printf "%s\n" | b64enc }}
+---
+apiVersion: v1
+kind: Secret
+type: Opaque
+metadata:
+  labels:
+    app: gloo-mesh-portal-server
+    gloo-mesh: gloo-mesh-portal
+  name: portal-storage-secret-key
+  namespace: {{ .Release.Namespace }}
+data:
+  key: {{ $glooMeshPortalServer.apiKeyStorage.secretKey | b64enc }}
+---
+{{- end }}

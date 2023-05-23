@@ -339,7 +339,7 @@ helm repo update
 * View the default management plane values
 
 ```sh
-helm show values gloo-platform/gloo-platform --version $GLOO_PLATFORM_VERSION
+helm show values gloo-platform-2.3.3-beta/gloo-platform --version $GLOO_PLATFORM_VERSION
 ```
 
 Gloo Platform can be installed using Helm. It is recommended to use deploy Gloo Platform via a CI/CD orchectrator such as ArgoCD or Flux.
@@ -353,7 +353,7 @@ helm upgrade --install gloo-platform-crds gloo-platform/gloo-platform-crds \
   --kube-context $MGMT \
   --create-namespace
 
-helm upgrade --install gloo-platform gloo-platform/gloo-platform \
+helm upgrade --install gloo-platform gloo-platform-2.3.3-beta/gloo-platform \
   --version=${GLOO_PLATFORM_VERSION} \
   --set licensing.glooMeshLicenseKey=$GLOO_PLATFORM_LICENSE_KEY \
   --set licensing.glooTrialLicenseKey=$GLOO_PLATFORM_LICENSE_KEY \
@@ -398,7 +398,7 @@ echo "Mgmt Plane Address: $MGMT_SERVER_NETWORKING_ADDRESS"
 * Install a Gloo agent on the management plane so we later can add and manage Gloo Gateway on it.
 
 ```sh
-helm upgrade --install gloo-agent gloo-platform/gloo-platform \
+helm upgrade --install gloo-agent gloo-platform-2.3.3-beta/gloo-platform \
   --kube-context=${MGMT} \
   --namespace gloo-mesh \
   --set glooAgent.relay.serverAddress=gloo-mesh-mgmt-server.gloo-mesh:9900 \
@@ -418,7 +418,7 @@ helm upgrade --install gloo-platform-crds gloo-platform/gloo-platform-crds \
   --kube-context $CLUSTER1 \
   --create-namespace
 
-helm upgrade --install gloo-agent gloo-platform/gloo-platform \
+helm upgrade --install gloo-agent gloo-platform-2.3.3-beta/gloo-platform \
   --kube-context=${CLUSTER1} \
   --namespace gloo-mesh \
   --set glooAgent.relay.serverAddress=${MGMT_SERVER_NETWORKING_ADDRESS} \
@@ -745,7 +745,7 @@ Beta feature: To get a more balanced connection pool, enable `glooMeshMgmtServer
 
 * Upgrade the management plane to have 2 replias and enable agent load balancing.
 ```sh
-helm upgrade --install gloo-platform gloo-platform/gloo-platform \
+helm upgrade --install gloo-platform gloo-platform-2.3.3-beta/gloo-platform \
   --version=${GLOO_PLATFORM_VERSION} \
   --reuse-values \
   --kube-context ${MGMT} \
@@ -911,7 +911,7 @@ helm upgrade --install prom prometheus-community/kube-prometheus-stack \
 
 * Update Gloo Platform to use new Prometheus endpoint
 ```sh
-helm upgrade --install gloo-platform gloo-platform/gloo-platform \
+helm upgrade --install gloo-platform gloo-platform-2.3.3-beta/gloo-platform \
   --version=${GLOO_PLATFORM_VERSION} \
   --reuse-values \
   --kube-context ${MGMT} \
@@ -966,7 +966,7 @@ EOF
 
 * Install Gloo Telemetry Gateway in the `mgmt` cluster
 ```sh
-helm upgrade --install gloo-telemetry-gateway gloo-platform/gloo-platform \
+helm upgrade --install gloo-telemetry-gateway gloo-platform-2.3.3-beta/gloo-platform \
   --version=${GLOO_PLATFORM_VERSION} \
   --kube-context ${MGMT} \
   --namespace gloo-mesh \
@@ -1010,7 +1010,7 @@ EOF
 
 * Install Gloo Telemetry Collector in the `cluster1` cluster
 ```sh
-helm upgrade --install gloo-telemetry-collector gloo-platform/gloo-platform \
+helm upgrade --install gloo-telemetry-collector gloo-platform-2.3.3-beta/gloo-platform \
   --version=${GLOO_PLATFORM_VERSION} \
   --kube-context ${CLUSTER1} \
   --namespace gloo-mesh \

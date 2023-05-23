@@ -1,0 +1,18 @@
+{{ $sidecarAccel := $.Values.sidecarAccel }}
+{{- if $sidecarAccel.enabled }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ $sidecarAccel.fullname }}
+  labels:
+    {{- include "sidecar-accel.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ $sidecarAccel.fullname }}
+subjects:
+- kind: ServiceAccount
+  name: {{ $sidecarAccel.fullname }}
+  namespace: {{ $.Values.common.addonNamespace | default $.Release.Namespace }}
+{{- end }}
+

@@ -5,6 +5,8 @@ common:
 # Configuration for the Gloo Platform Telemetry Collector. See the [OpenTelemetry Helm chart](https://github.com/open-telemetry/opentelemetry-helm-charts/blob/main/charts/opentelemetry-collector/values.yaml) for the complete set of values.
 telemetryCollector:
   enabled: true
+  image:
+    tag: 2.3.3
   replicaCount: 1
   mode: deployment
   service: 
@@ -26,6 +28,7 @@ telemetryCollector:
         endpoint: 1.2.3.4:12345
 # Optional customization for the Gloo Platform Telemetry Collector.
 telemetryCollectorCustomization:
+  disableDefaultPipeline: true
   extraPipelines:
     logs/gloo-mesh:
       receivers: [otlp/gloo-mesh]
@@ -53,6 +56,7 @@ telemetryCollectorCustomization:
       endpoint: 172.18.0.3:55690
       tls:
         insecure: false
+        insecure_skip_verify: true
         ca_file: /etc/otel-certs/ca.crt
         cert_file: /etc/otel-certs/tls.crt
         key_file: /etc/otel-certs/tls.key

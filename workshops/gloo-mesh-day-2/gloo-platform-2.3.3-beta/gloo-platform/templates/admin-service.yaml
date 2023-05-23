@@ -1,0 +1,22 @@
+{{- $glooMgmtServer := $.Values.glooMgmtServer}}
+{{- if $glooMgmtServer.enabled }}
+---
+
+# Admin service for gloo-mesh-mgmt-server; exposes stats endpoints for metadata
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: gloo-mesh-mgmt-server
+  annotations:
+    app.kubernetes.io/name: gloo-mesh-mgmt-server
+  name: gloo-mesh-mgmt-server-admin
+  namespace: {{ $.Release.Namespace }}
+spec:
+  selector:
+    app: gloo-mesh-mgmt-server
+  type: ClusterIP
+  ports:
+    - name: stats
+      port: {{ $glooMgmtServer.statsPort }}
+{{- end}}

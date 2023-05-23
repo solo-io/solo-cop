@@ -1,0 +1,158 @@
+# Declare variable to store CA object, whether it's generated anew or built from existing values
+{{ $ca := "" }}
+{{ if or .Values.glooMgmtServer.enabled .Values.telemetryGateway.enabled }}
+{{ if not (and .Values.glooMgmtServer.relay.disableCa .Values.glooMgmtServer.relay.disableCaCertGeneration .Values.telemetryGatewayCustomization.disableCertGeneration) }}
+{{ $existingCA := lookup "v1" "Secret" .Release.Namespace "relay-root-tls-secret" }}
+
+{{ if not $existingCA }}
+# Root CA Cert doesn't exist on cluster, generate a new one
+{{ $ca = genCA "relay-root-ca" 365 }} # TODO don't hard-code common name
+{{ else }}
+# Root CA Cert does exist on cluster, build an object with the existing values
+{{ $existingCACert := index $existingCA.data "ca.crt" }}
+{{ $existingCAKey := index $existingCA.data "tls.key" }}
+{{ $ca = buildCustomCert $existingCACert $existingCAKey }}
+{{ end }}
+{{ end }}
+
+{{ if not (or .Values.insecure .Values.glooMgmtServer.relay.disableCa .Values.glooMgmtServer.relay.disableCaCertGeneration) }}
+
+{{- $certVal := "" }}
+{{- $certKey := "" }}
+{{- $token := "" }}
+
+{{ $relayOpts := .Values.glooMgmtServer.relay }}
+
+{{- $existingCert := lookup "v1" "Secret" .Release.Namespace "relay-server-tls-secret" }}
+
+{{- if not $existingCert }}
+# Server cert doesn't exist, generate a new one
+{{ $subAltName1 := (printf "%v.%v" "gloo-mesh-mgmt-server" .Release.Namespace ) }}
+{{ $subAltName2 := (printf "%v.svc" $subAltName1 ) }}
+
+{{/* create base san list */}}
+{{ $sanList := ( list $subAltName1 $subAltName2 ) }}
+
+{{/* append all additional SANs from values */}}
+{{/*{{ range $index, $san := $relayOpts.additionalSans }}*/}} #TODO
+{{/*{{$sanList = append $sanList $san}}*/}}
+{{/*{{ end }}*/}}
+
+# TODO: https://github.com/solo-io/gloo-mesh-enterprise/issues/6690
+{{- $cert := genSignedCert "gloo-mesh-mgmt-server" nil $sanList 365 $ca }}
+{{- $certVal = $cert.Cert | b64enc }}
+{{- $certKey = $cert.Key | b64enc }}
+
+{{ else }}
+# Server cert does exist, pull values from the existing secret
+{{- $certVal = index $existingCert.data "tls.crt" }}
+{{- $certKey = index $existingCert.data "tls.key" }}
+
+{{ end }}
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: relay-root-tls-secret
+  namespace: {{ .Release.Namespace }}
+data:
+  ca.crt: {{ $ca.Cert | b64enc }}
+  tls.key: {{ $ca.Key | b64enc }}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: relay-server-tls-secret
+  namespace: {{ .Release.Namespace }}
+type: kubernetes.io/tls
+data:
+  ca.crt: {{ $ca.Cert | b64enc }}
+  tls.crt: {{ $certVal }}
+  tls.key: {{ $certKey }}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: relay-tls-signing-secret
+  namespace: {{ .Release.Namespace }}
+type: kubernetes.io/tls
+data:
+  ca.crt: {{ $ca.Cert | b64enc }}
+  tls.crt: {{ $ca.Cert | b64enc }}
+  tls.key: {{ $ca.Key | b64enc }}
+---
+{{- if not $relayOpts.disableTokenGeneration }}
+
+{{- $existingToken := lookup "v1" "Secret" .Release.Namespace "relay-identity-token-secret" }}
+
+{{- if or .Release.IsInstall (not $existingToken) }}
+
+{{- $token = randAlphaNum 16 | b64enc }}
+
+{{ else }}
+
+{{- $token = index $existingToken.data "token" }}
+
+{{ end }}
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: relay-identity-token-secret
+  namespace: {{ .Release.Namespace }}
+data:
+  {{ $.Values.glooMgmtServer.relay.tokenSecret.key }}: {{ b64enc $token }}
+
+{{- end }}
+{{- end }}
+
+
+# Make metrics(otel) cert if it doesn't exist
+# If CA is not disabled; metrics are enabled, and disableCertGeneration is false
+# then we create the metrics gateway certificate
+{{ if not .Values.glooMgmtServer.relay.disableCa }}
+{{ if and .Values.telemetryGateway.enabled (not .Values.telemetryGatewayCustomization.disableCertGeneration) }}
+
+{{- $telemetryCertVal := "" }}
+{{- $telemetryCertKey := "" }}
+
+{{- $existingTelemetryCert := lookup "v1" "Secret" .Release.Namespace "gloo-telemetry-gateway-tls-secret" }}
+
+{{/* Server cert doesn't exist, generate a new one */}}
+{{- if not $existingTelemetryCert }}
+
+# TODO: https://github.com/solo-io/gloo-mesh-enterprise/issues/6690
+# Server cert doesn't exist, generate a new one
+{{ $subAltName1 := .Values.telemetryGatewayCustomization.serverName }}
+{{ $subAltName2 := (printf "%v.svc" $subAltName1 ) }}
+
+{{ $subAltName3 := printf "gloo-metrics-gateway.%v" .Release.Namespace }}
+{{ $subAltName4 := (printf "%v.svc" $subAltName3 ) }}
+
+{{/* create base san list */}}
+{{ $sanList := ( list $subAltName1 $subAltName2 $subAltName3 $subAltName4 ) }}
+
+{{- $cert := genSignedCert "gloo-telemetry-gateway" nil $sanList 365 $ca }} # TODO don't hard-code common name
+{{- $telemetryCertVal = $cert.Cert | b64enc }}
+{{- $telemetryCertKey = $cert.Key | b64enc }}
+
+{{ else }}
+# Server cert does exist, pull values from the existing secret
+{{- $telemetryCertVal = index $existingTelemetryCert.data "tls.crt" }}
+{{- $telemetryCertKey = index $existingTelemetryCert.data "tls.key" }}
+
+{{ end }}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: gloo-telemetry-gateway-tls-secret
+  namespace: {{ .Release.Namespace }}
+type: kubernetes.io/tls
+data:
+  ca.crt: {{ $ca.Cert | b64enc }}
+  tls.crt: {{ $telemetryCertVal }}
+  tls.key: {{ $telemetryCertKey }}
+{{- end }}
+{{- end }}
+{{- end }}

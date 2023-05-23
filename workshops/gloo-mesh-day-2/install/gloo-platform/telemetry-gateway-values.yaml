@@ -11,7 +11,8 @@ telemetryGateway:
       enabled: true
       protocol: TCP
       servicePort: 55690
-
+  image:
+    tag: 2.3.3
 # dont try and generate the token
 glooMgmtServer:
   enabled: false
@@ -20,6 +21,7 @@ glooMgmtServer:
 
 # Optional customization for the Gloo Platform Telemetry Collector.
 telemetryGatewayCustomization:
+  disableDefaultPipeline: true
   # Disable cert generation for the Gloo Platform Telemetry Gateway.
   disableCertGeneration: true
   extraReceivers:

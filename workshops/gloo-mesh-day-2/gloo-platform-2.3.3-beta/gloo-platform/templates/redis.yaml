@@ -1,0 +1,40 @@
+{{- if or $.Values.glooUi.enabled $.Values.glooMgmtServer.enabled }}---
+# ConfigMap containing redis-client config yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redis-client-config
+  namespace: {{ .Release.Namespace }}
+data:
+  config.yaml: |2-
+    redis:
+      address: {{ $.Values.redis.address }}
+      db: {{ $.Values.redis.db }}
+      auth:
+        enabled: {{ $.Values.redis.auth.enabled }}
+      certs:
+        enabled: {{ $.Values.redis.certs.enabled }}
+        caCertFilename: {{ $.Values.redis.certs.caCertKey }}
+      connection: {{ $.Values.redis.connection | toYaml | nindent 6 }}
+---
+# Default secret containing empty values for redis username and password
+apiVersion: v1
+kind: Secret
+type: Opaque
+metadata:
+  name: "redis-auth-secrets"
+  namespace: {{ .Release.Namespace }}
+data:
+  username: ""
+  password: ""
+---
+# Default secret containing empty values for redis TLS certs
+apiVersion: v1
+kind: Secret
+type: Opaque
+metadata:
+  name: "redis-certs"
+  namespace: {{ .Release.Namespace }}
+data:
+  redis.crt: ""
+{{- end }}

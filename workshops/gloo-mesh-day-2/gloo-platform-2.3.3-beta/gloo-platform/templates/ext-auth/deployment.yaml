@@ -1,0 +1,233 @@
+{{- $extAuth := $.Values.extAuthService.extAuth }}
+{{- $service := $extAuth.service }}
+{{- $extAuthImage := $extAuth.image }}
+{{- $skFile := $extAuth.signingKeyFile }}
+{{- if $.Values.extAuthService.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: ext-auth-service
+  {{- include "ext-auth-service.extraLabels" . | nindent 4 }}
+  name: ext-auth-service
+  namespace: {{ $.Values.common.addonNamespace | default $.Release.Namespace }}
+spec:
+  selector:
+    matchLabels:
+      app: ext-auth-service
+  template:
+    metadata:
+      labels:
+        app: ext-auth-service
+      annotations:
+        prometheus.io/path: /metrics
+        prometheus.io/port: "9091"
+        prometheus.io/scrape: "true"
+        {{- include "ext-auth-service.extraTemplateAnnotations" . | nindent 8 }}
+    spec:
+      serviceAccountName: ext-auth-service
+      containers:
+      - image: {{ printf "%v/%v:%v" $extAuthImage.registry $extAuthImage.repository $extAuthImage.tag | quote }}
+        imagePullPolicy: {{ $extAuthImage.pullPolicy }}
+        name: ext-auth-service
+        env:
+        - name: LOG_LEVEL
+          value: {{ $extAuth.logLevel }}
+        - name: START_STATS_SERVER
+          value: "true"
+        - name: WATCH_NAMESPACE
+          value: {{ $extAuth.watchNamespace | quote }}
+        - name: SERVER_PORT
+          value: {{ $extAuth.service.grpcPort | quote }}
+        - name: DEBUG_PORT
+          value: {{ $extAuth.service.debugPort | quote }}
+        - name: USER_ID_HEADER
+          value: {{ $extAuth.userIdHeader | quote }}
+        - name: PLUGIN_DIRECTORY
+          value: {{ $extAuth.pluginDirectory | quote }}
+        - name: HEADERS_TO_REDACT
+          value: '{{ join "," $extAuth.headersToRedact | quote }}'
+        - name: HEALTH_FAIL_TIMEOUT
+          value: {{ $extAuth.healthCheckFailTimeout | quote }}
+        - name: HEALTH_HTTP_PORT
+          value: {{ $extAuth.service.healthPort | quote }}
+        - name: HEALTH_HTTP_PATH
+          value: {{ $extAuth.healthCheckHttpPath | quote }}
+        - name: HEALTH_LIVENESS_HTTP_PATH
+          value: {{ $extAuth.healthLivenessCheckHttpPath | quote }}
+{{- if $extAuth.apiKeyStorage }}
+        - name: APIKEY_STORAGE_BACKEND
+          value: {{ index $extAuth.apiKeyStorage.name | quote }}
+        - name: APIKEY_STORAGE_CONFIG_PATH
+          value: "/etc/apikeys/storage-config.yaml"
+{{- end }}
+{{- with $extAuth.apiKeyStorage }}
+  {{- if .secretKey }}
+        - name: APIKEY_STORAGE_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: ext-auth-service-api-key-secret-key
+              key: key
+  {{- end }}
+{{- end }}
+{{- if $skFile.enabled }}
+        - name: SIGNING_KEY_FILE
+          value: "/ext-auth-service-signing-key/signing-key"
+{{- else }}
+        - name: SIGNING_KEY
+          valueFrom:
+            secretKeyRef:
+              name: ext-auth-service-signing-key
+              key: signing-key
+{{- end }}
+{{- if or $skFile.enabled $extAuth.apiKeyStorage }}
+        volumeMounts:
+{{- end }}
+{{- if $skFile.enabled }}
+        - mountPath: /ext-auth-service-signing-key
+          name: ext-auth-service-signing-key
+{{- end }}
+{{- if $extAuth.apiKeyStorage }}
+        - mountPath: /etc/apikeys/
+          name: ext-auth-service-api-key-storage
+{{- end }}
+        readinessProbe:
+          httpGet:
+            port: {{ $extAuth.service.healthPort }}
+            path: {{ $extAuth.healthCheckHttpPath }}
+          initialDelaySeconds: 1
+          periodSeconds: 5
+          failureThreshold: 3
+          successThreshold: 1
+{{- if ne $extAuth.healthLivenessCheckHttpPath "" }}
+        livenessProbe:
+            httpGet:
+              port: {{ $extAuth.service.healthPort }}
+              path: {{ $extAuth.healthLivenessCheckHttpPath }}
+            initialDelaySeconds: 3
+            periodSeconds: 10
+            failureThreshold: 3
+            successThreshold: 1
+{{- end}}
+{{- if $extAuth.resources }}
+        resources:
+{{ toYaml $extAuth.resources | indent 10}}
+{{- else}}
+        resources:
+          requests:
+            cpu: 125m
+            memory: 256Mi
+{{- end}}
+        securityContext:
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+{{- if and $skFile.enabled $skFile.groupSettingEnabled }}
+      securityContext:
+        runAsUser: {{ $skFile.runAsUser }}
+        runAsGroup: {{ $skFile.runAsGroup }}
+        fsGroup: {{ $skFile.fsGroup }}
+{{- end }}
+{{- if or $skFile.enabled $extAuth.apiKeyStorage }}
+      volumes:
+{{- end }}
+{{- if $skFile.enabled }}
+      - name: ext-auth-service-signing-key
+        secret:
+          secretName: ext-auth-service-signing-key
+          defaultMode: {{ $skFile.fileMode }}
+{{- end }}
+{{- if $extAuth.apiKeyStorage }}
+      - name: ext-auth-service-api-key-storage
+        secret:
+          secretName: ext-auth-service-api-key-storage
+          defaultMode: 288
+{{- end }}
+
+---
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app: ext-auth-service
+  {{- include "ext-auth-service.extraLabels" . | nindent 4 }}
+  name: ext-auth-service
+  namespace: {{ $.Values.common.addonNamespace | default $.Release.Namespace }}
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: ext-auth-service
+  {{- include "ext-auth-service.extraLabels" . | nindent 4 }}
+  name: ext-auth-service
+  namespace: {{ $.Values.common.addonNamespace | default $.Release.Namespace }}
+spec:
+  type: {{ $service.type }}
+  selector:
+    app: ext-auth-service
+  ports:
+  - name: grpc
+    port: {{ $service.grpcPort }}
+    {{- if eq $service.type "NodePort" }}
+    nodePort: {{ $service.grpcNodePort }}
+    {{- end}}
+  - name: debug
+    port: {{ $service.debugPort }}
+    {{- if eq $service.type "NodePort" }}
+    nodePort: {{ $service.debugNodePort }}
+    {{- end}}
+  - name: health
+    port: {{ $service.healthPort }}
+    {{- if eq $service.type "NodePort" }}
+    nodePort: {{ $service.healthNodePort }}
+    {{- end}}
+
+---
+
+apiVersion: v1
+kind: Secret
+metadata:
+  labels:
+    app: ext-auth-service
+  {{- include "ext-auth-service.extraLabels" . | nindent 4 }}
+  name: ext-auth-service-signing-key
+  namespace: {{ $.Values.common.addonNamespace | default $.Release.Namespace }}
+type: Opaque
+data:
+  signing-key: {{ template "ext-auth-service.signingKeyValue" }}
+
+{{- if and $extAuth.apiKeyStorage }}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  labels:
+    app: ext-auth-service
+  {{- include "ext-auth-service.extraLabels" . | nindent 4 }}
+  name: ext-auth-service-api-key-storage
+  namespace: {{ $.Values.common.addonNamespace | default $.Release.Namespace }}
+type: Opaque
+data:
+  storage-config.yaml: {{ $extAuth.apiKeyStorage.config.connection | toYaml | printf "%s\n" | b64enc }}
+{{- if $extAuth.apiKeyStorage.secretKey }}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  labels:
+    app: ext-auth-service
+  {{- include "ext-auth-service.extraLabels" . | nindent 4 }}
+  name: ext-auth-service-api-key-secret-key
+  namespace: {{ $.Values.common.addonNamespace | default $.Release.Namespace }}
+type: Opaque
+data:
+  key: {{ $extAuth.apiKeyStorage.secretKey | b64enc }}
+{{- end }}
+{{- end }}
+{{- end }}

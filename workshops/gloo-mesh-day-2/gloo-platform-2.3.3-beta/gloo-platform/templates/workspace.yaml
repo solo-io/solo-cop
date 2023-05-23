@@ -1,0 +1,29 @@
+{{/* The purpose of this template is to automatically register the Default Workspace (all namespaces) when the agent subchart is installed */}}
+
+{{- if and  $.Values.glooMgmtServer.enabled $.Values.glooMgmtServer.registerCluster }}
+apiVersion: admin.gloo.solo.io/v2
+kind: Workspace
+metadata:
+  name: {{ $.Values.common.cluster }}
+  namespace: {{ $.Release.Namespace }}
+spec:
+  workloadClusters:
+    - name: '*'
+      namespaces:
+        - name: '*'
+---
+
+apiVersion: admin.gloo.solo.io/v2
+kind: WorkspaceSettings
+metadata:
+  name: default
+  namespace: {{ $.Release.Namespace }}
+spec:
+  options:
+    serviceIsolation:
+      enabled: false
+    federation:
+      enabled: false
+---
+
+{{- end }}
