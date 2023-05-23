@@ -1,10 +1,16 @@
 # Cluster name
 common:
-  cluster: mgmt-cluster
+  cluster: mgmt-cluster.spoc.nicklab.com
 
 # OTLP collector for workload cluster collectors
 telemetryGateway:
   enabled: true
+  ports:
+    otlp:
+      containerPort: 55690
+      enabled: true
+      protocol: TCP
+      servicePort: 55690
 
 # dont try and generate the token
 glooMgmtServer:
@@ -16,6 +22,15 @@ glooMgmtServer:
 telemetryGatewayCustomization:
   # Disable cert generation for the Gloo Platform Telemetry Gateway.
   disableCertGeneration: true
+  extraReceivers:
+    otlp/mtls:
+      protocols:
+        grpc:
+          endpoint: 0.0.0.0:55690
+          tls:
+            client_ca_file: /etc/otel-certs/ca.crt
+            cert_file: /etc/otel-certs/tls.crt
+            key_file: /etc/otel-certs/tls.key
   extraExporters:
     otlp/tracing:
       endpoint: jaeger-collector.monitoring.svc.cluster.local:4317
@@ -24,7 +39,7 @@ telemetryGatewayCustomization:
   extraPipelines:
     metrics/same:
       receivers:
-      - otlp
+      - otlp/mtls
       processors:
       - memory_limiter
       - batch
@@ -32,7 +47,7 @@ telemetryGatewayCustomization:
       - prometheus
     traces/gloo-mesh:
       receivers:
-      - otlp
+      - otlp/mtls
       processors: 
       - batch
       exporters: 

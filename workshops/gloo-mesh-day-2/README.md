@@ -45,7 +45,7 @@ Set these environment variables which will be used throughout the workshop.
 ```sh
 # Used to enable Gloo (please ask for a trial license key)
 export GLOO_PLATFORM_LICENSE_KEY=<licence_key>
-export GLOO_PLATFORM_VERSION=v2.3.0-rc1
+export GLOO_PLATFORM_VERSION=v2.3.3
 export ISTIO_IMAGE_REPO=us-docker.pkg.dev/gloo-mesh/istio-workshops
 export ISTIO_IMAGE_TAG=1.16.3-solo
 export ISTIO_VERSION=1.16.3
@@ -243,7 +243,7 @@ metadata:
 spec:
   commonName: gloo-server
   dnsNames:
-    - "*.gloo-mesh"
+    - "*.spoc.nicklab.com"
   duration: 8760h0m0s   ### 1 year life
   renewBefore: 8736h0m0s
   issuerRef:
@@ -266,7 +266,7 @@ spec:
   commonName: gloo-agent
   dnsNames:
     # Must match the cluster name used in the helm chart install
-    - "mgmt-cluster"
+    - "mgmt-cluster.spoc.nicklab.com"
   duration: 8760h0m0s   ### 1 year life
   renewBefore: 8736h0m0s
   issuerRef:
@@ -297,7 +297,7 @@ spec:
   commonName: gloo-agent
   dnsNames:
     # Must match the cluster name used in the helm chart install
-    - "$CLUSTER1"
+    - "$CLUSTER1.spoc.nicklab.com"
   duration: 8760h0m0s   ### 1 year life
   renewBefore: 8736h0m0s
   issuerRef:
@@ -370,7 +370,7 @@ kubectl apply --context $MGMT -f- <<EOF
 apiVersion: admin.gloo.solo.io/v2
 kind: KubernetesCluster
 metadata:
-  name: mgmt-cluster
+  name: mgmt-cluster.spoc.nicklab.com
   namespace: gloo-mesh
 spec:
   clusterDomain: cluster.local
@@ -378,7 +378,7 @@ spec:
 apiVersion: admin.gloo.solo.io/v2
 kind: KubernetesCluster
 metadata:
-  name: cluster1
+  name: cluster1.spoc.nicklab.com
   namespace: gloo-mesh
 spec:
   clusterDomain: cluster.local
@@ -402,7 +402,8 @@ helm upgrade --install gloo-agent gloo-platform/gloo-platform \
   --kube-context=${MGMT} \
   --namespace gloo-mesh \
   --set glooAgent.relay.serverAddress=gloo-mesh-mgmt-server.gloo-mesh:9900 \
-  --set common.cluster=${MGMT} \
+  --set glooAgent.relay.authority=gloo-mesh-mgmt-server.spoc.nicklab.com \
+  --set common.cluster=${MGMT}.spoc.nicklab.com \
   --version ${GLOO_PLATFORM_VERSION} \
   -f install/gloo-platform/agent-values.yaml
 ```
@@ -421,7 +422,8 @@ helm upgrade --install gloo-agent gloo-platform/gloo-platform \
   --kube-context=${CLUSTER1} \
   --namespace gloo-mesh \
   --set glooAgent.relay.serverAddress=${MGMT_SERVER_NETWORKING_ADDRESS} \
-  --set common.cluster=${CLUSTER1} \
+  --set glooAgent.relay.authority=gloo-mesh-mgmt-server.spoc.nicklab.com \
+  --set common.cluster=${CLUSTER1}.spoc.nicklab.com \
   --version ${GLOO_PLATFORM_VERSION} \
   -f install/gloo-platform/agent-values.yaml
 ```
@@ -473,14 +475,14 @@ spec:
   secretName: cacerts
   duration: 720h # 30d
   renewBefore: 360h # 15d
-  commonName: mgmt.solo.io
+  commonName: mgmt-cluster.spoc.nicklab.com
   isCA: true
   usages:
     - digital signature
     - key encipherment
     - cert sign
   dnsNames:
-    - mgmt.solo.io
+    - mgmt-cluster.spoc.nicklab.com
   issuerRef:
     kind: ClusterIssuer
     name: vault-issuer-istio
@@ -500,14 +502,14 @@ spec:
   secretName: cacerts
   duration: 720h # 30d
   renewBefore: 360h # 15d
-  commonName: cluster1.solo.io
+  commonName: cluster1.spoc.nicklab.com
   isCA: true
   usages:
     - digital signature
     - key encipherment
     - cert sign
   dnsNames:
-    - cluster1.solo.io
+    - cluster1.spoc.nicklab.com
   issuerRef:
     kind: ClusterIssuer
     name: vault-issuer-istio
@@ -584,7 +586,7 @@ global:
 meshConfig:
   # The trust domain corresponds to the trust root of a system. 
   # For Gloo this should be the name of the cluster that cooresponds with the CA certificate CommonName identity
-  trustDomain: mgmt-cluster
+  trustDomain: mgmt-cluster.spoc.nicklab.com
   # enable access logging to standard output
   accessLogFile: /dev/stdout
   defaultConfig:
@@ -626,7 +628,7 @@ global:
 meshConfig:
   # The trust domain corresponds to the trust root of a system. 
   # For Gloo this should be the name of the cluster that cooresponds with the CA certificate CommonName identity
-  trustDomain: mgmt-cluster
+  trustDomain: cluster1.spoc.nicklab.com
   # enable access logging to standard output
   accessLogFile: /dev/stdout
   defaultConfig:
@@ -766,13 +768,13 @@ metadata:
   namespace: gloo-mesh
 spec:
   workloadClusters:
-  - name: 'mgmt-cluster'
+  - name: 'mgmt-cluster.spoc.nicklab.com'
     namespaces:
     - name: gloo-mesh
     - name: ops-team
     - name: istio-eastwest
     - name: monitoring
-  - name: 'cluster1'
+  - name: 'cluster1.spoc.nicklab.com'
     namespaces:
     - name: istio-ingress
     - name: gloo-mesh-addons
@@ -805,7 +807,7 @@ metadata:
   namespace: ops-team
 spec:
   hosts:
-  - gloo-ui.solo.internal
+  - gloo-ui.spoc.nicklab.com
   services:
   - labels:
       app: gloo-mesh-ui
@@ -825,7 +827,7 @@ spec:
     - selector:
         labels:
           istio: ingressgateway
-        cluster: cluster1
+        cluster: cluster1.spoc.nicklab.com
         namespace: istio-ingress
   listeners: 
     - http: {}
@@ -847,7 +849,7 @@ spec:
   virtualGateways:
     - name: ingress-gateway
       namespace: ops-team
-      cluster: mgmt-cluster
+      cluster: mgmt-cluster.spoc.nicklab.com
   workloadSelectors: []
   http:
     - name: gloo-platform-ui
@@ -888,10 +890,10 @@ When you install Gloo, you can choose how you want to collect metrics in your Gl
 
 * Deploy Bookinfo so we can generate some metrics
 ```sh
-kubectl create namespace bookinfo
-kubectl label namespace bookinfo istio.io/rev=$ISTIO_REVISION
+kubectl create namespace bookinfo --context $CLUSTER1
+kubectl label namespace bookinfo --context $CLUSTER1 istio.io/rev=$ISTIO_REVISION
 
-kubectl apply -n bookinfo -f install/bookinfo
+kubectl apply -n bookinfo --context $CLUSTER1 -f install/bookinfo
 ```
 
 * Install prometheus in the `mgmt` cluster
@@ -946,7 +948,7 @@ metadata:
 spec:
   commonName: gloo-telemetry-gateway
   dnsNames:
-    - "gloo-telemetry-gateway.gloo-mesh"
+    - "gloo-telemetry-gateway.spoc.nicklab.com"
   duration: 8760h0m0s   ### 1 year life
   renewBefore: 8736h0m0s
   issuerRef:
@@ -973,9 +975,37 @@ helm upgrade --install gloo-telemetry-gateway gloo-platform/gloo-platform \
 
 * Get the Gloo Telemetry Gateway Endpoint
 ```sh
-GLOO_TELEMETRY_GATEWAY=$(kubectl get svc -n gloo-mesh gloo-telemetry-gateway --context $MGMT -o jsonpath='{.status.loadBalancer.ingress[0].*}'):$(kubectl --context ${MGMT} -n gloo-mesh get svc gloo-telemetry-gateway -o jsonpath='{.spec.ports[?(@.port==4317)].port}')
+GLOO_TELEMETRY_GATEWAY=$(kubectl get svc -n gloo-mesh gloo-telemetry-gateway --context $MGMT -o jsonpath='{.status.loadBalancer.ingress[0].*}'):$(kubectl --context ${MGMT} -n gloo-mesh get svc gloo-telemetry-gateway -o jsonpath='{.spec.ports[?(@.port==55690)].port}')
 
-echo "Telemetry Gateway Address: $GLOO_TELEMETRY_GATEWAY"
+echo "MTLS Telemetry Gateway Address: $GLOO_TELEMETRY_GATEWAY"
+```
+
+* Create Gloo telemetry collector certificate
+
+```sh
+kubectl --context $CLUSTER1 apply -f - <<EOF
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: gloo-telemetry-collector
+  namespace: gloo-mesh
+spec:
+  commonName: gloo-telemetry-collector
+  dnsNames:
+    - "cluster1-gloo-telemetry-collector.spoc.nicklab.com"
+  duration: 8760h0m0s   ### 1 year life
+  renewBefore: 8736h0m0s
+  issuerRef:
+    kind: ClusterIssuer
+    name: vault-issuer-gloo
+  secretName: gloo-telemetry-collector-tls-secret
+  usages:
+    - server auth
+    - client auth
+  privateKey:
+    algorithm: "RSA"
+    size: 4096
+EOF
 ```
 
 * Install Gloo Telemetry Collector in the `cluster1` cluster
@@ -983,7 +1013,6 @@ echo "Telemetry Gateway Address: $GLOO_TELEMETRY_GATEWAY"
 helm upgrade --install gloo-telemetry-collector gloo-platform/gloo-platform \
   --version=${GLOO_PLATFORM_VERSION} \
   --kube-context ${CLUSTER1} \
-  --set telemetryCollector.config.exporters.otlp.endpoint=$GLOO_TELEMETRY_GATEWAY \
   --namespace gloo-mesh \
   -f install/gloo-platform/telemetry-collector-values.yaml
 ```

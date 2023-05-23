@@ -13,13 +13,17 @@ telemetryCollector:
     - name: root-ca
       secret:
         defaultMode: 420
-        secretName: gloo-agent-tls-cert
+        secretName: gloo-telemetry-collector-tls-secret
     - configMap:
         items:
           - key: relay
             path: relay.yaml
         name: gloo-telemetry-collector-config
       name: telemetry-configmap
+  config:
+    exporters:
+      otlp:
+        endpoint: 1.2.3.4:12345
 # Optional customization for the Gloo Platform Telemetry Collector.
 telemetryCollectorCustomization:
   extraPipelines:
@@ -32,7 +36,7 @@ telemetryCollectorCustomization:
       receivers: [zipkin/gloo-mesh]
       processors: [batch]
       exporters:
-        - otlp
+        - otlp/mtls
     metrics/gloo-mesh:
       receivers: [prometheus]
       processors:
@@ -43,8 +47,15 @@ telemetryCollectorCustomization:
         - attributes/drop_extra_otel_labels # Add this to drop some labels from the OTel collector itself.
         - gloo_metrics_processor
       exporters:
-        - otlp
+        - otlp/mtls
   extraExporters:
+    otlp/mtls:
+      endpoint: 172.18.0.3:55690
+      tls:
+        insecure: false
+        ca_file: /etc/otel-certs/ca.crt
+        cert_file: /etc/otel-certs/tls.crt
+        key_file: /etc/otel-certs/tls.key
     logging/gloo-mesh:
       verbosity: normal
       sampling_initial: 5

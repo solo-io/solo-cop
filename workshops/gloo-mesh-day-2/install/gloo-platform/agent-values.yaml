@@ -1,7 +1,7 @@
 # Configuration for the Gloo agent.
 glooAgent:
   enabled: true
-  relay: 
+  relay:
     clientTlsSecret:
       name: gloo-agent-tls-cert
     # With this override, we don't have to create a mock relay-identity-token-secret
