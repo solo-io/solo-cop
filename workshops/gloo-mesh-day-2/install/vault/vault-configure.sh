@@ -29,6 +29,9 @@ cat /relay-root-ca.crt /relay-root-ca.key > /ca-bundle.pem
 
 vault write /pki/config/ca pem_bundle=@/ca-bundle.pem
 
+printf "Root Certificate\n\n"
+cat /relay-root-ca.crt
+
 # vault write -field=certificate pki/root/generate/internal \
 #      common_name="solo.io" \
 #      issuer_name="solo-io" \
@@ -73,7 +76,7 @@ openssl req -new -config /istio-intermediate.conf -key /key.pem -out /pki_interm
 #      issuer_name="solo-io-istio-issuer" \
 #      | jq -r '.data.csr' > /pki_intermediate_istio.csr
 
-          # Very important that we set use_csr_values to get our key usage we need
+# Very important that we set use_csr_values to get our key usage we need
 vault write -format=json pki/root/sign-intermediate \
      issuer_ref="solo-io" \
      csr=@/pki_intermediate_istio.csr \
@@ -110,11 +113,37 @@ vault write pki_int_gloo/roles/gloo-issuer \
      enforce_hostnames=false \
      max_ttl="720h"
 
+## Istio CSR
+vault secrets enable -path=pki_int_istio_csr pki
+
+vault secrets tune -max-lease-ttl=43800h pki_int_istio_csr
+
+vault write -format=json  pki_int_istio_csr/intermediate/generate/internal \
+     common_name="Istio CSR CA Issuer" \
+     issuer_name="istio-csr-issuer" \
+     | jq -r '.data.csr' > /pki_intermediate_istio_csr.csr
+
+vault write -format=json pki/root/sign-intermediate \
+     issuer_ref="solo-io" \
+     csr=@/pki_intermediate_istio_csr.csr \
+     format=pem_bundle ttl="43800h" \
+     | jq -r '.data.certificate' > /pki_intermediate_istio_csr.cert.pem
+
+vault write pki_int_istio_csr/intermediate/set-signed certificate=@/pki_intermediate_istio_csr.cert.pem
+
+vault write pki_int_istio_csr/roles/istio-csr-issuer \
+     allow_subdomains=true \
+     allowed_domains="svc" \
+     max_ttl="720h" \
+     require_cn=false \
+     allowed_uri_sans="spiffe://*"
+
 # Create role for signing certs
 vault policy write sign-certs -<<EOF
 path "pki*"                        { capabilities = ["read", "list"] }
 path "pki_int_istio/root/sign-intermediate"    { capabilities = ["create", "update"] }
-path "pki_int_gloo/sign/gloo-issuer"   { capabilities = ["create", "update"] }
+path "pki_int_istio_csr/sign/istio-csr-issuer"    { capabilities = ["update"] }
+path "pki_int_gloo/sign/gloo-issuer"   { capabilities = ["update"] }
 EOF
 
 # Enable AppRole For cert manger

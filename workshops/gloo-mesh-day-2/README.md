@@ -105,10 +105,12 @@ printf "\n\nVault available at: $VAULT_ADDR\n"
 * Generate a token to give to cert-manager
 
 ```sh
+export ROOT_CA_CERT=$(kubectl exec -it vault-0 -n vault --context $MGMT -- wget -qO- http://localhost:8200/v1/pki/ca/pem)
+echo "$ROOT_CA_CERT" > /tmp/root-ca.pem
 export VAULT_APPROLE_ID=$(kubectl get configmap -n vault --context $MGMT cert-manager-app-role -o json | jq -r '.data.role_id')
 export VAULT_APPROLE_SECRET_ID=$(kubectl get configmap -n vault --context $MGMT cert-manager-app-role -o json | jq -r '.data.secret_id')
 
-printf "\n\nYour cert-manager AppRole RoleID: $VAULT_APPROLE_ID\nSecretID: $VAULT_APPROLE_SECRET_ID"
+printf "\n\nYour cert-manager AppRole RoleID: $VAULT_APPROLE_ID\nSecretID: $VAULT_APPROLE_SECRET_ID\n\nRoot Cert\n$ROOT_CA_CERT"
 ```
 
 ### Cert Manager
@@ -141,13 +143,12 @@ kubectl apply --context $MGMT -f- <<EOF
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
 metadata:
-  name: vault-issuer-istio
+  name: istio-csr-issuer
   namespace: cert-manager
 spec:
   vault:
-    path: pki_int_istio/root/sign-intermediate
+    path: pki_int_istio_csr/sign/istio-csr-issuer
     server: $VAULT_ADDR
-    # namespace: admin   # Required for multi-tenant vaukt or HCP CLoud
     auth:
       appRole:
         path: approle
@@ -183,13 +184,12 @@ kubectl apply --context ${CLUSTER1} -f- <<EOF
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
 metadata:
-  name: vault-issuer-istio
+  name: istio-csr-issuer
   namespace: cert-manager
 spec:
   vault:
-    path: pki_int_istio/root/sign-intermediate ## This path allows ca: TRUE certificaets
+    path: pki_int_istio_csr/sign/istio-csr-issuer
     server: $VAULT_ADDR
-    # namespace: admin   # Required for multi-tenant vaukt or HCP CLoud
     auth:
       appRole:
         path: approle
@@ -449,11 +449,6 @@ relay_push_clients_connected{cluster="mgmt-cluster"} 1
 
 ## Install Istio <a name="Istio"></a>
 
-### Istio Certificate Setup
-
-As stated above, Istio requries an Intermediate Signing CA so that it can issue workload certificates. Each remote cluster should have an Intermediate Signing CA that is rooted in the same trust chain if you want to facilitate cross cluster communication. 
-
-![Istio Certs](./images/istio-certs.png)
 
 * Create istio-system namespaces
 
@@ -462,66 +457,50 @@ kubectl create namespace istio-system --context $MGMT
 kubectl create namespace istio-system --context $CLUSTER1
 ```
 
-* Create Istio `cacerts` certificate in the `mgmt` cluster
-
-```yaml
-kubectl apply --context $MGMT -f- <<EOF
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: mgmt-cacerts
-  namespace: istio-system
-spec:
-  secretName: cacerts
-  duration: 720h # 30d
-  renewBefore: 360h # 15d
-  commonName: mgmt-cluster.spoc.nicklab.com
-  isCA: true
-  usages:
-    - digital signature
-    - key encipherment
-    - cert sign
-  dnsNames:
-    - mgmt-cluster.spoc.nicklab.com
-  issuerRef:
-    kind: ClusterIssuer
-    name: vault-issuer-istio
-EOF
-```
-
-* Create Istio `cacerts` certificate in the `cluster1` cluster
-
-```yaml
-kubectl apply --context $CLUSTER1 -f- <<EOF
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: cluster1-cacerts
-  namespace: istio-system
-spec:
-  secretName: cacerts
-  duration: 720h # 30d
-  renewBefore: 360h # 15d
-  commonName: cluster1.spoc.nicklab.com
-  isCA: true
-  usages:
-    - digital signature
-    - key encipherment
-    - cert sign
-  dnsNames:
-    - cluster1.spoc.nicklab.com
-  issuerRef:
-    kind: ClusterIssuer
-    name: vault-issuer-istio
-EOF
-```
-
-* Verify Secrets are created
-
+* Add the Root Cert to the cluster for Istio CSR to establish trust
 ```sh
-kubectl get secret -n istio-system cacerts --context $MGMT
-kubectl get secret -n istio-system cacerts --context $CLUSTER1
+kubectl create secret generic istio-root-ca --from-file=ca.cert.pem=/tmp/root-ca.pem -n cert-manager --context $MGMT
+kubectl create secret generic istio-root-ca --from-file=ca.cert.pem=/tmp/root-ca.pem -n cert-manager --context $CLUSTER1
 ```
+
+* Install Istio CSR
+```sh
+helm repo add jetstack https://charts.jetstack.io
+helm repo update
+
+helm upgrade --install cert-manager-istio-csr jetstack/cert-manager-istio-csr \
+  --namespace cert-manager \
+  --set "app.certmanager.issuer.name=istio-csr-issuer" \
+  --set "app.certmanager.issuer.kind=ClusterIssuer" \
+  --set "app.tls.rootCAFile=/var/run/secrets/istio-csr/ca.cert.pem" \
+  --set "volumeMounts[0].name=root-ca" \
+  --set "volumeMounts[0].mountPath=/var/run/secrets/istio-csr" \
+  --set "volumes[0].name=root-ca" \
+  --set "volumes[0].secret.secretName=istio-root-ca" \
+  --set "app.istio.revisions={1-16}" \
+  --set "app.tls.trustDomain=mgmt-cluster.spoc.nicklab.com" \
+  --set "app.server.clusterID=mgmt" \
+  --kube-context $MGMT
+
+helm upgrade --install cert-manager-istio-csr jetstack/cert-manager-istio-csr \
+  --namespace cert-manager \
+  --set "app.certmanager.issuer.name=istio-csr-issuer" \
+  --set "app.certmanager.issuer.kind=ClusterIssuer" \
+  --set "app.tls.rootCAFile=/var/run/secrets/istio-csr/ca.cert.pem" \
+  --set "volumeMounts[0].name=root-ca" \
+  --set "volumeMounts[0].mountPath=/var/run/secrets/istio-csr" \
+  --set "volumes[0].name=root-ca" \
+  --set "volumes[0].secret.secretName=istio-root-ca" \
+  --set "app.server.clusterID=cluster1" \
+  --kube-context $CLUSTER1
+```
+
+
+### Istio Certificate Setup
+
+As stated above, Istio requries an Intermediate Signing CA so that it can issue workload certificates. Each remote cluster should have an Intermediate Signing CA that is rooted in the same trust chain if you want to facilitate cross cluster communication. 
+
+![Istio Certs](./images/istio-certs.png)
 
 Istio now recommends using `helm` to install its components. The helm charts are broken up into a few distinct charts. This makes it easier to manage istio and upgrade the component individually when needed.
 
@@ -579,10 +558,12 @@ helm upgrade --install istiod-${ISTIO_REVISION} istio/istiod \
   --version ${ISTIO_VERSION} \
   --namespace istio-system \
   --kube-context ${MGMT} \
+  --post-renderer ./kustomize.sh \
   -f- <<EOF
 global:
   multiCluster:
     clusterName: $MGMT
+  caAddress: "cert-manager-istio-csr.cert-manager.svc:443"
 meshConfig:
   # The trust domain corresponds to the trust root of a system. 
   # For Gloo this should be the name of the cluster that cooresponds with the CA certificate CommonName identity
@@ -608,6 +589,8 @@ pilot:
     # Disable selecting workload entries for local service routing.
     # Required for Gloo VirtualDestinaton functionality.
     PILOT_ENABLE_K8S_SELECT_WORKLOAD_ENTRIES: "false"
+    # disable the internal CA server
+    ENABLE_CA_SERVER: "false"
 EOF
 ```
 
@@ -621,10 +604,12 @@ helm upgrade --install istiod-${ISTIO_REVISION} istio/istiod \
   --version ${ISTIO_VERSION} \
   --namespace istio-system \
   --kube-context ${CLUSTER1} \
+  --post-renderer ./kustomize.sh \
   -f- <<EOF
 global:
   multiCluster:
     clusterName: $CLUSTER1
+  caAddress: "cert-manager-istio-csr.cert-manager.svc:443"
 meshConfig:
   # The trust domain corresponds to the trust root of a system. 
   # For Gloo this should be the name of the cluster that cooresponds with the CA certificate CommonName identity
@@ -650,34 +635,33 @@ pilot:
     # Disable selecting workload entries for local service routing.
     # Required for Gloo VirtualDestinaton functionality.
     PILOT_ENABLE_K8S_SELECT_WORKLOAD_ENTRIES: "false"
+    # disable the internal CA server
+    ENABLE_CA_SERVER: "false"
 EOF
 ```
 
 * Verify that Istio is using the plugged in certs `kubectl logs --context ${MGMT} deploy/istiod-${ISTIO_REVISION} -n istio-system | grep x509`
 ```sh
-2023-04-10T14:21:41.638520Z     info    x509 cert - Issuer: "CN=mgmt.solo.io", Subject: "", SN: d7c4889aa3e4dd3b53b02169f1dc9016, NotBefore: "2023-04-10T14:19:41Z", NotAfter: "2033-04-07T14:21:41Z"
-2023-04-10T14:21:41.638547Z     info    x509 cert - Issuer: "CN=Intermediate CA,O=Istio", Subject: "CN=mgmt.solo.io", SN: 60d431616502af501d1f3454e1a4a9f7d35ddd4e, NotBefore: "2023-04-10T14:20:45Z", NotAfter: "2023-05-10T14:21:15Z"
-2023-04-10T14:21:41.638580Z     info    x509 cert - Issuer: "CN=Root Certificate", Subject: "CN=Intermediate CA,O=Istio", SN: 3e8948df93d720abc4a908e172eafa617e617187, NotBefore: "2023-04-10T14:13:31Z", NotAfter: "2028-04-08T14:14:01Z"
-2023-04-10T14:21:41.638598Z     info    x509 cert - Issuer: "CN=Root Certificate", Subject: "CN=Root Certificate", SN: 643b4f58d74689e0facc6318ab39d5a86c0c5d5f, NotBefore: "2023-04-10T14:14:01Z", NotAfter: "2033-04-07T14:14:01Z"
+2023-05-25T16:24:06.811794Z     info    x509 cert - Issuer: "CN=Istio CSR CA Issuer", Subject: "CN=istiod.istio-system.svc", SN: 1db8311db2253f6e0e5daf6d1f1c2269ce08eed3, NotBefore: "2023-05-25T16:23:06Z", NotAfter: "2023-05-25T17:23:36Z"
+2023-05-25T16:24:06.811819Z     info    x509 cert - Issuer: "CN=Root Certificate", Subject: "CN=Istio CSR CA Issuer", SN: 727861a42806746518e7a3da5cd80d474fbb766, NotBefore: "2023-05-25T15:17:53Z", NotAfter: "2028-05-23T15:18:23Z"
 ```
 
-* Verify that Istio is using the plugged in certs for cluster1 `kubectl logs --context ${CLUSTER1} deploy/istiod-${ISTIO_REVISION} -n istio-system | grep x509`
+* Verify that Istio is using the plugged in certs `kubectl logs --context ${CLUSTER1} deploy/istiod-${ISTIO_REVISION} -n istio-system | grep x509`
 ```sh
-2023-04-10T14:24:59.559865Z     info    x509 cert - Issuer: "CN=cluster1.solo.io", Subject: "", SN: c848d01c8e0867395b850dc742afde71, NotBefore: "2023-04-10T14:22:59Z", NotAfter: "2033-04-07T14:24:59Z"
-2023-04-10T14:24:59.559882Z     info    x509 cert - Issuer: "CN=Intermediate CA,O=Istio", Subject: "CN=cluster1.solo.io", SN: 220eed6f615f2f4ffc1b9e625d6464e640c0a419, NotBefore: "2023-04-10T14:20:50Z", NotAfter: "2023-05-10T14:21:20Z"
-2023-04-10T14:24:59.559895Z     info    x509 cert - Issuer: "CN=Root Certificate", Subject: "CN=Intermediate CA,O=Istio", SN: 3e8948df93d720abc4a908e172eafa617e617187, NotBefore: "2023-04-10T14:13:31Z", NotAfter: "2028-04-08T14:14:01Z"
-2023-04-10T14:24:59.559906Z     info    x509 cert - Issuer: "CN=Root Certificate", Subject: "CN=Root Certificate", SN: 643b4f58d74689e0facc6318ab39d5a86c0c5d5f, NotBefore: "2023-04-10T14:14:01Z", NotAfter: "2033-04-07T14:14:01Z"
+2023-05-25T16:44:58.736979Z     info    x509 cert - Issuer: "CN=Istio CSR CA Issuer", Subject: "CN=istiod.istio-system.svc", SN: 2e19366872158498bfb9f7aa9942455eb3dc5bb9, NotBefore: "2023-05-25T16:33:03Z", NotAfter: "2023-05-25T17:33:33Z"
+2023-05-25T16:44:58.736996Z     info    x509 cert - Issuer: "CN=Root Certificate", Subject: "CN=Istio CSR CA Issuer", SN: 727861a42806746518e7a3da5cd80d474fbb766, NotBefore: "2023-05-25T15:17:53Z", NotAfter: "2028-05-23T15:18:23Z"
 ```
 
 * Install an Eastwest gateway in `mgmt` cluster. This will allow us to expose the Gloo UI through the Ingress gateway in `cluster1`
 
 ```sh
+kubectl create namespace istio-eastwest --context $MGMT
+kubectl label namespace istio-eastwest istio.io/rev=${ISTIO_REVISION} --context $MGMT
 helm upgrade --install istio-eastwestgateway-${ISTIO_REVISION} istio/gateway \
   --set revision=${ISTIO_REVISION} \
   --set global.hub=${ISTIO_IMAGE_REPO} \
   --set global.tag=${ISTIO_IMAGE_TAG} \
   --version ${ISTIO_VERSION} \
-  --create-namespace \
   --namespace istio-eastwest \
   --kube-context ${MGMT} \
   -f- <<EOF
@@ -703,12 +687,13 @@ EOF
 * Install Gloo Gateway in `cluster1`
 
 ```sh
+kubectl create namespace istio-ingress --context $CLUSTER1
+kubectl label namespace istio-ingress istio.io/rev=${ISTIO_REVISION} --context $CLUSTER1
 helm upgrade --install istio-ingressgateway-${ISTIO_REVISION} istio/gateway \
   --set revision=${ISTIO_REVISION} \
   --set global.hub=${ISTIO_IMAGE_REPO} \
   --set global.tag=${ISTIO_IMAGE_TAG} \
   --version ${ISTIO_VERSION} \
-  --create-namespace \
   --namespace istio-ingress \
   --kube-context ${CLUSTER1} \
   --wait \
@@ -1026,11 +1011,12 @@ helm upgrade --install istiod-${ISTIO_REVISION} istio/istiod \
   --version ${ISTIO_VERSION} \
   --namespace istio-system \
   --kube-context ${CLUSTER1} \
+  --post-renderer ./kustomize.sh \
   -f- <<EOF
 global:
   multiCluster:
     clusterName: $CLUSTER1
-
+  caAddress: "cert-manager-istio-csr.cert-manager.svc:443"
 meshConfig:
   enableTracing: true
   extensionProviders:
@@ -1065,6 +1051,8 @@ pilot:
     # Disable selecting workload entries for local service routing.
     # Required for Gloo VirtualDestinaton functionality.
     PILOT_ENABLE_K8S_SELECT_WORKLOAD_ENTRIES: "false"
+    # disable the internal CA server
+    ENABLE_CA_SERVER: "false"
 EOF
 ```
 
