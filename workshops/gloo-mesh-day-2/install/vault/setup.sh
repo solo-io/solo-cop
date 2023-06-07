@@ -103,7 +103,6 @@ vault-setup-istio-pki() {
 
   kubectl --context $MGMT -n vault cp $LOCAL_DIR/vault-configure.sh vault-setup:/tmp/vault-configure.sh
   VAULT_LB=$(kubectl --context ${MGMT} -n vault get svc vault -o jsonpath='{.status.loadBalancer.ingress[0].*}')
-  echo $VAULT_LB
   nslookup "${VAULT_LB}"
   until [ $? -eq 0 ]
   do
