@@ -147,7 +147,7 @@ spec:
   vault:
     path: pki_int_istio/root/sign-intermediate
     server: $VAULT_ADDR
-    # namespace: admin   # Required for multi-tenant vaukt or HCP CLoud
+    # namespace: admin   # Required for multi-tenant vault or HCP CLoud
     auth:
       appRole:
         path: approle
@@ -165,7 +165,7 @@ spec:
   vault:
     path: pki_int_gloo/sign/gloo-issuer
     server: $VAULT_ADDR
-    # namespace: admin   # Required for multi-tenant vaukt or HCP CLoud
+    # namespace: admin   # Required for multi-tenant vault or HCP CLoud
     auth:
       appRole:
         path: approle
@@ -189,7 +189,7 @@ spec:
   vault:
     path: pki_int_istio/root/sign-intermediate ## This path allows ca: TRUE certificaets
     server: $VAULT_ADDR
-    # namespace: admin   # Required for multi-tenant vaukt or HCP CLoud
+    # namespace: admin   # Required for multi-tenant vault or HCP CLoud
     auth:
       appRole:
         path: approle
@@ -207,7 +207,7 @@ spec:
   vault:
     path: pki_int_gloo/sign/gloo-issuer ## This path is for client/server certificates
     server: $VAULT_ADDR
-    # namespace: admin   # Required for multi-tenant vaukt or HCP CLoud
+    # namespace: admin   # Required for multi-tenant vault or HCP CLoud
     auth:
       appRole:
         path: approle
