@@ -102,9 +102,18 @@ vault-setup-istio-pki() {
   kubectl wait --for=condition=ready pod -l app=vault-setup -n vault --context $MGMT --timeout 60s
 
   kubectl --context $MGMT -n vault cp $LOCAL_DIR/vault-configure.sh vault-setup:/tmp/vault-configure.sh
+  VAULT_LB=$(kubectl --context ${MGMT} -n vault get svc vault -o jsonpath='{.status.loadBalancer.ingress[0].*}')
+  nslookup "${VAULT_LB}"
+  until [ $? -eq 0 ]
+  do
+    echo "-----------------------------------------------"
+    echo "Re-checking LoadBalancer status in 5 seconds..."
+    echo "-----------------------------------------------"
+    sleep 5; echo;
+    nslookup "${VAULT_LB}"
+  done
 
-  export VAULT_ADDR=http://$(kubectl --context ${MGMT} -n vault get svc vault -o jsonpath='{.status.loadBalancer.ingress[0].*}'):8200
-
+  export VAULT_ADDR="http://${VAULT_LB}:8200"
   kubectl exec --context $MGMT -n vault -it vault-setup -- /tmp/vault-configure.sh $VAULT_ADDR
 }
 
