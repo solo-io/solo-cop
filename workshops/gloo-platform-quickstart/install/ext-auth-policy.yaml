@@ -1,0 +1,32 @@
+apiVersion: security.policy.gloo.solo.io/v2
+kind: ExtAuthPolicy
+metadata:
+  name: frontend-login
+  namespace: gloo-gateway
+spec:
+  applyToRoutes: # Dynamically gets applied to all Routes with this label
+  - route:
+      labels:
+        route: frontend
+  config:
+    server: # Points at the `ExtAuthServer` config that should be used.
+      name: ext-auth-server
+      namespace: gloo-gateway
+      cluster: cluster-1
+    glooAuth:
+      configs:
+      - oauth2:
+          oidcAuthorizationCode:
+            appUrl: https://${GLOO_GATEWAY_HTTPS} # where to redirect after successful auth
+            callbackPath: /callback # a path relative to app url that will be used for OIDC callbacks
+            clientId: ${KEYCLOAK_CLIENTID} # your client id as registered with the issuer
+            clientSecretRef: # your client secret as registered with the issuer
+              name: oauth
+              namespace: gloo-mesh
+            issuerUrl: "${KEYCLOAK_URL}/realms/master/"
+            logoutPath: /logout
+            afterLogoutUrl: "${KEYCLOAK_URL}/realms/master/protocol/openid-connect/logout?redirect_uri=https://${GLOO_GATEWAY_HTTPS}"
+            scopes: # Scopes to request in addition to openid scope
+            - email
+            headers: # 	Configures headers added to requests
+              idTokenHeader: jwt

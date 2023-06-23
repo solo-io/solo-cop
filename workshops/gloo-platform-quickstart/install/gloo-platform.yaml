@@ -1,0 +1,27 @@
+common:
+  cluster: cluster-1
+glooAgent:
+  enabled: true
+  relay:
+    serverAddress: gloo-mesh-mgmt-server.gloo-mesh:9900
+glooMgmtServer:
+  serviceType: ClusterIP
+  registerCluster: true
+  enabled: true
+glooUi:
+  enabled: true
+telemetryCollector:
+  enabled: true
+  config:
+    exporters:
+      otlp:
+        endpoint: gloo-telemetry-gateway.gloo-mesh:4317
+prometheus:
+  enabled: true
+redis:
+  deployment:
+    enabled: true
+telemetryGateway:
+  enabled: true
+  service:
+    type: ClusterIP
