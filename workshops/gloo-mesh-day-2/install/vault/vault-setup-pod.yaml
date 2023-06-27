@@ -32,5 +32,5 @@ spec:
     - command:
         - sleep
         - 20h
-      image: vault:latest
+      image: hashicorp/vault:latest
       name: vault-setup
