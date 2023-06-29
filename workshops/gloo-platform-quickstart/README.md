@@ -92,84 +92,82 @@ To capture the traffic coming to the Gateway and route them to your applications
 `RouteTables` defines one or more hosts and a set of traffic route rules to handle traffic for these hosts. The traffic route rules can be *delegated* to other RouteTable based on one or more given hosts or specific paths. This allows you to create a hierarchy of routing configuration and dynamically attach policies at various levels. 
 
 1. Let's start by assuming the role of a Ops team. Configure the Gateway to listen on port 80 and create a generic RouteTable that further delegates the traffic routing to RouteTables in other namespaces.
-
-```yaml
-kubectl apply -f - <<EOF
-apiVersion: networking.gloo.solo.io/v2
-kind: VirtualGateway
-metadata:
-  name: ingress
-  namespace: gloo-mesh-gateways
-spec:
-  workloads:
-    - selector:
-        labels:
-          app: istio-ingressgateway
+  ```yaml
+  kubectl apply -f - <<EOF
+  apiVersion: networking.gloo.solo.io/v2
+  kind: VirtualGateway
+  metadata:
+    name: ingress
+    namespace: gloo-mesh-gateways
+  spec:
+    workloads:
+      - selector:
+          labels:
+            app: istio-ingressgateway
+          namespace: gloo-mesh-gateways
+    listeners: 
+      - http: {}
+        port:
+          number: 80
+        allowedRouteTables:
+          - host: '*'
+            selector:
+              namespace: gloo-mesh-gateways
+  ---
+  apiVersion: networking.gloo.solo.io/v2
+  kind: RouteTable
+  metadata:
+    name: ingress
+    namespace: gloo-mesh-gateways
+  spec:
+    hosts:
+      - '*'
+    virtualGateways:
+      - name: ingress
         namespace: gloo-mesh-gateways
-  listeners: 
-    - http: {}
-      port:
-        number: 80
-      allowedRouteTables:
-        - host: '*'
-          selector:
-            namespace: gloo-mesh-gateways
----
-apiVersion: networking.gloo.solo.io/v2
-kind: RouteTable
-metadata:
-  name: ingress
-  namespace: gloo-mesh-gateways
-spec:
-  hosts:
-    - '*'
-  virtualGateways:
-    - name: ingress
-      namespace: gloo-mesh-gateways
-  workloadSelectors: []
-  http:
-    - name: application-ingress
-      labels:
-        ingress: all
-      delegate:
-        routeTables:
-        - namespace: online-boutique
-EOF
-```
+    workloadSelectors: []
+    http:
+      - name: application-ingress
+        labels:
+          ingress: all
+        delegate:
+          routeTables:
+          - namespace: online-boutique
+  EOF
+  ```
 
 2. The Dev team can now write their own RouteTables in their own namespace. Create a RouteTable to send traffic that matches URI `prefix: /` to the frontend application.
-
-```yaml
-kubectl apply -f - <<EOF
-apiVersion: networking.gloo.solo.io/v2
-kind: RouteTable
-metadata:
-  name: frontend
-  namespace: online-boutique
-spec:
-  workloadSelectors: []
-  http:
-    - matchers:
-      - uri:
-          prefix: /
-      name: frontend
-      labels:
-        route: frontend
-      forwardTo:
-        destinations:
-          - ref:
-              name: frontend
-              namespace: online-boutique
-            port:
-              number: 80
-EOF
-```
+  ```yaml
+  kubectl apply -f - <<EOF
+  apiVersion: networking.gloo.solo.io/v2
+  kind: RouteTable
+  metadata:
+    name: frontend
+    namespace: online-boutique
+  spec:
+    workloadSelectors: []
+    http:
+      - matchers:
+        - uri:
+            prefix: /
+        name: frontend
+        labels:
+          route: frontend
+        forwardTo:
+          destinations:
+            - ref:
+                name: frontend
+                namespace: online-boutique
+              port:
+                number: 80
+  EOF
+  ```
 
 3. Visit the online boutique application in your browser:
-```sh
-export GLOO_GATEWAY=$(kubectl -n gloo-mesh-gateways get svc istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].*}')
-printf "\n\nGloo Gateway available at http://$GLOO_GATEWAY\n"
-```
+  ```sh
+  export GLOO_GATEWAY=$(kubectl -n gloo-mesh-gateways get svc istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].*}')
+  printf "\n\nGloo Gateway available at http://$GLOO_GATEWAY\n"
+  ```
 
 ![Online Boutique](images/online-boutique-1.png)
 
@@ -206,12 +204,12 @@ printf "\n\nGloo Gateway available at http://$GLOO_GATEWAY\n"
   EOF
   ```
 
-1. Get products from the Product Catalog API
+2. Get products from the Product Catalog API
   ```sh
   curl $GLOO_GATEWAY/products
   ```
 
-1. Next, lets route to an endpoint (http://httpbin.org) that is external to the cluster. `ExternalService` resource defines a service that exists outside of the mesh. ExternalServices provide a mechanism to tell Gloo Platform about its existance and how it should be communicated with. Once an ExternalService is created, a RouteTable can be used to send traffic to it. In this example, we will send traffic on URI `prefix: /httpbin` to this external service.
+3. Next, lets route to an endpoint (http://httpbin.org) that is external to the cluster. `ExternalService` resource defines a service that exists outside of the mesh. ExternalServices provide a mechanism to tell Gloo Platform about its existance and how it should be communicated with. Once an ExternalService is created, a RouteTable can be used to send traffic to it. In this example, we will send traffic on URI `prefix: /httpbin` to this external service.
   ```yaml
   kubectl apply -f - <<EOF
   apiVersion: networking.gloo.solo.io/v2
@@ -230,7 +228,7 @@ printf "\n\nGloo Gateway available at http://$GLOO_GATEWAY\n"
   EOF
   ```
 
-1. Create a new `RouteTable` that will match on requests containing the prefix `/httpbin` and route it to the httpbin `ExternalService`. You may have also noticed that we are rewriting the path using `pathRewrite: /` because httpbin.org is listening for `/get`.
+4. Create a new `RouteTable` that will match on requests containing the prefix `/httpbin` and route it to the httpbin `ExternalService`. You may have also noticed that we are rewriting the path using `pathRewrite: /` because httpbin.org is listening for `/get`.
   ```yaml
   kubectl apply -f - <<'EOF'
   apiVersion: networking.gloo.solo.io/v2
@@ -259,7 +257,7 @@ printf "\n\nGloo Gateway available at http://$GLOO_GATEWAY\n"
   EOF
   ```
 
-1. Let's test it.
+5. Let's test it.
   ```sh
   curl -v $GLOO_GATEWAY/httpbin/get
   ```
@@ -270,92 +268,87 @@ printf "\n\nGloo Gateway available at http://$GLOO_GATEWAY\n"
 API key authentication is one of the easiest forms of authentication to implement. Simply create a Kubernetes secret that contains the key and reference it from the `ExtAuthPolicy`. It is recommended to label the secrets so that multiple can be selected and more can be added later. You can select any header to validate against.
 
 1. Create two secrets that Gloo will validate against. One with the api-key `admin` and the other `developer`.
-
-```yaml
-kubectl apply -f - <<EOF
-apiVersion: v1
-kind: Secret
-metadata:
-  name: solo-admin
-  namespace: gloo-mesh-gateways
-  labels:
-    api-keyset: httpbin-users
-type: extauth.solo.io/apikey
-data:
-  api-key: $(echo -n "admin" | base64)
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: solo-developer
-  namespace: gloo-mesh-gateways
-  labels:
-    api-keyset: httpbin-users
-type: extauth.solo.io/apikey
-data:
-  api-key: $(echo -n "developer" | base64)
-EOF
-```
+  ```yaml
+  kubectl apply -f - <<EOF
+  apiVersion: v1
+  kind: Secret
+  metadata:
+    name: solo-admin
+    namespace: gloo-mesh-gateways
+    labels:
+      api-keyset: httpbin-users
+  type: extauth.solo.io/apikey
+  data:
+    api-key: $(echo -n "admin" | base64)
+  ---
+  apiVersion: v1
+  kind: Secret
+  metadata:
+    name: solo-developer
+    namespace: gloo-mesh-gateways
+    labels:
+      api-keyset: httpbin-users
+  type: extauth.solo.io/apikey
+  data:
+    api-key: $(echo -n "developer" | base64)
+  EOF
+  ```
 
 2. Create the API key `ExtAuthPolicy` that will match header `x-api-key` values againt the secrets created above. The `ExtAuthServer` resource configures where authorization checks will be performed
-
-```yaml
-kubectl apply -f - <<EOF
-apiVersion: admin.gloo.solo.io/v2
-kind: ExtAuthServer
-metadata:
-  name: ext-auth-server
-  namespace: gloo-mesh-gateways
-spec:
-  destinationServer:
-    ref:
-      cluster: cluster-1
-      name: ext-auth-service
-      namespace: gloo-mesh-addons
-    port:
-      name: grpc
----
-apiVersion: security.policy.gloo.solo.io/v2
-kind: ExtAuthPolicy
-metadata:
-  name: products-apikey
-  namespace: gloo-mesh-gateways
-spec:
-  applyToRoutes:
-  - route:
-      labels:
-        route: products
-  config:
-    server:
-      name: ext-auth-server
-      namespace: gloo-mesh-gateways
-      cluster: cluster-1
-    glooAuth:
-      configs:
-      - apiKeyAuth:
-          headerName: x-api-key
-          labelSelector:
-            api-keyset: httpbin-users
-EOF
-```
+  ```yaml
+  kubectl apply -f - <<EOF
+  apiVersion: admin.gloo.solo.io/v2
+  kind: ExtAuthServer
+  metadata:
+    name: ext-auth-server
+    namespace: gloo-mesh-gateways
+  spec:
+    destinationServer:
+      ref:
+        cluster: cluster-1
+        name: ext-auth-service
+        namespace: gloo-mesh-addons
+      port:
+        name: grpc
+  ---
+  apiVersion: security.policy.gloo.solo.io/v2
+  kind: ExtAuthPolicy
+  metadata:
+    name: products-apikey
+    namespace: gloo-mesh-gateways
+  spec:
+    applyToRoutes:
+    - route:
+        labels:
+          route: products
+    config:
+      server:
+        name: ext-auth-server
+        namespace: gloo-mesh-gateways
+        cluster: cluster-1
+      glooAuth:
+        configs:
+        - apiKeyAuth:
+            headerName: x-api-key
+            labelSelector:
+              api-keyset: httpbin-users
+  EOF
+  ```
 
 3. Call httpbin without an api key and you will get a 401 unauthorized message.
-
-```sh
-curl -i http://$GLOO_GATEWAY/products
-```
+  ```sh
+  curl -i http://$GLOO_GATEWAY/products
+  ```
 
 4. Call httpbin with the developer api key `x-api-key: developer`
-
-```sh
-curl -H "x-api-key: developer" http://$GLOO_GATEWAY/products
-```
+  ```sh
+  curl -H "x-api-key: developer" http://$GLOO_GATEWAY/products
+  ```
 
 5. Call httpbin with the admin api key `x-api-key: admin`
-
-```sh
-curl -H "x-api-key: admin" http://$GLOO_GATEWAY/products
-```
+  ```sh
+  curl -H "x-api-key: admin" http://$GLOO_GATEWAY/products
+  ```
 
 
 ## Lab 5 - Zero Trust <a name="zerotrust"></a>
@@ -364,70 +357,67 @@ curl -H "x-api-key: admin" http://$GLOO_GATEWAY/products
 Lets enforce a "Zero Trust" networking approach where all inbound traffic to any applications is denied by default.
 
 1. Add a default deny-all policy to the backend-apis-team workspace
-
-```yaml
-cat << EOF | kubectl apply -f -
-apiVersion: security.policy.gloo.solo.io/v2
-kind: AccessPolicy
-metadata:
-  name: allow-nothing
-  namespace: online-boutique
-spec:
-  applyToWorkloads:
-  - selector:
-      namespace: online-boutique
-  config:
-    authn:
-      tlsMode: STRICT
-    authz: {}
-EOF
-```
+  ```yaml
+  cat << EOF | kubectl apply -f -
+  apiVersion: security.policy.gloo.solo.io/v2
+  kind: AccessPolicy
+  metadata:
+    name: allow-nothing
+    namespace: online-boutique
+  spec:
+    applyToWorkloads:
+    - selector:
+        namespace: online-boutique
+    config:
+      authn:
+        tlsMode: STRICT
+      authz: {}
+  EOF
+  ```
 
 2. Refresh the Online Boutique webpage (`echo http://$GLOO_GATEWAY`). You should see an error with message "RBAC: access denied"
 
 3. Add AccessPolicy to explicitly allow traffic between the gateway and the frontend application:
-
-```yaml
-kubectl apply -f - <<EOF
-apiVersion: security.policy.gloo.solo.io/v2
-kind: AccessPolicy
-metadata:
-  name: frontend-api-access
-  namespace: online-boutique
-spec:
-  applyToDestinations:
-  - selector:
-      labels: 
-        app: frontend
-  config:
-    authz:
-      allowedClients:
-      - serviceAccountSelector:
-          name: istio-ingressgateway-1-17-2-service-account
-          namespace: gloo-mesh-gateways
-EOF
-```
+  ```yaml
+  kubectl apply -f - <<EOF
+  apiVersion: security.policy.gloo.solo.io/v2
+  kind: AccessPolicy
+  metadata:
+    name: frontend-api-access
+    namespace: online-boutique
+  spec:
+    applyToDestinations:
+    - selector:
+        labels: 
+          app: frontend
+    config:
+      authz:
+        allowedClients:
+        - serviceAccountSelector:
+            name: istio-ingressgateway-1-17-2-service-account
+            namespace: gloo-mesh-gateways
+  EOF
+  ```
 
 3. Add AccessPolicy to explicitly allow traffic between the microservices online-boutique workspace. As you can see, these policies can be very flexible.
-
-```yaml
-kubectl apply -f - <<EOF
-apiVersion: security.policy.gloo.solo.io/v2
-kind: AccessPolicy
-metadata:
-  name: in-namespace-access
-  namespace: online-boutique
-spec:
-  applyToDestinations:
-  - selector:
-      namespace: online-boutique
-  config:
-    authz:
-      allowedClients:
-      - serviceAccountSelector:
-          namespace: online-boutique
-EOF
-```
+  ```yaml
+  kubectl apply -f - <<EOF
+  apiVersion: security.policy.gloo.solo.io/v2
+  kind: AccessPolicy
+  metadata:
+    name: in-namespace-access
+    namespace: online-boutique
+  spec:
+    applyToDestinations:
+    - selector:
+        namespace: online-boutique
+    config:
+      authz:
+        allowedClients:
+        - serviceAccountSelector:
+            namespace: online-boutique
+  EOF
+  ```
 
 
 ## Lab 6 - Traffic policies
