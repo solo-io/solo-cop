@@ -1,8 +1,7 @@
-# <center>Gloo Platform Quickstart</center>
+# <center>Gloo Platform EKS Workshop</center>
 
 ![](images/solo-gloo-platform-logo.png)
 ## Introduction <a name="introduction"></a>
-
 
 
 Gloo Platform integrates API gateway, API management, Kubernetes Ingress, Istio service mesh and cloud-native networking into a unified application networking platform. It also simplifies multi-cluster management of service mesh for containers and virtual machines. 
@@ -19,7 +18,7 @@ In this workshop, we will deploy Gloo Platform on a single cluster and a subset 
 
 ## Table of Contents
 
-- [Gloo Platform Quickstart](#gloo-platform-quickstart)
+- [Gloo Platform EKS Workshop](#gloo-platform-eks-workshop)
   - [Introduction ](#introduction-)
   - [Table of Contents](#table-of-contents)
   - [Lab 1 - Deploy Gloo Platform ](#lab-1---deploy-gloo-platform-)
