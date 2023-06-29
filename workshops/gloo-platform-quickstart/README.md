@@ -1,10 +1,21 @@
 # <center>Gloo Platform Quickstart</center>
 
+![](images/solo-gloo-platform-logo.png)
 ## Introduction <a name="introduction"></a>
 
-![Gloo Products](images/gloo-products.png)
 
-Gloo Platform integrates API gateway, API management, Kubernetes Ingress, Istio service mesh and cloud-native networking into a unified application networking platform.
+
+Gloo Platform integrates API gateway, API management, Kubernetes Ingress, Istio service mesh and cloud-native networking into a unified application networking platform. It also simplifies multi-cluster management of service mesh for containers and virtual machines. 
+
+![Gloo Platform Components](./images/gloo-platform-components.png)
+
+It's modular components lends itself to scale to multiple clusters and enable .... tiered gateways, DA, HA,.. etc. **TODO**
+
+![Gloo Platform AWS Reference Architecture](images/Gloo-AWS-Ref-Architecture.png)
+
+In this workshop, we will deploy Gloo Platform on a single cluster and a subset of its features. 
+
+![Gloo Platform EKS Workshop Architecture](images/gloo-platform-eks-workshop.png)
 
 ## Table of Contents
 
@@ -19,11 +30,9 @@ Gloo Platform integrates API gateway, API management, Kubernetes Ingress, Istio 
   - [Lab 6 - Traffic policies](#lab-6---traffic-policies)
   - [Lab 7 - Dashboard](#lab-7---dashboard)
 
-
-
 ## Lab 1 - Deploy Gloo Platform <a name="glooplatform"></a>
 
-![Gloo Architecture](images/gloo-architecture.png)
+![Gloo Platform EKS Workshop Architecture](images/gloo-platform-eks-workshop-lab1.png)
 
 Gloo Platform provides a management plane to interact with the service mesh and gateways in your environment. The management plane exposes a unified API that is multi-tenant and multi-cluster aware. It is responsible for taking your supplied configuration and updating the mesh and gateways in your clusters. Included in the management plane is a UI for policy and traffic observability.
 
@@ -64,8 +73,7 @@ printf "\n\nGloo Gateway available at https://$GLOO_GATEWAY\n"
 Note: No application will respond to this address...yet!
 
 ## Lab 2 - Deploy & Expose Online Boutique Sample Application<a name="onlineboutique"></a>
-
-![Gloo Gateway Architecture](images/gloo-gateway-apps-arch.png)
+![Gloo Platform EKS Workshop Architecture Lab 2](images/gloo-platform-eks-workshop-lab2.png)
 
 1. Deploy the Online Boutique microservices to the `online-boutique` namespace.
 
@@ -76,8 +84,6 @@ helm upgrade --install online-boutique --version "5.0.0" oci://us-central1-docke
   --create-namespace \
   --namespace online-boutique
 ```
-
-![Expose Online Boutique](images/expose-apps.png)
 
 To capture the traffic coming to the Gateway and route them to your applications, you need to use the `VirtualGateway` and `RouteTable` resources.
 
@@ -168,8 +174,7 @@ printf "\n\nGloo Gateway available at http://$GLOO_GATEWAY\n"
 ![Online Boutique](images/online-boutique-1.png)
 
 ## Lab 3 - Routing to other workloads <a name="routing"></a>
-
-![Routing](./images/routing.png)
+![Gloo Platform EKS Workshop Architecture Lab 3](images/gloo-platform-eks-workshop-lab3.png)
 
 1. Lets see how easy it is to expose another application. This time, we will match on URI `prefix: /products` and send to the productcatalogservice application.
   ```yaml
@@ -201,12 +206,12 @@ printf "\n\nGloo Gateway available at http://$GLOO_GATEWAY\n"
   EOF
   ```
 
-2. Get products from the Product Catalog API
+1. Get products from the Product Catalog API
   ```sh
   curl $GLOO_GATEWAY/products
   ```
 
-3. Next, lets route to an endpoint (http://httpbin.org) that is external to the cluster. `ExternalService` resource defines a service that exists outside of the mesh. ExternalServices provide a mechanism to tell Gloo Platform about its existance and how it should be communicated with. Once an ExternalService is created, a RouteTable can be used to send traffic to it. In this example, we will send traffic on URI `prefix: /httpbin` to this external service.
+1. Next, lets route to an endpoint (http://httpbin.org) that is external to the cluster. `ExternalService` resource defines a service that exists outside of the mesh. ExternalServices provide a mechanism to tell Gloo Platform about its existance and how it should be communicated with. Once an ExternalService is created, a RouteTable can be used to send traffic to it. In this example, we will send traffic on URI `prefix: /httpbin` to this external service.
   ```yaml
   kubectl apply -f - <<EOF
   apiVersion: networking.gloo.solo.io/v2
@@ -225,7 +230,7 @@ printf "\n\nGloo Gateway available at http://$GLOO_GATEWAY\n"
   EOF
   ```
 
-4. Create a new `RouteTable` that will match on requests containing the prefix `/httpbin` and route it to the httpbin `ExternalService`. You may have also noticed that we are rewriting the path using `pathRewrite: /` because httpbin.org is listening for `/get`.
+1. Create a new `RouteTable` that will match on requests containing the prefix `/httpbin` and route it to the httpbin `ExternalService`. You may have also noticed that we are rewriting the path using `pathRewrite: /` because httpbin.org is listening for `/get`.
   ```yaml
   kubectl apply -f - <<'EOF'
   apiVersion: networking.gloo.solo.io/v2
@@ -254,12 +259,13 @@ printf "\n\nGloo Gateway available at http://$GLOO_GATEWAY\n"
   EOF
   ```
 
-5. Let's test it.
+1. Let's test it.
   ```sh
   curl -v $GLOO_GATEWAY/httpbin/get
   ```
 
 ## Lab 4 - Authentication / API Key <a name="apikey"></a>
+![Gloo Platform EKS Workshop Architecture Lab 4](images/gloo-platform-eks-workshop-lab4.png)
 
 API key authentication is one of the easiest forms of authentication to implement. Simply create a Kubernetes secret that contains the key and reference it from the `ExtAuthPolicy`. It is recommended to label the secrets so that multiple can be selected and more can be added later. You can select any header to validate against.
 
@@ -353,6 +359,7 @@ curl -H "x-api-key: admin" http://$GLOO_GATEWAY/products
 
 
 ## Lab 5 - Zero Trust <a name="zerotrust"></a>
+![Gloo Platform EKS Workshop Architecture Lab 5](images/gloo-platform-eks-workshop-lab5.png)
 
 Lets enforce a "Zero Trust" networking approach where all inbound traffic to any applications is denied by default.
 
@@ -424,6 +431,7 @@ EOF
 
 
 ## Lab 6 - Traffic policies
+![Gloo Platform EKS Workshop Architecture Lab 6](images/gloo-platform-eks-workshop-lab6.png)
 
 Implement intelligent routing rules for the apps in your cluster and optimize the responses to incoming requests with Gloo traffic policies. Traffic policies let you apply internal security and compliance standards to individual routes, destinations, or an entire workload so that you can enforce your networking strategy throughout your microservices architecture.
 
