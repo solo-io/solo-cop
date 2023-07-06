@@ -1,0 +1,189 @@
+telemetryCollector:
+  enabled: true
+  securityContext:
+    runAsUser: 0
+    allowPrivilegeEscalation: false
+  extraHostPathMounts:
+    - name: varlibdockercontainers
+      hostPath: /var/lib/docker/containers
+      mountPath: /var/lib/docker/containers
+      readOnly: true
+    - name: varlog
+      hostPath: /var/log
+      mountPath: /var/log
+      readOnly: true
+    - hostPath: /etc/machine-id
+      mountPath: /etc/machine-id
+      name: etcmachineid
+      readOnly: true
+telemetryCollectorCustomization:
+  extraReceivers:
+    otlp/mesh:
+      protocols:
+        grpc:
+          endpoint: 0.0.0.0:4317
+        http:
+          endpoint: 0.0.0.0:4318
+    filelog:
+      exclude:
+      - /var/log/pods/*telemetry-collector*_*/*/*.log
+      include:
+      - /var/log/pods/app*/*/*.log
+      include_file_name: false
+      include_file_path: true
+      operators:
+      - id: get-format
+        routes:
+        - expr: body matches "^\\{"
+          output: parser-docker
+        - expr: body matches "^[^ Z]+ "
+          output: parser-crio
+        - expr: body matches "^[^ Z]+Z"
+          output: parser-containerd
+        type: router
+      - id: parser-crio
+        output: extract_metadata_from_filepath
+        regex: ^(?P<time>[^ Z]+) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) ?(?P<log>.*)$
+        timestamp:
+          layout: 2006-01-02T15:04:05.999999999Z07:00
+          layout_type: gotime
+          parse_from: attributes.time
+        type: regex_parser
+      - id: parser-containerd
+        output: extract_metadata_from_filepath
+        regex: ^(?P<time>[^ ^Z]+Z) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) ?(?P<log>.*)$
+        timestamp:
+          layout: '%Y-%m-%dT%H:%M:%S.%LZ'
+          parse_from: attributes.time
+        type: regex_parser
+      - id: parser-docker
+        output: extract_metadata_from_filepath
+        timestamp:
+          layout: '%Y-%m-%dT%H:%M:%S.%LZ'
+          parse_from: attributes.time
+        type: json_parser
+      - id: extract_metadata_from_filepath
+        parse_from: attributes["log.file.path"]
+        regex: ^.*\/(?P<namespace>[^_]+)_(?P<pod_name>[^_]+)_(?P<uid>[a-f0-9\-]+)\/(?P<container_name>[^\._]+)\/(?P<restart_count>\d+)\.log$
+        type: regex_parser
+      - from: attributes.stream
+        to: attributes["log.iostream"]
+        type: move
+      - from: attributes.container_name
+        to: resource["k8s.container.name"]
+        type: move
+      - from: attributes.namespace
+        to: resource["k8s.namespace.name"]
+        type: move
+      - from: attributes.pod_name
+        to: resource["k8s.pod.name"]
+        type: move
+      - from: attributes.restart_count
+        to: resource["k8s.container.restart_count"]
+        type: move
+      - from: attributes.uid
+        to: resource["k8s.pod.uid"]
+        type: move
+      - from: attributes.log
+        to: body
+        type: move
+      start_at: beginning
+  extraExporters:
+    logging/mesh:
+      verbosity: normal
+      sampling_initial: 5
+      sampling_thereafter: 200
+  extraProcessors:
+    k8sattributes:
+      extract:
+        metadata:
+        - k8s.namespace.name
+        - k8s.deployment.name
+        - k8s.statefulset.name
+        - k8s.daemonset.name
+        - k8s.cronjob.name
+        - k8s.job.name
+        - k8s.node.name
+        - k8s.pod.name
+        - k8s.pod.uid
+        - k8s.pod.start_time
+        - k8s.node.name
+      filter:
+        node_from_env_var: K8S_NODE_NAME
+      passthrough: false
+      pod_association:
+      - sources:
+        - from: resource_attribute
+          name: ip
+      - sources:
+        - from: resource_attribute
+          name: k8s.pod.ip
+      - sources:
+        - from: resource_attribute
+          name: k8s.pod.uid
+      - sources:
+        - from: resource_attribute
+          name: host.name
+      - sources:
+        - from: connection
+          name: ip
+    transform:
+      # metric_statements:
+      #   - context: resource
+      #     statements:
+      #       - replace_all_patterns(attributes, "key", "k8s.(statefulset|deployment|daemonset).name", "resource")
+      #       - replace_all_patterns(attributes, "key", "service.name", "job")
+      #       - delete_key(attributes, "k8s.pod.uid")
+      #       - delete_key(attributes, "k8s.container.restart_count")
+      #       - replace_all_patterns(attributes, "key", "k8s.node.name", "node")
+      #       - replace_all_patterns(attributes, "key", "k8s.namespace.name", "k8s_namespace")
+      #       - replace_all_patterns(attributes, "key", "k8s.pod.name", "instance")
+      #       - replace_all_patterns(attributes, "key", "k8s.container.name", "k8s_container")
+      log_statements:
+        - context: resource
+          statements:
+            - delete_key(attributes, "k8s.pod.uid")
+            - delete_key(attributes, "k8s.container.restart_count")
+            - replace_all_patterns(attributes, "key", "k8s.namespace.name", "namespace")
+            - replace_all_patterns(attributes, "key", "k8s.pod.name", "instance")
+            - replace_all_patterns(attributes, "key", "k8s.container.name", "k8s_container")
+        - context: log
+          statements:
+            - set(resource.attributes["loki.format"], "logfmt") where severity_text != ""
+            - delete_key(attributes, "logtag")
+            - delete_key(attributes, "log.file.path")
+    resource/tempo:
+      attributes:
+        - key: "service.name"
+          from_attribute: "service"
+          action: insert
+        - key: "service"
+          action: delete
+    resource:
+      attributes:
+        - key: net.host.port
+          action: delete
+        - key: host
+          from_attribute: "host.name"
+          action: upsert
+  extraPipelines:
+    logs/accesslogs:
+      receivers:
+        - otlp/mesh
+      processors: [k8sattributes, resource, transform, memory_limiter, batch]
+      exporters: 
+        - otlp
+        # - logging/mesh
+    logs/k8slogs:
+      receivers:
+        - filelog
+      processors: [ k8sattributes, resource, transform, memory_limiter, batch ]
+      exporters: 
+        - otlp
+        # - logging/mesh
+    traces/mesh: 
+      receivers: [otlp/mesh]
+      processors: [ resource, resource/tempo, memory_limiter, batch ]
+      exporters:
+        - otlp
+        - logging/mesh
