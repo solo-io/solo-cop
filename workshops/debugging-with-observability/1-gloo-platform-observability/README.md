@@ -274,10 +274,11 @@ The App is very simple. It leverages [Fake Service](https://github.com/nicholasj
 
 ![app](./images/demo-app.png)
 
+**Notice** that the request do not use the kubernetes standard `svc-name.namespace.svc.cluster.local` domain, but the abstraction that Gloo Platform offers. In this case `*.global` domain.
+
 So we have already everything deployed:
 ![architecture](./images/architecture.png)
 
-**Notice** that the request do not use the kubernetes standard `svc-name.namespace.svc.cluster.local` domain, but the abstraction that Gloo Platform offers. In this case `*.global` domain.
 
 Reload several time the application to create traffic:
 
