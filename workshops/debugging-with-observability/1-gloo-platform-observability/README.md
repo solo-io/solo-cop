@@ -274,9 +274,13 @@ The App is very simple. It leverages [Fake Service](https://github.com/nicholasj
 
 ![app](./images/demo-app.png)
 
+So we have already everything deployed:
+![architecture](./images/architecture.png)
+
 **Notice** that the request do not use the kubernetes standard `svc-name.namespace.svc.cluster.local` domain, but the abstraction that Gloo Platform offers. In this case `*.global` domain.
 
 Reload several time the application to create traffic:
+
 ```sh
 for i in {1..25}; do
 curl -I -k http://${ENDPOINT_HTTP_GW_CLUSTER1}
@@ -288,8 +292,6 @@ Go to grafana and login with `admin/password`
 ```sh
 echo http://$(kubectl --context ${MGMT} get svc grafana -n observability -o jsonpath='{.status.loadBalancer.ingress[0].*}')
 ```
-
-
 
 Go to dashboard and select the `default` one. It will show logs and traces for the last 5 minutes.
 
@@ -307,4 +309,3 @@ Similary, on the traces side, you can also click on the Logs button and being re
 In this demo we have seen how to install Gloo Platform and configure it to collect telemetry signals from the applications deployed in the mesh.
 
 We have also seen how to configure the observability stack to collect logs and traces and how to visualize them in Grafana.
-
