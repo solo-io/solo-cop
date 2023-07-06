@@ -1,0 +1,22 @@
+apiVersion: telemetry.istio.io/v1alpha1
+kind: Telemetry
+metadata:
+  name: default
+  namespace: istio-system
+spec:
+  tracing:
+  - providers:
+      - name: opentelemetry
+    randomSamplingPercentage: 100
+    disableSpanReporting: false
+    customTags:
+      instance:
+        environment:
+          name: POD_NAME
+      namespace:
+        environment:
+          name: POD_NAMESPACE
+  accessLogging:
+  - providers:
+    - name: envoyOtelAls
+    - name: envoyFileAccessLog

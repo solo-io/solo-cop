@@ -1,0 +1,21 @@
+gateway:
+  enabled: false
+loki:
+  commonConfig:
+    replication_factor: 1
+  storage:
+    type: 'filesystem'
+  auth_enabled: false
+monitoring:
+  selfMonitoring:
+    enabled: false
+    grafanaAgent:
+      installOperator: false
+  lokiCanary:
+    enabled: false
+  serviceMonitor:
+    enabled: false
+singleBinary:
+  replicas: 1
+test:
+  enabled: false

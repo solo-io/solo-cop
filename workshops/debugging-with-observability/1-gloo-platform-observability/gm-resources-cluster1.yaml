@@ -1,0 +1,178 @@
+apiVersion: admin.gloo.solo.io/v2
+kind: WorkspaceSettings
+metadata:
+  name: gateways
+  namespace: istio-ingress
+spec:
+  importFrom:
+  - workspaces:
+    - selector:
+        allow_ingress: "true"
+    resources:
+    - kind: SERVICE
+    - kind: ALL
+      labels:
+        expose: "true"
+  exportTo:
+  - workspaces:
+    - selector:
+        allow_ingress: "true"
+    resources:
+    - kind: SERVICE
+---
+apiVersion: admin.gloo.solo.io/v2
+kind: WorkspaceSettings
+metadata:
+  name: app
+  namespace: app
+spec:
+  importFrom:
+  - workspaces:
+    - name: gateways
+    resources:
+    - kind: SERVICE
+  exportTo:
+  - workspaces:
+    - name: gateways
+    resources:
+    - kind: SERVICE
+      labels:
+        app: app1
+    - kind: SERVICE
+      labels:
+        app: app2
+    - kind: SERVICE
+      labels:
+        app: app3
+    - kind: ALL
+      labels:
+        expose: "true"
+---
+apiVersion: networking.gloo.solo.io/v2
+kind: VirtualGateway
+metadata:
+  name: north-south-gw
+  namespace: istio-ingress
+spec:
+  workloads:
+    - selector:
+        labels:
+          istio: ingressgateway
+  listeners: 
+    - http: {}
+      port:
+        number: 80
+      allowedRouteTables:
+        - host: '*'
+---
+apiVersion: networking.gloo.solo.io/v2
+kind: RouteTable
+metadata:
+  name: main
+  namespace: istio-ingress
+spec:
+  hosts:
+    - '*'
+  virtualGateways:
+    - name: north-south-gw
+      namespace: istio-ingress
+      cluster: cluster1
+  workloadSelectors: []
+  http:
+    - name: root
+      matchers:
+      - uri:
+          prefix: /
+      delegate:
+        routeTables:
+          - labels:
+              expose: "true"
+---
+apiVersion: networking.gloo.solo.io/v2
+kind: RouteTable
+metadata:
+  name: app
+  namespace: app
+  labels:
+    expose: "true"
+spec:
+  http:
+    - name: app
+      matchers:
+      - uri:
+          prefix: /
+      forwardTo:
+        destinations:
+          - ref:
+              name: app1
+              namespace: app
+              cluster: cluster1
+            port:
+              number: 9090
+---
+apiVersion: networking.gloo.solo.io/v2
+kind: VirtualDestination
+metadata:
+  name: app2
+  namespace: app
+  labels:
+    expose: "true"
+    failover: "true"
+spec:
+  hosts:
+  - app2.global
+  services:
+  - namespace: app
+    labels:
+      app: app2
+  ports:
+    - number: 9090
+      protocol: HTTP
+---
+apiVersion: networking.gloo.solo.io/v2
+kind: VirtualDestination
+metadata:
+  name: app3
+  namespace: app
+  labels:
+    expose: "true"
+    failover: "true"
+spec:
+  hosts:
+  - app3.global
+  services:
+  - namespace: app
+    labels:
+      app: app3
+      version: v1
+  ports:
+    - number: 9090
+      protocol: HTTP
+---
+apiVersion: networking.gloo.solo.io/v2
+kind: RouteTable
+metadata:
+  name: app3
+  namespace: app
+  labels:
+    expose: "true"
+spec:
+  hosts:
+    - app3.global
+  workloadSelectors:
+    - selector:
+        labels: 
+          app: app2
+  http:
+    - name: app3
+      matchers:
+      - uri:
+          prefix: /
+      forwardTo:
+        destinations:
+          - ref:
+              name: app3
+              namespace: app
+            kind: VIRTUAL_DESTINATION
+            port:
+              number: 9090

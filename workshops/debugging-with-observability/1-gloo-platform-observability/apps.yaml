@@ -1,0 +1,160 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: app1
+  labels:
+    app: app1
+spec:
+  selector:
+    app: app1
+  ports:
+  - name: http
+    protocol: TCP
+    port: 9090
+    targetPort: 9090
+  - name: metrics
+    protocol: TCP
+    port: 9102
+    targetPort: 9102
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app1
+  labels:
+    app: app1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: app1
+  template:
+    metadata:
+      labels:
+        app: app1
+    spec:
+      containers:
+      - name: app1
+        image: nicholasjackson/fake-service:v0.20.0
+        ports:
+        - containerPort: 9090
+        env:
+        - name: "LISTEN_ADDR"
+          value: "0.0.0.0:9090"
+        - name: "UPSTREAM_URIS"
+          value: "http://app2.global:9090"
+        - name: "NAME"
+          value: "app1"
+        - name: "MESSAGE"
+          value: "I am app1"
+        - name: "HTTP_CLIENT_KEEP_ALIVES"
+          value: "true"
+        - name: "LOG_LEVEL"
+          value: "debug"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app2
+  labels:
+    app: app2
+spec:
+  selector:
+    app: app2
+  ports:
+  - name: http
+    protocol: TCP
+    port: 9090
+    targetPort: 9090
+  - name: metrics
+    protocol: TCP
+    port: 9102
+    targetPort: 9102
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app2
+  labels:
+    app: app2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: app2
+  template:
+    metadata:
+      labels:
+        app: app2
+    spec:
+      containers:
+      - name: app2
+        image: nicholasjackson/fake-service:v0.20.0
+        ports:
+        - containerPort: 9090
+        env:
+        - name: "LISTEN_ADDR"
+          value: "0.0.0.0:9090"
+        - name: "UPSTREAM_URIS"
+          value: "http://app3.global:9090"
+        - name: "NAME"
+          value: "app2"
+        - name: "MESSAGE"
+          value: "I am app2"
+        - name: "HTTP_CLIENT_KEEP_ALIVES"
+          value: "true"
+        - name: "LOG_LEVEL"
+          value: "debug"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app3-v1
+  labels:
+    app: app3
+    version: v1
+spec:
+  selector:
+    app: app3-v1
+  ports:
+  - name: http
+    protocol: TCP
+    port: 9090
+    targetPort: 9090
+  - name: metrics
+    protocol: TCP
+    port: 9102
+    targetPort: 9102
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app3-v1
+  labels:
+    app: app3-v1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: app3-v1
+  template:
+    metadata:
+      labels:
+        app: app3-v1
+    spec:
+      containers:
+      - name: app3-v1
+        image: nicholasjackson/fake-service:v0.20.0
+        ports:
+        - containerPort: 9090
+        env:
+        - name: "LISTEN_ADDR"
+          value: "0.0.0.0:9090"
+        - name: "NAME"
+          value: "app3-v1"
+        - name: "MESSAGE"
+          value: "I am app3 version 1"
+        - name: "HTTP_CLIENT_KEEP_ALIVES"
+          value: "true"
+        - name: "LOG_LEVEL"
+          value: "debug"

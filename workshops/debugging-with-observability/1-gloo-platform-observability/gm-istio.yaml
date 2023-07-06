@@ -1,0 +1,183 @@
+apiVersion: admin.gloo.solo.io/v2
+kind: IstioLifecycleManager
+metadata:
+  name: istiod-control-plane
+  namespace: gloo-mesh
+spec:
+  installations:
+      # The revision for this installation, such as 1-14
+    - revision: 1-17
+      # List all workload clusters to install Istio into
+      clusters:
+      - name: cluster1
+        # If set to true, the spec for this revision is applied in the cluster
+        defaultRevision: true
+      istioOperatorSpec:
+        # Only the control plane components are installed
+        # (https://istio.io/latest/docs/setup/additional-setup/config-profiles/)
+        profile: minimal
+        values:
+          global:
+            meshID: gloomesh
+            multiCluster:
+              clusterName: cluster1
+            network: cluster1
+        # Solo.io Istio distribution repository; required for Gloo Istio.
+        # You get the repo key from your Solo Account Representative.
+        hub: us-docker.pkg.dev/gloo-mesh/istio-workshops
+        # Any Solo.io Gloo Istio tag
+        tag: 1.17.2-solo
+        namespace: istio-system
+        # Mesh configuration
+        meshConfig:
+          extensionProviders:
+            - name: envoyFileAccessLog
+              envoyFileAccessLog:
+                path: /dev/stdout
+                logFormat:
+                  labels:
+                    "istio_client_type": "envoyFileAccessLog"
+                    "instance": "%ENVIRONMENT(POD_NAME)%"
+                    "namespace": "%ENVIRONMENT(POD_NAMESPACE)%"
+                    "startTime": "[%START_TIME%]"
+                    "method": "%REQ(:METHOD)%"
+                    "path": "%REQ(X-ENVOY-ORIGINAL-PATH?:PATH)%"
+                    "protocol": "%PROTOCOL%"
+                    "reponseCode": "%RESPONSE_CODE%"
+                    "reponseFlags": "%RESPONSE_FLAGS%"
+                    "failureRease": "%UPSTREAM_TRANSPORT_FAILURE_REASON%"
+                    "bytesReceived": "%BYTES_RECEIVED% %BYTES_SENT%"
+                    "duration": "%DURATION%"
+                    "envoyUpstreamServiceTime": "%RESP(X-ENVOY-UPSTREAM-SERVICE-TIME)%"
+                    "forwardedFor": "%REQ(X-FORWARDED-FOR)%"
+                    "userAgent": "%REQ(USER-AGENT)%"
+                    "requestID": "%REQ(X-REQUEST-ID)%"
+                    "authority": "%REQ(:AUTHORITY)%"
+                    "host": "%UPSTREAM_HOST%"
+                    "upstreamCluster": "%UPSTREAM_CLUSTER%"
+                    "upstreamLocalAdress": "%UPSTREAM_LOCAL_ADDRESS%"
+                    "downstreamLocalAddress": "%DOWNSTREAM_LOCAL_ADDRESS%"
+                    "downstreamRemoteAddress": "%DOWNSTREAM_REMOTE_ADDRESS%"
+                    "requestedServerName": "%REQUESTED_SERVER_NAME%"
+                    "routeName": "%ROUTE_NAME%"
+                    "traceparent": "%REQ(traceparent)%"
+                    "xForwardedClientCert" : "%REQ(x-forwarded-client-cert)%"
+
+            - name: envoyOtelAls
+              envoyOtelAls:
+                service: "gloo-telemetry-collector.gloo-mesh.svc.cluster.local"
+                port: "4317"
+                logFormat:
+                  text: |
+                    [ACCESS LOGS OTEL] [%START_TIME%] "%REQ(:METHOD)% %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)% %PROTOCOL%" %RESPONSE_CODE% %RESPONSE_FLAGS% %RESPONSE_CODE_DETAILS% %CONNECTION_TERMINATION_DETAILS% "%UPSTREAM_TRANSPORT_FAILURE_REASON%" %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(X-ENVOY-UPSTREAM-SERVICE-TIME)% "%REQ(X-FORWARDED-FOR)%" "%REQ(USER-AGENT)%" "%REQ(X-REQUEST-ID)%" "%REQ(:AUTHORITY)%" "%UPSTREAM_HOST%" %UPSTREAM_CLUSTER% %UPSTREAM_LOCAL_ADDRESS% %DOWNSTREAM_LOCAL_ADDRESS% %DOWNSTREAM_REMOTE_ADDRESS% %REQUESTED_SERVER_NAME% %ROUTE_NAME% "traceparent": "%REQ(traceparent)%"
+                  labels:
+                    "istio_client_type": "envoyOtelAls"
+                    "startTime": "[%START_TIME%]"
+                    "method": "%REQ(:METHOD)%"
+                    "path": "%REQ(X-ENVOY-ORIGINAL-PATH?:PATH)%"
+                    "protocol": "%PROTOCOL%"
+                    "reponseCode": "%RESPONSE_CODE%"
+                    "authority": "%REQ(:AUTHORITY)%"
+                    "host": "%UPSTREAM_HOST%"
+                    "traceparent": "%REQ(traceparent)%"
+                    "instance": "%ENVIRONMENT(POD_NAME)%"
+                    "namespace": "%ENVIRONMENT(POD_NAMESPACE)%"
+                    "xForwardedClientCert" : "%REQ(x-forwarded-client-cert)%"
+            - name: opentelemetry
+              opentelemetry:
+                service: "gloo-telemetry-collector.gloo-mesh.svc.cluster.local"
+                port: "4317"
+          defaultConfig:
+            # Wait for the istio-proxy to start before starting application pods
+            holdApplicationUntilProxyStarts: true
+            # Enable Gloo metrics service. Required for Gloo UI
+            envoyMetricsService:
+              address: gloo-mesh-agent.gloo-mesh:9977
+            # Enable Gloo accesslog service. Required for Gloo Access Logging
+            envoyAccessLogService:
+              address: gloo-mesh-agent.gloo-mesh:9977
+            proxyMetadata:
+              # Enable Istio agent to handle DNS requests for known hosts
+              # Unknown hosts are automatically resolved using upstream DNS servers
+              # in resolv.conf (for proxy-dns)
+              ISTIO_META_DNS_CAPTURE: "true"
+              # Enable automatic address allocation (for proxy-dns)
+              ISTIO_META_DNS_AUTO_ALLOCATE: "true"
+          # Set the default behavior of the sidecar for handling outbound traffic
+          # from the application
+          outboundTrafficPolicy:
+            mode: ALLOW_ANY
+          # The administrative root namespace for Istio configuration
+          rootNamespace: istio-system
+        # Traffic management
+        components:
+          pilot:
+            k8s:
+              env:
+            # Allow multiple trust domains (Required for Gloo Mesh east/west routing)
+              - name: PILOT_SKIP_VALIDATE_TRUST_DOMAIN
+                value: "true"
+              # Reload cacerts when cert-manager changes it
+              - name: AUTO_RELOAD_PLUGIN_CERTS
+                value: "true"
+---
+apiVersion: admin.gloo.solo.io/v2
+kind: GatewayLifecycleManager
+metadata:
+  name: all-gateways
+  namespace: gloo-mesh
+spec:
+  installations:
+      # The revision for this installation, such as 1-14
+    - gatewayRevision: 1-17
+      # List all workload clusters to install Istio into
+      clusters:
+      - name: cluster1
+        # If set to true, the spec for this revision is applied in the cluster
+        activeGateway: true
+      istioOperatorSpec:
+        # No control plane components are installed
+        profile: empty
+        # Solo.io Istio distribution repository; required for Gloo Istio.
+        # You get the repo key from your Solo Account Representative.
+        hub: us-docker.pkg.dev/gloo-mesh/istio-workshops
+        # The Solo.io Gloo Istio tag
+        tag: 1.17.2-solo
+        components:
+          ingressGateways:
+            - enabled: true
+              k8s:
+                service:
+                  ports:
+                    - name: http2
+                      port: 80
+                      protocol: TCP
+                      targetPort: 8080
+                    - name: https
+                      port: 443
+                      protocol: TCP
+                      targetPort: 8443
+                  selector:
+                    app: istio-ingressgateway
+                    istio: ingressgateway
+                  type: LoadBalancer
+              name: istio-ingressgateway
+              namespace: istio-ingress
+            - enabled: true
+              name: istio-eastwestgateway
+              namespace: istio-eastwest
+              label:
+                istio: eastwestgateway
+              k8s:
+                env:
+                  - name: ISTIO_META_ROUTER_MODE
+                    value: sni-dnat
+                service:
+                  ports:
+                    - port: 15443
+                      targetPort: 15443
+                      # Gloo Mesh looks for this default name 'tls' on a gateway
+                      name: tls
+                  selector:
+                    istio: eastwestgateway
+                  type: LoadBalancer

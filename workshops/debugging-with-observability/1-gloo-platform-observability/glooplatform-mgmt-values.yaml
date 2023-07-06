@@ -1,0 +1,60 @@
+glooMgmtServer:
+  enabled: true
+  ports:
+    healthcheck: 8091
+prometheus:
+  enabled: true
+redis:
+  deployment:
+    enabled: true
+telemetryGateway:
+  enabled: true
+  service:
+    type: LoadBalancer
+glooUi:
+  enabled: true
+  serviceType: LoadBalancer
+telemetryGatewayCustomization:
+  extraExporters:
+    loki/mesh:
+      endpoint: http://loki.observability:3100/loki/api/v1/push
+      tls:
+        insecure: true
+    otlp/tempo:
+      endpoint: tempo.observability:4317
+      tls:
+        insecure: true
+    logging/mesh:
+      verbosity: detailed
+      sampling_initial: 5
+      sampling_thereafter: 200
+  extraProcessors:
+    resource/mesh:
+      attributes:
+      - action: insert
+        key: loki.format
+        value: json
+      - action: insert
+        key: loki.resource.labels
+        value: namespace, instance
+    attributes/mesh:
+      actions:
+        - action: insert
+          key: loki.attribute.labels
+          value: istio_client_type
+  extraPipelines:
+    logs/mesh:
+      receivers: [otlp]
+      processors:
+        - batch
+        - resource/mesh
+        - attributes/mesh
+      exporters: 
+        - loki/mesh
+        # - logging/mesh
+    traces/mesh: 
+      receivers: [otlp]
+      processors: [batch]
+      exporters:
+        - otlp/tempo
+        - logging/mesh
