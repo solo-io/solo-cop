@@ -8,7 +8,7 @@ The goal is to show how simple is to configure the Gloo Platform to execute thes
 
 ## Prerequisites
 
-- You need to have completed the [previous workshop](../2-test-in-production/README.md) of the series.
+- You need to have completed the [previous workshop](../debugging-with-observability/1-gloo-platform-observability/README.md) of the series.
 - Having [jq](https://jqlang.github.io/jq/) or similar installed in your machine to parse JSON files.
 
 ## Final Architecture
