@@ -2,13 +2,13 @@
 
 This workshop aims to provide you with practical insights and hands-on experience in leveraging Observability tools within a Service Mesh (Gloo Platform) to enhance your testing strategies in a production environment.
 
-With the application deployed in the [previous workshop](../2-test-in-production/README.md) of the series, you will deploy an app-v2 and Test in Production using one of the strategies described in this post (Dark Launch).
+With the application deployed in the [previous workshop](../1-gloo-platform-observability/README.md) of the series, you will deploy an app-v2 and Test in Production using one of the strategies described in this post (Dark Launch).
 
 The goal is to show how simple is to configure the Gloo Platform to execute these strategies and speed up the development lifecycle.
 
 ## Prerequisites
 
-- You need to have completed the [previous workshop](../debugging-with-observability/1-gloo-platform-observability/README.md) of the series.
+- You need to have completed the [previous workshop](../1-gloo-platform-observability/README.md) of the series.
 - Having [jq](https://jqlang.github.io/jq/) or similar installed in your machine to parse JSON files.
 
 ## Final Architecture
