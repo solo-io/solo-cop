@@ -92,7 +92,7 @@ kubectl --context=$CLUSTER1 apply -n test -f ./app3-v2.yaml
 
 Notice that this application comes with a paramter to create an error with a probability of 33%. The intention is to simulate a new version of the service with a bug that you discovered when testing.
 
-```yaml,nocopy
+```yaml,no-copy
 [...]
     spec:
       containers:
@@ -133,7 +133,7 @@ kubectl --context=$CLUSTER1 apply -f ./test-vd.yaml
 
 **Note:** Notice that the `RouteTable` object defines a header to route traffic either production version or testing version. That is the unique header the tester will use to run tests.
 
-```yaml,nocopy
+```yaml,no-copy
         - name: x-feature-id
           value: "1234"
 ```
@@ -154,7 +154,7 @@ curl "http://${ENDPOINT_HTTP_GW_CLUSTER1} | jq"
 
 You will see the old version (`version 1`) of the application (`app3`) working smoothly.
 
-```json,nocopy
+```json,no-copy
 {
   [...]
   "code": "200",
@@ -184,7 +184,7 @@ done
 
 You will see:
 
-```yaml,nocopy
+```yaml,no-copy
           "code": 500,
           "error": "Error processing upstream request: http://app3.global:9090/, expected code 200, got 500"
       "code": 500,
@@ -211,7 +211,7 @@ echo http://$(kubectl --context ${MGMT} get svc grafana -n observability -o json
 
 You will see in `Explore`, adding the give query for Loki, the error from the Istio Access Logs:
 
-```sh,nocopy
+```sh,no-copy
 {istio_client_type="envoyOtelAls"} |= `500`
 ```
 
