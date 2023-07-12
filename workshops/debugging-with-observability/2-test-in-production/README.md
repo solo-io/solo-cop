@@ -92,7 +92,7 @@ kubectl --context=$CLUSTER1 apply -n test -f ./app3-v2.yaml
 
 Notice that this application comes with a paramter to create an error with a probability of 33%. The intention is to simulate a new version of the service with a bug that you discovered when testing.
 
-```json,nocopy
+```yaml,nocopy
 [...]
     spec:
       containers:
