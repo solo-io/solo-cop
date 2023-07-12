@@ -102,7 +102,7 @@ helm upgrade --kube-context=$MGMT --install grafana grafana/grafana -n observabi
 
 Notice that there is Default dashboard (`./grafana-dashboard-configmap.yaml`) installed as `ConfigMap` to be used in this demo as a sample.
 
-```yaml,no-copy
+```yaml,nocopy
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -121,7 +121,7 @@ data:
 
 As well, there is an interesting configuration to let Grafana create a link between Loki logs and Tempo traces and viceversa.
 
-```yaml,no-copy
+```yaml,nocopy
 datasources:
  datasources.yaml:
    apiVersion: 1
