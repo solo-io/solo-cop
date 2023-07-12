@@ -241,6 +241,8 @@ To do so, you can configure the platform to define a Canary Release strategy. Th
 
 ![grafana](./images/canary.png)
 
+This task is left for you to do it. You can follow the [Argo Rollouts documentation](https://argoproj.github.io/argo-rollouts/) to configure it.
+
 ## Conclusion
 
 In this demo we have seen, based on the previous workshop, how easy is to configure Gloo Platform to perform a Dark Launch and Test in Production a new version of an application.
