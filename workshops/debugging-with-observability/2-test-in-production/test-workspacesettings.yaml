@@ -1,0 +1,12 @@
+apiVersion: admin.gloo.solo.io/v2
+kind: WorkspaceSettings
+metadata:
+  name: test
+  namespace: test
+spec:
+  exportTo:
+  - workspaces:
+    - name: app
+    resources:
+    - kind: SERVICE
+    - kind: VIRTUAL_DESTINATION

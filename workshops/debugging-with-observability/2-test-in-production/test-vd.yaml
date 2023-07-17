@@ -1,0 +1,19 @@
+apiVersion: networking.gloo.solo.io/v2
+kind: VirtualDestination
+metadata:
+  name: app3-v2
+  namespace: test
+  labels:
+    expose: "true"
+    failover: "true"
+spec:
+  hosts:
+  - app3v2.global
+  services:
+  - namespace: test
+    labels:
+      app: app3
+      version: v2
+  ports:
+    - number: 9090
+      protocol: HTTP

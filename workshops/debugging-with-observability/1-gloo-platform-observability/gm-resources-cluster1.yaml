@@ -6,19 +6,10 @@ metadata:
 spec:
   importFrom:
   - workspaces:
-    - selector:
-        allow_ingress: "true"
+    - name: app
     resources:
     - kind: SERVICE
-    - kind: ALL
-      labels:
-        expose: "true"
-  exportTo:
-  - workspaces:
-    - selector:
-        allow_ingress: "true"
-    resources:
-    - kind: SERVICE
+    - kind: ROUTE_TABLE
 ---
 apiVersion: admin.gloo.solo.io/v2
 kind: WorkspaceSettings
@@ -38,13 +29,7 @@ spec:
     - kind: SERVICE
       labels:
         app: app1
-    - kind: SERVICE
-      labels:
-        app: app2
-    - kind: SERVICE
-      labels:
-        app: app3
-    - kind: ALL
+    - kind: ROUTE_TABLE
       labels:
         expose: "true"
 ---

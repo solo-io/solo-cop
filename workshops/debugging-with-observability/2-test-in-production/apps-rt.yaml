@@ -1,0 +1,42 @@
+apiVersion: networking.gloo.solo.io/v2
+kind: RouteTable
+metadata:
+  name: app3
+  namespace: app
+  labels:
+    expose: "true"
+spec:
+  hosts:
+    - app3.global
+  workloadSelectors:
+    - selector:
+        labels: 
+          app: app2
+  http:
+    - name: app3-v2
+      matchers:
+      - uri:
+          prefix: /
+        headers:
+        - name: x-feature-id
+          value: "1234"
+      forwardTo:
+        destinations:
+          - ref:
+              name: app3-v2
+              namespace: test
+            kind: VIRTUAL_DESTINATION
+            port:
+              number: 9090
+    - name: app3
+      matchers:
+      - uri:
+          prefix: /
+      forwardTo:
+        destinations:
+          - ref:
+              name: app3
+              namespace: app
+            kind: VIRTUAL_DESTINATION
+            port:
+              number: 9090

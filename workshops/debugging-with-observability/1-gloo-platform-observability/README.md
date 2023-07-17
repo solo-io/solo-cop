@@ -284,7 +284,7 @@ Reload several time the application to create traffic:
 
 ```sh
 for i in {1..25}; do
-curl -I -k http://${ENDPOINT_HTTP_GW_CLUSTER1}
+curl -I http://${ENDPOINT_HTTP_GW_CLUSTER1}
 done
 ```
 

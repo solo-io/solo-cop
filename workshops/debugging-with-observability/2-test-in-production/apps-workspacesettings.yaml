@@ -1,0 +1,26 @@
+apiVersion: admin.gloo.solo.io/v2
+kind: WorkspaceSettings
+metadata:
+  name: app
+  namespace: app
+spec:
+  importFrom:
+  - workspaces:
+    - name: gateways
+    resources:
+    - kind: SERVICE
+  - workspaces:
+    - name: test
+    resources:
+    - kind: SERVICE
+    - kind: VIRTUAL_DESTINATION
+  exportTo:
+  - workspaces:
+    - name: gateways
+    resources:
+    - kind: SERVICE
+      labels:
+        app: app1
+    - kind: ROUTE_TABLE
+      labels:
+        expose: "true"
