@@ -1,0 +1,60 @@
+apiVersion: k6.io/v1alpha1
+kind: K6
+metadata:
+  name: k6-runner
+  namespace: k6
+spec:
+  parallelism: 18 # num machines * 3
+  script:
+    configMap:
+      name: k6-test
+      file: k6-test-single.js
+  separate: false
+  arguments: -o experimental-prometheus-rw
+  # arguments: --out json=/dev/null
+  runner:
+    image: loadimpact/k6
+    env:
+    # - name: K6_PROMETHEUS_RW_TREND_AS_NATIVE_HISTOGRAM
+    #   value: "true"
+    # - name: K6_PROMETHEUS_RW_PUSH_INTERVAL
+    #   value: "15s"
+    - name: K6_PROMETHEUS_RW_SERVER_URL
+      value: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090/api/v1/write
+    - name : K6_PROMETHEUS_RW_TREND_STATS
+      value: p(90),p(95),max
+    - name: K6_PROMETHEUS_RW_STALE_MARKERS
+      value: "true"
+    securityContext:
+      runAsUser: 1000
+      runAsGroup: 1000
+      runAsNonRoot: true
+      sysctls:
+      - name: net.ipv4.ip_local_port_range
+        value: "1024 65535"
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: eks.amazonaws.com/nodegroup
+              operator: In
+              values:
+              - n2-16-r5-large
+              - n2-2-t3-small
+              - n2-4-t3-medium
+    securityContext:
+      sysctls:
+      - name: net.ipv4.ip_local_port_range
+        value: "1024 65535"
+    tolerations:
+    - key: k6
+      operator: Exists
+      effect: NoSchedule
+    resources:
+      limits:
+        cpu: 1100m
+        memory: 8000Mi
+      requests:
+        cpu: 500m
+        memory: 350Mi

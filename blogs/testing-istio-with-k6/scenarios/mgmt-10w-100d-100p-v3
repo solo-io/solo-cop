@@ -1,0 +1,130 @@
+apiVersion: admin.gloo.solo.io/v2
+kind: Workspace
+metadata:
+  name: workspace-1
+  namespace: gloo-mesh
+  labels:
+    allow_ingress: "true"
+spec:
+  workloadClusters:
+  - name: cluster1
+    namespaces:
+    - name: workspace-1
+---
+apiVersion: admin.gloo.solo.io/v2
+kind: Workspace
+metadata:
+  name: workspace-2
+  namespace: gloo-mesh
+  labels:
+    allow_ingress: "true"
+spec:
+  workloadClusters:
+  - name: cluster1
+    namespaces:
+    - name: workspace-2
+---
+apiVersion: admin.gloo.solo.io/v2
+kind: Workspace
+metadata:
+  name: workspace-3
+  namespace: gloo-mesh
+  labels:
+    allow_ingress: "true"
+spec:
+  workloadClusters:
+  - name: cluster1
+    namespaces:
+    - name: workspace-3
+---
+apiVersion: admin.gloo.solo.io/v2
+kind: Workspace
+metadata:
+  name: workspace-4
+  namespace: gloo-mesh
+  labels:
+    allow_ingress: "true"
+spec:
+  workloadClusters:
+  - name: cluster1
+    namespaces:
+    - name: workspace-4
+---
+apiVersion: admin.gloo.solo.io/v2
+kind: Workspace
+metadata:
+  name: workspace-5
+  namespace: gloo-mesh
+  labels:
+    allow_ingress: "true"
+spec:
+  workloadClusters:
+  - name: cluster1
+    namespaces:
+    - name: workspace-5
+---
+apiVersion: admin.gloo.solo.io/v2
+kind: Workspace
+metadata:
+  name: workspace-6
+  namespace: gloo-mesh
+  labels:
+    allow_ingress: "true"
+spec:
+  workloadClusters:
+  - name: cluster1
+    namespaces:
+    - name: workspace-6
+---
+apiVersion: admin.gloo.solo.io/v2
+kind: Workspace
+metadata:
+  name: workspace-7
+  namespace: gloo-mesh
+  labels:
+    allow_ingress: "true"
+spec:
+  workloadClusters:
+  - name: cluster1
+    namespaces:
+    - name: workspace-7
+---
+apiVersion: admin.gloo.solo.io/v2
+kind: Workspace
+metadata:
+  name: workspace-8
+  namespace: gloo-mesh
+  labels:
+    allow_ingress: "true"
+spec:
+  workloadClusters:
+  - name: cluster1
+    namespaces:
+    - name: workspace-8
+---
+apiVersion: admin.gloo.solo.io/v2
+kind: Workspace
+metadata:
+  name: workspace-9
+  namespace: gloo-mesh
+  labels:
+    allow_ingress: "true"
+spec:
+  workloadClusters:
+  - name: cluster1
+    namespaces:
+    - name: workspace-9
+---
+apiVersion: admin.gloo.solo.io/v2
+kind: Workspace
+metadata:
+  name: workspace-10
+  namespace: gloo-mesh
+  labels:
+    allow_ingress: "true"
+spec:
+  workloadClusters:
+  - name: cluster1
+    namespaces:
+    - name: workspace-10
+---
