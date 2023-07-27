@@ -8,7 +8,7 @@ Gloo Platform integrates API gateway, API management, Kubernetes Ingress, Istio 
 
 ![Gloo Platform Components](./images/gloo-platform-components.png)
 
-It's modular components lends itself to scale to multiple clusters and enable .... tiered gateways, DA, HA,.. etc. **TODO**
+It's modular components lends itself to scale across multiple clusters, computes and teams.
 
 ![Gloo Platform AWS Reference Architecture](images/Gloo-AWS-Ref-Architecture.png)
 
