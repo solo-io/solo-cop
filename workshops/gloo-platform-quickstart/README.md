@@ -8,7 +8,7 @@ Gloo Platform integrates API gateway, API management, Kubernetes Ingress, Istio 
 
 ![Gloo Platform Components](./images/gloo-platform-components.png)
 
-It's modular components lends itself to scale across multiple clusters, computes and teams.
+Its modular component architecture allows it to scale across multiple clusters, computes and teams. 
 
 ![Gloo Platform AWS Reference Architecture](images/Gloo-AWS-Ref-Architecture.png)
 
@@ -21,6 +21,7 @@ In this workshop, we will deploy Gloo Platform on a single cluster and a subset 
 - [Gloo Platform EKS Workshop](#gloo-platform-eks-workshop)
   - [Introduction ](#introduction-)
   - [Table of Contents](#table-of-contents)
+  - [Prerequisites and Requirements ](#prerequisites-and-requirements-)
   - [Lab 1 - Deploy Gloo Platform ](#lab-1---deploy-gloo-platform-)
   - [Lab 2 - Deploy \& Expose Online Boutique Sample Application](#lab-2---deploy--expose-online-boutique-sample-application)
   - [Lab 3 - Routing to other workloads ](#lab-3---routing-to-other-workloads-)
@@ -28,12 +29,12 @@ In this workshop, we will deploy Gloo Platform on a single cluster and a subset 
   - [Lab 5 - Zero Trust ](#lab-5---zero-trust-)
   - [Lab 6 - Traffic policies](#lab-6---traffic-policies)
   - [Lab 7 - Dashboard](#lab-7---dashboard)
+  - [Help ](#help-)
 
 ## Prerequisites and Requirements <a name="prereq"></a>
 
 - One EKS cluster in any region with a minimum of 2 worker nodes of size 2vCPU and 8GB memory and above
 - kubectl CLI configured to communicate with the EKS cluster
-- [meshctl CLI](https://docs.solo.io/gloo-mesh-enterprise/main/setup/prepare/meshctl_cli_install/#quick-installation)
 - A basic understanding of containers and Kubernetes
 
 ## Lab 1 - Deploy Gloo Platform <a name="glooplatform"></a>
@@ -479,5 +480,10 @@ Let's conclude this workshop by looking at the Gloo Dashboard again and explorin
    ![](images/dashboard-graph.png)
 
 
+## Help <a name="help"></a>
 
-  
+Review the following ways to get help, training, and other forms of support as you use Gloo Platform.
+
+- [Troubleshoot Issues](https://docs.solo.io/gloo-mesh-enterprise/main/troubleshooting/)
+- [Support and Slack](https://docs.solo.io/gloo-mesh-enterprise/main/support/)
+
