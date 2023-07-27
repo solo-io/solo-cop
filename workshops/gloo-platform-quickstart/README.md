@@ -12,7 +12,7 @@ It's modular components lends itself to scale across multiple clusters, computes
 
 ![Gloo Platform AWS Reference Architecture](images/Gloo-AWS-Ref-Architecture.png)
 
-In this workshop, we will deploy Gloo Platform on a single cluster and a subset of its features. 
+In this workshop, we will deploy Gloo Platform on a single cluster and a subset of its features. This entire workshop can be completed in less than an hour.
 
 ![Gloo Platform EKS Workshop Architecture](images/gloo-platform-eks-workshop.png)
 
