@@ -29,6 +29,12 @@ In this workshop, we will deploy Gloo Platform on a single cluster and a subset 
   - [Lab 6 - Traffic policies](#lab-6---traffic-policies)
   - [Lab 7 - Dashboard](#lab-7---dashboard)
 
+## Prerequisites and Requirements <a name="prereq"></a>
+
+- One EKS cluster in any region with a minimum of 2 worker nodes of size 2vCPU and 8GB memory and above
+- kubectl CLI configured to communicate with the EKS cluster
+- [meshctl CLI](https://docs.solo.io/gloo-mesh-enterprise/main/setup/prepare/meshctl_cli_install/#quick-installation)
+
 ## Lab 1 - Deploy Gloo Platform <a name="glooplatform"></a>
 
 ![Gloo Platform EKS Workshop Architecture](images/gloo-platform-eks-workshop-lab1.png)
