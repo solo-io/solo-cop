@@ -34,6 +34,7 @@ In this workshop, we will deploy Gloo Platform on a single cluster and a subset 
 - One EKS cluster in any region with a minimum of 2 worker nodes of size 2vCPU and 8GB memory and above
 - kubectl CLI configured to communicate with the EKS cluster
 - [meshctl CLI](https://docs.solo.io/gloo-mesh-enterprise/main/setup/prepare/meshctl_cli_install/#quick-installation)
+- A basic understanding of containers and Kubernetes
 
 ## Lab 1 - Deploy Gloo Platform <a name="glooplatform"></a>
 
