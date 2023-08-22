@@ -50,7 +50,7 @@ Gloo Platform provides a management plane to interact with the service mesh and 
 
 2. Install meshctl, the Gloo command line tool for bootstrapping Gloo Platform, registering clusters, describing configured resources, and more. Be sure to download version 2.3.5, which uses the latest Gloo Mesh installation values.
     ```sh
-    curl -sL https://run.solo.io/meshctl/install | GLOO_MESH_VERSION=v2.3.5 sh -
+    curl -sL https://run.solo.io/meshctl/install | GLOO_MESH_VERSION=v2.3.14 sh -
     export PATH=$HOME/.gloo-mesh/bin:$PATH
     ```
 
