@@ -1,4 +1,6 @@
 #!/bin/bash
+# Usage:
+# ./get-snapshots-and-profiles.sh ${MANAGEMENT_SERVER_POD_NAME}
 export MGMT_SERVER_POD=$1
 
 SECONDS_FOR_CAPTURING_PROFILE=120
