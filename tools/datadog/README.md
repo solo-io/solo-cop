@@ -29,7 +29,7 @@ helm upgrade --install datadog --create-namespace -n datadog  -f https://raw.git
 
 1. Patch Gloo Mesh Mgmt
 ```
-kubectl patch -n gloo-mesh deployment gloo-mesh-mgmt-server --patch-file gloo-mesh-patch-file.yaml 
+kubectl patch -n gloo-mesh deployment gloo-mesh-mgmt-server --patch-file https://raw.githubusercontent.com/solo-io/solo-cop/main/tools/datadog/gloo-mesh-patch-file.yaml
 ```
 2. Create a new dashboard.
 3. Import `gloo-mesh-dashboard.json` into the new dashboard.
