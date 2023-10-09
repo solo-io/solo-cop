@@ -22,7 +22,7 @@ helm repo update
 ```
 4. Install the agent on each of your clusters:
 ```
-helm upgrade --install datadog --create-namespace -n datadog  -f datadog-values.yaml --set datadog.site='datadoghq.com' --set datadog.apiKey='{{GENERATED_API_KEY}}' datadog/datadog
+helm upgrade --install datadog --create-namespace -n datadog  -f https://raw.githubusercontent.com/solo-io/solo-cop/main/tools/datadog/datadog-values.yaml --set datadog.site='datadoghq.com' --set datadog.apiKey='{{GENERATED_API_KEY}}' datadog/datadog
 ```
 
 ### Add OpenMetrics annotations to Gloo Mesh Resources
