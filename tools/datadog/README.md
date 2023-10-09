@@ -10,8 +10,8 @@ If you are already familiar with the Datadog install process you may skip this s
 
 In the event that this documentation conflicts with the [Datadog install documentation](https://docs.datadoghq.com/containers/kubernetes/installation/?tab=operator#installation), please defer to the Datadog documentation.
 
-1. [Generate an API Key](https://docs.datadoghq.com/account_management/api-app-keys/#add-an-api-key-or-client-token)
-2. Install `helm`
+1. [Generate an API Key](https://docs.datadoghq.com/account_management/api-app-keys/#add-an-api-key-or-client-token) and export it `export DD_API_KEY={{KEY}}`
+3. Install `helm`
 ```
 curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 ```
@@ -22,7 +22,7 @@ helm repo update
 ```
 4. Install the agent on each of your clusters:
 ```
-helm upgrade --install datadog --create-namespace -n datadog  -f https://raw.githubusercontent.com/solo-io/solo-cop/main/tools/datadog/datadog-values.yaml --set datadog.site='datadoghq.com' --set datadog.apiKey='{{GENERATED_API_KEY}}' datadog/datadog
+helm upgrade --install datadog --create-namespace -n datadog  -f https://raw.githubusercontent.com/solo-io/solo-cop/main/tools/datadog/datadog-values.yaml --set datadog.site='datadoghq.com' --set datadog.apiKey=$DD_API_KEY datadog/datadog
 ```
 
 ### Add OpenMetrics annotations to Gloo Mesh Resources
