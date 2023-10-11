@@ -3,6 +3,7 @@ datadog:
   ignoreAutoConfig:
   - redisdb
   - istio
+  site: "datadoghq.com"
 clusterAgent:
   replicas: 2
   createPodDisruptionBudget: "true"  
