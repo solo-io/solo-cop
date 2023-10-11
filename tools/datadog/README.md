@@ -39,7 +39,7 @@ kubectl patch -n gloo-mesh deployment gloo-mesh-mgmt-server --patch-file https:/
 5. Update distributions to show percentiles.
   - Navigate to metrics summary.
   - Locate `gloo_mesh.gloo_mesh_reconciler_time_sec`/`gloo_mesh.gloo_mesh_translation_time_sec` distributions
-  - In `Advanced` toggle the `Enable percentiels and threshold queries` setting
+  - In `Advanced` toggle the `Enable percentiles and threshold queries` setting
 6. Apply Unit to Trial License Expiration
   - Navigate to metrics summary.
   - Locate `gloo_mesh.solo_io_gloo_trial_license` guage.
