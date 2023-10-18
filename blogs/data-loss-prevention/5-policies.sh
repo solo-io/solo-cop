@@ -108,8 +108,3 @@ spec:
 EOF
 
 echo "https://${ENDPOINT_HTTPS_GW_CLUSTER1}/forms/post"
-
-Hi, I am John Doe with ID 56873922Q
-Please use my visa for payment: 4716423832634670
-
-Have a good day
