@@ -1,6 +1,6 @@
 # OPA ExternalAuth with sidecar in Gloo Platform
 
-Let’s try out OPA sidecar with ExternalAuth in gloo platform. To use this feature, you will need a valid Gloo Platform license or a trial key. If you don’t have one, you can request one here: (link to trial key form). 
+Let’s try out OPA (Open Policy Agent) sidecar with ExternalAuth in Gloo Platform. To use this feature, you will need a valid Gloo Platform license or a trial key. If you don’t have one, you can request one here: (link to trial key form). 
 
 ## Prerequisites
 - One (1) Kubernetes cluster with Gloo Mesh or Gloo Gateway installed and configured. See [Gloo Mesh Getting Started](https://docs.solo.io/gloo-mesh/latest/getting_started/) for more details.
@@ -13,7 +13,7 @@ Let’s try out OPA sidecar with ExternalAuth in gloo platform. To use this feat
 
 OPA server in sidecar mode is configured directly using the OPA configuration file API: https://www.openpolicyagent.org/docs/latest/configuration/. This configuration file allows you to load bundles, specify services, control logging and tracing for the sidecar, and more. This config file is loaded into a Kubernetes ConfigMap by the Gloo Platform helm chart and is version-tracked so that the deployment is restarted automatically when the underlying config file is redeployed with helm. For that reason, it’s important to use GitOps as a best practice to manage your cluster in production. Today, we will simply specify our configuration file on the command line and install it with Helm. 
 
-To use OPA server in sidecar mode, Rego policies must be loaded with a bundle from a bundle service. For this workshop, we’re going to use a simple Rego policy that helps us control access to the `httpbin` service using ExternalAuth. Let’s imagine a fictional scenario where we want to control access to some httpbin endpoints: we’d like to disallow users from hitting the `/bytes` endpoint as it allows users to request arbitrarily large payloads, which can be expensive if we’re paying for egress. We want users to be able to GET or POST the other endpoints. Here’s the policy we will use:
+To use OPA server in sidecar mode, Rego policies must be loaded with a bundle from an HTTP service. For this workshop, we’re going to use a simple Rego policy that helps us control access to the `httpbin` service using ExternalAuth. Let’s imagine a fictional scenario where we want to control access to some httpbin endpoints: we’d like to disallow users from hitting the `/bytes` endpoint as it allows users to request arbitrarily large payloads, which can be expensive if we’re paying for egress. We want users to be able to GET or POST the other endpoints. Here’s the policy we will use:
 
 ```rego
 package httpbin
@@ -60,7 +60,7 @@ Create a directory on your machine for this project, and add the above rego poli
 
 This file will instruct OPA that we have a package that will own the `httpbin` name. Build your bundle by running `opa build -b .` in the `rego` directory. (NEED TO HAVE OPA INSTALLATION DIRECTIONS).
 
-Next, we need to upload this bundle to a bundle service. There are lots of different options for a bundle service – you can use a local NGINX server, a cloud storage service, and other options. We will use a GCP bucket today.
+Next, we need to upload this bundle to an HTTP service. There are lots of different options for this service – you can use a local NGINX server, a cloud storage service, and other options. We will use a GCP bucket today.
 
 You can copy the bundle to GCS with the following command:
 
@@ -68,7 +68,7 @@ You can copy the bundle to GCS with the following command:
 gsutil cp bundle.tar.gz gs://${YOUR_BUCKET_URL}
 ```
 
-Finally, in our root directory for this tutorial, let’s create an OPA config file to reference this bundle server and bundle. We will add this file into our helm install. Add the following into `config.yaml`:
+Finally, in our root directory for this tutorial, let’s create an OPA config file to reference this bundle server and bundle. We will add this file to our helm install. Add the following into `config.yaml`:
 
 ```yaml
 services:
@@ -80,7 +80,7 @@ bundles:
       resource: 'httpbin.tar.gz?alt=media'
 ```
 
-Now, we can install gloo platform with ExternalAuth enabled and the OPA sidecar configured. This is done with the Gloo Platform helm chart. You can set options and helm values as you would like, and then include the following snippet in your values.yaml file:
+Now, we can install Gloo Platform with ExternalAuth enabled and the OPA sidecar configured. This is done with the Gloo Platform helm chart. You can set options and helm values as you would like and then include the following snippet in your values.yaml file:
 
 ```yaml
 extAuthService:
