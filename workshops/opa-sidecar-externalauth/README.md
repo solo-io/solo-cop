@@ -241,4 +241,4 @@ curl -vik http://${INGRESS_GATEWAY_IP}:80/bytes/200  -H "X-httpbin: true"
 See how you got a 200 from the first request, but a 403 from the second? Our ExtAuthPolicy is working!
 
 ## Conclusion
-In this workshop, we have demonstrated creating a Rego policy to 
+In this workshop, we have demonstrated creating a Rego policy to control traffic and compiling that into a bundle. We then uploaded that bundle to a cloud storage bucket, and added configuration to load that bundle into the OPA sidecar in our external auth service. Finally, we configured Gloo Platform to use that rego policy bundle to authenticate requests to the httpbin service. I hope you enjoyed the workshop!
