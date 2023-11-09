@@ -121,6 +121,29 @@ Let’s create some resources to allow traffic to httpbin. Save the yaml below i
 
 ```yaml
 apiVersion: admin.gloo.solo.io/v2
+kind: Workspace
+metadata:
+  name: global
+  namespace: gloo-mesh
+spec:
+  workloadClusters:
+  - name: '*'
+    namespaces:
+    - name: '*'
+---
+apiVersion: admin.gloo.solo.io/v2
+kind: WorkspaceSettings
+metadata:
+  name: global-wss
+  namespace: gloo-mesh
+spec:
+  options:
+    eastWestGateways:
+    - selector:
+      labels:
+        istio: eastwestgateway
+---
+apiVersion: admin.gloo.solo.io/v2
 kind: ExtAuthServer
 metadata:
   name: default-server
@@ -176,7 +199,7 @@ spec:
         istio: ingressgateway
 ```
 
-This route table and virtual gateway will send all traffic with the `X-httpbin` header to the httpbin service. Curl it through the ingress gateway IP to validate that we can send requests to the `bytes/200` and `status/200` endpoints before we configure ExternalAuth to use our rego policy.
+We created a simple `Workspace`, `WorkspaceSettings` object, an `ExtAuthServer` resource, and a `RouteTable` with an accompanying `VirtualGateway`. This route table and virtual gateway will send all traffic with the `X-httpbin` header to the httpbin service. Curl it through the ingress gateway IP to validate that we can send requests to the `bytes/200` and `status/200` endpoints before we configure the external auth server to use our rego policy. To learn more about these resources, check out the solo.io Gloo Gateway docs: https://docs.solo.io/gloo-gateway/latest/concepts/.
 
 Now that we’ve verified routing is working, let’s apply an ExtAuthPolicy to configure ExternalAuth to use our rego policy. Save the yaml below into a file in your project directory and apply it with `kubectl apply -f <your-file>.yaml`.
 
