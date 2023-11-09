@@ -1,6 +1,6 @@
 # OPA ExternalAuth with sidecar in Gloo Platform
 
-Let’s try out OPA (Open Policy Agent) sidecar with ExternalAuth in Gloo Platform. To use this feature, you will need a valid Gloo Platform license or a trial key. If you don’t have one, you can [(request one here)](https://www.solo.io/free-trial/).
+Let’s try out OPA (Open Policy Agent) sidecar with ExternalAuth in Gloo Platform. To use this feature, you will need a valid Gloo Platform license or a trial key. If you don’t have one, you can [request one here](https://www.solo.io/free-trial/).
 
 ## Prerequisites
 - One (1) Kubernetes cluster with Gloo Mesh or Gloo Gateway installed and configured. See [Gloo Mesh Getting Started](https://docs.solo.io/gloo-mesh/latest/getting_started/) for more details.
