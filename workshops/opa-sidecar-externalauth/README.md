@@ -100,7 +100,7 @@ Let’s install this with helm, setting the `extAuthService.extAuth.opaServer.co
 helm install gloo-platform gloo-platform/gloo-platform \
    --namespace gloo-mesh \
    --values values.yaml
-  --set-file extAuthService.extAuth.opaServer.config=${OUR_DIRECTORY}/config.yaml"
+   --set-file extAuthService.extAuth.opaServer.config=${OUR_DIRECTORY}/config.yaml"
 ```
 
 Verify that the installation has been successful and that there are two containers running in the ext-auth-service pod in the `gloo-mesh-addons` namespace:
