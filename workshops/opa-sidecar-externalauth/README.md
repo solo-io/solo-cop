@@ -1,6 +1,6 @@
 # OPA ExternalAuth with sidecar in Gloo Platform
 
-Let’s try out OPA (Open Policy Agent) sidecar with ExternalAuth in Gloo Platform. To use this feature, you will need a valid Gloo Platform license or a trial key. If you don’t have one, you can request one here: (link to trial key form). 
+Let’s try out OPA (Open Policy Agent) sidecar with ExternalAuth in Gloo Platform. To use this feature, you will need a valid Gloo Platform license or a trial key. If you don’t have one, you can [(request one here)](https://www.solo.io/free-trial/).
 
 ## Prerequisites
 - One (1) Kubernetes cluster with Gloo Mesh or Gloo Gateway installed and configured. See [Gloo Mesh Getting Started](https://docs.solo.io/gloo-mesh/latest/getting_started/) for more details.
@@ -58,7 +58,7 @@ Create a directory on your machine for this project, and add the above rego poli
 }
 ```
 
-This file will instruct OPA that we have a package that will own the `httpbin` name. Build your bundle by running `opa build -b .` in the `rego` directory. (NEED TO HAVE OPA INSTALLATION DIRECTIONS).
+This file will instruct OPA that we have a package that will own the `httpbin` name. Build your bundle by running `opa build -b .` in the `rego` directory. To do this, you'll need to install the OPA command-line utility. You can find instructions in the OPA docs: https://www.openpolicyagent.org/docs/latest/#running-opa.
 
 Next, we need to upload this bundle to an HTTP service. There are lots of different options for this service – you can use a local NGINX server, a cloud storage service, and other options. We will use a GCP bucket today.
 
@@ -73,7 +73,7 @@ Finally, in our root directory for this tutorial, let’s create an OPA config f
 ```yaml
 services:
   gcs:
-    url: https://storage.googleapis.com/storage/v1/b/test-opa-bundles-25c0391/o
+    url: https://storage.googleapis.com/storage/v1/b/${YOUR_BUCKET_NAME}/o
 bundles:
   httpbin:
     service: gcs
@@ -115,9 +115,9 @@ Now, let's finally install the httpbin sample application so we can control traf
 kubectl create ns httpbin && kubectl -n httpbin apply -f https://raw.githubusercontent.com/solo-io/gloo-mesh-use-cases/main/policy-demo/httpbin.yaml
 ```
 
-Verify that the httpbin app is running by running `kubectl -n httpbin get pods`
+Verify that the httpbin app is running by running `kubectl -n httpbin get pods -l app=httpbin` and verify that the `httpbin` application is `READY`.
 
-Let’s create some resources to allow traffic to httpbin: 
+Let’s create some resources to allow traffic to httpbin. Save the yaml below into a file in your project directory and apply it with `kubectl apply -f <your-file>.yaml`.
 
 ```yaml
 apiVersion: admin.gloo.solo.io/v2
@@ -178,10 +178,9 @@ spec:
 
 This route table and virtual gateway will send all traffic with the `X-httpbin` header to the httpbin service. Curl it through the ingress gateway IP to validate that we can send requests to the `bytes/200` and `status/200` endpoints before we configure ExternalAuth to use our rego policy.
 
-Now that we’ve verified routing is working, let’s apply an ExtAuthPolicy to configure ExternalAuth to use our rego policy:
+Now that we’ve verified routing is working, let’s apply an ExtAuthPolicy to configure ExternalAuth to use our rego policy. Save the yaml below into a file in your project directory and apply it with `kubectl apply -f <your-file>.yaml`.
 
 ```yaml
----
 apiVersion: security.policy.gloo.solo.io/v2
 kind: ExtAuthPolicy
 metadata:
