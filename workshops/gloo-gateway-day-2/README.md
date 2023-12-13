@@ -47,13 +47,13 @@ Set these environment variables which will be used throughout the workshop.
 ```sh
 # Used to enable Gloo Gateway (please ask for a trail license key)
 export GLOO_PLATFORM_LICENSE_KEY=<licence_key>
-export GLOO_PLATFORM_VERSION=v2.3.1
+export GLOO_PLATFORM_VERSION=v2.4.4
 
 # Istio version information
 export ISTIO_IMAGE_REPO=us-docker.pkg.dev/gloo-mesh/istio-workshops
-export ISTIO_IMAGE_TAG=1.16.3-solo
-export ISTIO_VERSION=1.16.3
-export ISTIO_REVISION=1-16
+export ISTIO_IMAGE_TAG=1.19.3-solo
+export ISTIO_VERSION=1.19.3
+export ISTIO_REVISION=1-19
 ```
 
 ## Lab 1 - Configure/Deploy a Kubernetes cluster <a name="k8s"></a>
@@ -88,7 +88,7 @@ helm upgrade --install gloo-platform-crds gloo-platform/gloo-platform-crds \
   --namespace=gloo-mesh \
   --create-namespace
 
-helm install gloo-platform gloo-platform/gloo-platform \
+helm upgrade --install gloo-platform gloo-platform/gloo-platform \
   --version=$GLOO_PLATFORM_VERSION \
   --devel \
   --namespace=gloo-mesh \
@@ -121,6 +121,102 @@ kubectl port-forward -n gloo-mesh svc/gloo-mesh-ui 8090:8090
 ```
 
 * Navigate to `http://localhost:8090`
+
+## Setup Operations Team configuration namespace
+
+* Create administrative namespace for ops-team
+```shell
+kubectl create namespace ops-team
+```
+
+* Apply Gloo Platform configuration for ops-team
+```shell
+kubectl apply -f - <<EOF
+apiVersion: admin.gloo.solo.io/v2
+kind: Workspace
+metadata:
+  name: ops-team
+  namespace: gloo-mesh
+spec:
+  workloadClusters:
+  - name: '*'
+    namespaces:
+    - name: gloo-gateway
+    - name: gloo-gateway-addons
+    - name: gloo-mesh
+    - name: gm-iop-1-19
+    - name: istio-system
+    - name: ops-team
+---
+# workspace configuration
+apiVersion: admin.gloo.solo.io/v2
+kind: WorkspaceSettings
+metadata:
+  name: ops-team
+  # placed in the administrative namespace
+  namespace: ops-team
+spec:
+  # import service discovery from app-team
+  importFrom:
+  - workspaces:
+    - name: app-team
+  # export service discovery to any workspace that needs ingress
+  exportTo:
+  - workspaces:
+    - name: "*"
+  # for mutli cluster routing
+  options:
+    eastWestGateways:
+    - selector:
+        labels:
+          istio: eastwestgateway
+EOF
+```
+
+## Setup Application Team configuration namespace
+
+* Create administrative namespace for app-team
+```shell
+kubectl create namespace app-team
+```
+
+* Apply Gloo Platform configuration for app-team
+```shell
+kubectl apply -f - <<EOF
+apiVersion: admin.gloo.solo.io/v2
+kind: Workspace
+metadata:
+  name: app-team
+  namespace: gloo-mesh
+spec:
+  workloadClusters:
+  # workload cluster namespace
+  - name: '*'
+    namespaces:
+    - name: online-boutique
+    - name: app-team
+---
+apiVersion: admin.gloo.solo.io/v2
+kind: WorkspaceSettings
+metadata:
+  name: app-team
+  namespace: app-team
+spec:
+  # import gateway service for ingress
+  importFrom:
+  - workspaces:
+    - name: ops-team
+  # share service discovery and routing to ingress
+  exportTo:
+  - workspaces:
+    - name: ops-team
+  options:
+    eastWestGateways:
+    - selector:
+        labels:
+          istio: eastwestgateway
+EOF
+```
 
 ## Lab 3 - Deploy Gloo API Gateway<a name="gloogateway"></a>
 
@@ -690,7 +786,7 @@ EOF
 4. Test out the new HTTPS endpoint (you may need to allow insecure traffic in your browser. Chrome: Advanced -> Proceed)
 
 ```sh
-export GLOO_GATEWAY_HTTPS=$(kubectl -n gloo-gateway get svc istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].*}'):443
+export GLOO_GATEWAY_HTTPS=$(kubectl -n gloo-gateway get svc gloo-gateway -o jsonpath='{.status.loadBalancer.ingress[0].*}'):443
 
 echo "Secure Online Boutique URL: https://$GLOO_GATEWAY_HTTPS"
 ```
