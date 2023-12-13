@@ -88,7 +88,7 @@ helm upgrade --install gloo-platform-crds gloo-platform/gloo-platform-crds \
   --namespace=gloo-mesh \
   --create-namespace
 
-helm install gloo-platform gloo-platform/gloo-platform \
+helm upgrade --install gloo-platform gloo-platform/gloo-platform \
   --version=$GLOO_PLATFORM_VERSION \
   --devel \
   --namespace=gloo-mesh \
