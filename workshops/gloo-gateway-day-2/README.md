@@ -786,7 +786,7 @@ EOF
 4. Test out the new HTTPS endpoint (you may need to allow insecure traffic in your browser. Chrome: Advanced -> Proceed)
 
 ```sh
-export GLOO_GATEWAY_HTTPS=$(kubectl -n gloo-gateway get svc istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].*}'):443
+export GLOO_GATEWAY_HTTPS=$(kubectl -n gloo-gateway get svc gloo-gateway -o jsonpath='{.status.loadBalancer.ingress[0].*}'):443
 
 echo "Secure Online Boutique URL: https://$GLOO_GATEWAY_HTTPS"
 ```
