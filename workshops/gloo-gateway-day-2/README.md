@@ -122,6 +122,102 @@ kubectl port-forward -n gloo-mesh svc/gloo-mesh-ui 8090:8090
 
 * Navigate to `http://localhost:8090`
 
+## Setup Operations Team configuration namespace
+
+* Create administrative namespace for ops-team
+```shell
+kubectl create namespace ops-team
+```
+
+* Apply Gloo Platform configuration for ops-team
+```shell
+kubectl apply -f - <<EOF
+apiVersion: admin.gloo.solo.io/v2
+kind: Workspace
+metadata:
+  name: ops-team
+  namespace: gloo-mesh
+spec:
+  workloadClusters:
+  - name: '*'
+    namespaces:
+    - name: gloo-gateway
+    - name: gloo-gateway-addons
+    - name: gloo-mesh
+    - name: gm-iop-1-19
+    - name: istio-system
+    - name: ops-team
+---
+# workspace configuration
+apiVersion: admin.gloo.solo.io/v2
+kind: WorkspaceSettings
+metadata:
+  name: ops-team
+  # placed in the administrative namespace
+  namespace: ops-team
+spec:
+  # import service discovery from app-team
+  importFrom:
+  - workspaces:
+    - name: app-team
+  # export service discovery to any workspace that needs ingress
+  exportTo:
+  - workspaces:
+    - name: "*"
+  # for mutli cluster routing
+  options:
+    eastWestGateways:
+    - selector:
+        labels:
+          istio: eastwestgateway
+EOF
+```
+
+## Setup Application Team configuration namespace
+
+* Create administrative namespace for app-team
+```shell
+kubectl create namespace app-team
+```
+
+* Apply Gloo Platform configuration for app-team
+```shell
+kubectl apply -f - <<EOF
+apiVersion: admin.gloo.solo.io/v2
+kind: Workspace
+metadata:
+  name: app-team
+  namespace: gloo-mesh
+spec:
+  workloadClusters:
+  # workload cluster namespace
+  - name: '*'
+    namespaces:
+    - name: online-boutique
+    - name: app-team
+---
+apiVersion: admin.gloo.solo.io/v2
+kind: WorkspaceSettings
+metadata:
+  name: app-team
+  namespace: app-team
+spec:
+  # import gateway service for ingress
+  importFrom:
+  - workspaces:
+    - name: ops-team
+  # share service discovery and routing to ingress
+  exportTo:
+  - workspaces:
+    - name: ops-team
+  options:
+    eastWestGateways:
+    - selector:
+        labels:
+          istio: eastwestgateway
+EOF
+```
+
 ## Lab 3 - Deploy Gloo API Gateway<a name="gloogateway"></a>
 
 ![Gloo API Gateway](images/deploy.png)
