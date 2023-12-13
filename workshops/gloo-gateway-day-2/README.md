@@ -47,13 +47,13 @@ Set these environment variables which will be used throughout the workshop.
 ```sh
 # Used to enable Gloo Gateway (please ask for a trail license key)
 export GLOO_PLATFORM_LICENSE_KEY=<licence_key>
-export GLOO_PLATFORM_VERSION=v2.3.1
+export GLOO_PLATFORM_VERSION=v2.4.4
 
 # Istio version information
 export ISTIO_IMAGE_REPO=us-docker.pkg.dev/gloo-mesh/istio-workshops
-export ISTIO_IMAGE_TAG=1.16.3-solo
-export ISTIO_VERSION=1.16.3
-export ISTIO_REVISION=1-16
+export ISTIO_IMAGE_TAG=1.19.3-solo
+export ISTIO_VERSION=1.19.3
+export ISTIO_REVISION=1-19
 ```
 
 ## Lab 1 - Configure/Deploy a Kubernetes cluster <a name="k8s"></a>
