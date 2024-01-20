@@ -1,4 +1,4 @@
-# Deploy a Single Cluster Gloo Mesh with Argo CD
+# Deploy Gloo Mesh with Argo CD
 
 ## Introduction
 GitOps is becoming increasingly popular approach to manage Kubernetes components. It works by using Git as a single source of truth for declarative infrastructure and applications, allowing your application definitions, configurations, and environments to be declarative and version controlled. This helps to make these workflows automated, auditable, and easy to understand.
