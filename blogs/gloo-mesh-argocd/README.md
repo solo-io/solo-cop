@@ -478,7 +478,7 @@ istio-ingressgateway-1-20-5bc944987-882ls   1/1     Running   0          55s
 
 ### Configuring IstioLifecycleManager or GatewayLifecycleManager with Argo CD
 
-Since we can treat the `IstioLifecycleManager` and `GatewayLifecycleManager` the same as any other Kubernetes CRD, we can deploy Istio on our cluster by using an Argo Application that is configured to deploy any valid YAML configuration in the `/lifecyclemanager` [directory in this repo](https://github.com/solo-io/solo-cop/blogs/gloo-mesh-with-argocd/tree/main/istiolifecyclemanager). This will allow us to configure all of the steps we just did with one Argo CD `Application` resource.
+Since we can treat the `IstioLifecycleManager` and `GatewayLifecycleManager` the same as any other Kubernetes CRD, we can deploy Istio on our cluster by using an Argo Application that is configured to deploy any valid YAML configuration in the `/lifecyclemanager` [directory in this repo](https://github.com/solo-io/solo-cop/tree/main/blogs/gloo-mesh-argocd/istiolifecyclemanager). This will allow us to configure all of the steps we just did with one Argo CD `Application` resource.
 
 Note the use of the annotation `argocd.argoproj.io/sync-wave` in each manifest, which can help with the deployment ordering of each component. The order of operations would go least to greatest. More on [Argo CD sync-waves](https://argo-cd.readthedocs.io/en/stable/user-guide/sync-waves/#how-do-i-configure-waves).
 
@@ -496,8 +496,8 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/solo-io/solo-cop/blogs/gloo-mesh-with-argocd/
-    path: istiolifecyclemanager
+    repoURL: https://github.com/solo-io/solo-cop
+    path: blogs/gloo-mesh-argocd/istiolifecyclemanager
     targetRevision: HEAD
     directory:
       recurse: true
@@ -735,8 +735,8 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/solo-io/solo-cop/blogs/gloo-mesh-with-argocd/
-    path: easybutton/workloads
+    repoURL: https://github.com/solo-io/solo-cop
+    path: blogs/gloo-mesh-argocd/easybutton/workloads
     targetRevision: HEAD
     directory:
       recurse: true
@@ -825,8 +825,8 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/solo-io/solo-cop/blogs/gloo-mesh-with-argocd/
-    path: easybutton/observability
+    repoURL: https://github.com/solo-io/solo-cop
+    path: blogs/gloo-mesh-argocd/easybutton/observability
     targetRevision: HEAD
     directory:
       recurse: true
@@ -1121,8 +1121,8 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/solo-io/solo-cop/blogs/gloo-mesh-with-argocd/
-    path: easybutton/app-of-app
+    repoURL: https://github.com/solo-io/solo-cop
+    path: blogs/gloo-mesh-argocd/easybutton/app-of-app
     targetRevision: HEAD
     directory:
       recurse: true

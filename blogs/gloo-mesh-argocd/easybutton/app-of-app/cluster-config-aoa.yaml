@@ -10,8 +10,8 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/solo-io/solo-cop/blogs/gloo-mesh-with-argocd/
-    path: easybutton/cluster-config
+    repoURL: https://github.com/solo-io/solo-cop
+    path: blogs/gloo-mesh-argocd/easybutton/cluster-config
     targetRevision: HEAD
     directory:
       recurse: true
