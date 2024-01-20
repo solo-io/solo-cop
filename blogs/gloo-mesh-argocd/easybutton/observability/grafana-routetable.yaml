@@ -1,0 +1,23 @@
+apiVersion: networking.gloo.solo.io/v2
+kind: RouteTable
+metadata:
+  name: grafana-routetable
+  namespace: grafana
+spec:
+  hosts:
+  - '*'
+  http:
+  - name: grafana-ui
+    matchers:
+      - uri:
+          prefix: /grafana
+    forwardTo:
+      destinations:
+      - port:
+          number: 3000
+        ref:
+          name: grafana
+          namespace: grafana
+  virtualGateways:
+  - name: north-south-gw
+    namespace: istio-gateways
