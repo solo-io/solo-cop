@@ -30,6 +30,7 @@ cleanup() {
     rm -rf enterprise-agent || true
     rm -rf gloo-mesh-agent || true
     rm -rf gloo-mesh-enterprise || true
+    rm -rf gloo-platform || true
     rm .images.out
 }
 
@@ -100,7 +101,7 @@ if [[ $VERSION == 1* ]]; then
     find enterprise-agent -name "values.yaml" | while read file; do 
         cat $file | yq eval $JSON_FLAG | jq -r '.. | .image? | select(. != null) | (if .registry then (if .registry == "docker.io" then "docker.io/library" else .registry end) + "/" else "" end) + .repository + ":" + (.tag | tostring)'
     done | sort -u | tee .images.out
-else
+elif [[ $VERSION == 2.0* || $VERSION == 2.1* || $VERSION == 2.2* || $VERSION == 2.3* ]]; then
     wget -q https://storage.googleapis.com/gloo-mesh-enterprise/gloo-mesh-agent/gloo-mesh-agent-${VERSION}.tgz
     tar zxf gloo-mesh-agent-${VERSION}.tgz
     find gloo-mesh-agent -name "values.yaml" | while read file; do
@@ -112,19 +113,27 @@ echo ""
 echo "###################################"
 echo "# Getting Gloo Mesh images        #"
 echo "###################################"
-wget -q https://storage.googleapis.com/gloo-mesh-enterprise/gloo-mesh-enterprise/gloo-mesh-enterprise-${VERSION}.tgz
-tar zxf gloo-mesh-enterprise-${VERSION}.tgz
-find gloo-mesh-enterprise -name "values.yaml" | while read file; do
-    cat $file | yq eval $JSON_FLAG | jq -r '.. | .image? | select(. != null) | (if .registry then (if .registry == "docker.io" then "docker.io/library" else .registry end) + "/" else "" end) + .repository? + ":" + (.tag? | tostring)'
-done | sort -u | tee -a .images.out
+if [[ $VERSION == 2.0* || $VERSION == 2.1* || $VERSION == 2.2* || $VERSION == 2.3* ]]; then
+    wget -q https://storage.googleapis.com/gloo-mesh-enterprise/gloo-mesh-enterprise/gloo-mesh-enterprise-${VERSION}.tgz
+    tar zxf gloo-mesh-enterprise-${VERSION}.tgz
+    find gloo-mesh-enterprise -name "values.yaml" | while read file; do
+        cat $file | yq eval $JSON_FLAG | jq -r '.. | .image? | select(. != null) | (if .registry then (if .registry == "docker.io" then "docker.io/library" else .registry end) + "/" else "" end) + .repository? + ":" + (.tag? | tostring)'
+    done | sort -u | tee -a .images.out
+else
+    wget -q https://storage.googleapis.com/gloo-platform/helm-charts/gloo-platform-${VERSION}.tgz
+    tar zxf gloo-platform-${VERSION}.tgz
+    find gloo-platform -name "values.yaml" | while read file; do
+        cat $file | yq eval $JSON_FLAG | jq -r '.. | .image? | select(. != null) | (if .registry then (if .registry == "docker.io" then "docker.io/library" else .registry end) + "/" else "" end) + .repository? + ":" + (.tag? | tostring)'
+    done | sort -u | tee -a .images.out
+fi
 
 
 echo ""
 echo "###################################"
 echo "# Getting Solo istio images       #"
 echo "###################################"
-echo us-docker.pkg.dev/gloo-mesh/istio-workshops/pilot:1.16.1-solo | tee -a .images.out
-echo us-docker.pkg.dev/gloo-mesh/istio-workshops/proxyv2:1.16.1-solo | tee -a .images.out
+echo us-docker.pkg.dev/gloo-mesh/istio-workshops/pilot:1.20.2-solo | tee -a .images.out
+echo us-docker.pkg.dev/gloo-mesh/istio-workshops/proxyv2:1.20.2-solo | tee -a .images.out
 
 
 if [ $pull == 1 ]; then
