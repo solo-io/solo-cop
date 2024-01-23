@@ -133,9 +133,9 @@ fi
 
 
 echo ""
-echo "###################################"
-echo "# Getting Solo istio images       #"
-echo "###################################"
+echo "#######################################"
+echo "# Getting Solo distributions of Istio #"
+echo "#######################################"
 echo us-docker.pkg.dev/gloo-mesh/istio-workshops/pilot:1.20.2-solo | tee -a .images.out
 echo us-docker.pkg.dev/gloo-mesh/istio-workshops/proxyv2:1.20.2-solo | tee -a .images.out
 
