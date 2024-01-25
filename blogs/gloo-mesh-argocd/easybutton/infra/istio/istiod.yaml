@@ -22,12 +22,11 @@ spec:
         global:
           meshID: gloo-mesh
           multiCluster:
-            clusterName: mgmt
+            clusterName: gloo
           network: network1
           hub: us-docker.pkg.dev/gloo-mesh/istio-workshops
           tag: 1.20.2-solo
         meshConfig:
-          trustDomain: mgmt
           accessLogFile: /dev/stdout
           accessLogEncoding: JSON
           enableAutoMtls: true
