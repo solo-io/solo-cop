@@ -127,7 +127,7 @@ else
     wget -q https://storage.googleapis.com/gloo-platform/helm-charts/gloo-platform-${VERSION}.tgz
     tar zxf gloo-platform-${VERSION}.tgz
     find gloo-platform -name "values.yaml" | while read file; do
-        cat $file | yq eval $JSON_FLAG | jq -r '.. | .image? | select(. != null) | (if .registry then (if .registry == "docker.io" then "docker.io/library" else .registry end) + "/" else "" end) + .repository? + .repo? + ":" + (.tag? | tostring)'
+        cat $file | yq eval $JSON_FLAG | jq -r '.. | .image? | select(. != null) | (if .registry then (if .registry == "docker.io" then "docker.io/library" else .registry end) + "/" else "" end) + .repository? + .repo? + ":" + (if (.tag? | tostring) != "" then (.tag? | tostring) else "latest" end)'
     done | sort -u | tee -a .images.out
 fi
 
