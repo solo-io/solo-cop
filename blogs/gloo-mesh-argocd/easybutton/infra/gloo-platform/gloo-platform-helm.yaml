@@ -29,10 +29,6 @@ spec:
         redis:
           deployment:
             enabled: true
-        telemetryGateway:
-          enabled: true
-          service:
-            type: LoadBalancer
         telemetryCollector:
           enabled: true
           config:
