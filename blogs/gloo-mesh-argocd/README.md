@@ -189,7 +189,7 @@ spec:
           cluster: "${MY_CLUSTER_NAME}"
         glooMgmtServer:
           enabled: true
-          serviceType: LoadBalancer
+          serviceType: ClusterIP
           registerCluster: true
           createGlobalWorkspace: true
         prometheus:
@@ -197,10 +197,6 @@ spec:
         redis:
           deployment:
             enabled: true
-        telemetryGateway:
-          enabled: true
-          service:
-            type: ClusterIP
         telemetryCollector:
           enabled: true
           config:
@@ -223,6 +219,15 @@ spec:
     syncOptions:
       - CreateNamespace=true
 EOF
+```
+
+More information on the gloo-platform helm values is [present here](https://docs.solo.io/gloo-mesh-enterprise/latest/reference/helm/latest/gloo_platform_helm_values_reference/)
+
+You may also retrieve the gloo-platform helm package, and download it locally.
+```bash
+helm repo add gloo-platform https://storage.googleapis.com/gloo-platform/helm-charts
+helm pull gloo-platform/gloo-platform --version=${GLOO_MESH_VERSION} --untar
+open gloo-platform/values.yaml
 ```
 
 You can check to see that the Gloo Mesh Management Plane is deployed
