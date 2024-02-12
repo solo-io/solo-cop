@@ -6,7 +6,7 @@ common:
 telemetryCollector:
   enabled: true
   replicaCount: 1
-  mode: deployment
+  mode: daemonset
   service: 
     type: ClusterIP
   extraVolumes:
