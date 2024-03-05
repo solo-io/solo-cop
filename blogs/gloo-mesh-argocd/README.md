@@ -373,6 +373,12 @@ spec:
               # Reload cacerts when cert-manager changes it
               - name: AUTO_RELOAD_PLUGIN_CERTS
                 value: "true"
+          # deploy an istio-cni-node DaemonSet into the cluster. More info on the plugin- https://istio.io/latest/docs/setup/additional-setup/cni/
+          cni:
+            enabled: true
+            hub: ${HUB}
+            tag: ${ISTIO_VERSION}
+            namespace: kube-system
 EOF
 ```
 
