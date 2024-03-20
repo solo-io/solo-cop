@@ -195,7 +195,7 @@ spec:
     - name: 'apis-team-config'
   - name: 'cluster1'           # apis namespace in cluster1
       namespaces:
-      - name: 'aips'
+      - name: 'apis'
 ```
 
 ![Global Workspace](./images/gloo-mesh-config.png)
