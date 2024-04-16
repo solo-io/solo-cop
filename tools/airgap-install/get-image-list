@@ -14,8 +14,11 @@ The version argument is required.
 
 Available options:
 
--h, --help      Print this help and exit
--v, --verbose   Print script debug info
+-sv, --istio-ver    Istio version (Defaults to 1.20.2 if not specified)
+-sh, --istio-hub    Istio hub (Defaults to us-docker.pkg.dev/gloo-mesh/istio-workshops if not specified)
+-p,  --pull         Execute a Docker pull
+-v,  --verbose      Print script debug info
+-h,  --help         Print this help and exit
 EOF
     exit
 }
@@ -57,11 +60,15 @@ parse_params() {
     # default values of variables set from params
     pull=0
     param=''
+    istioVer="1.20.2"
+    istioHub="us-docker.pkg.dev/gloo-mesh/istio-workshops"
     VERSION=''
 
     while :; do
         case "${1-}" in 
         -h | --help) usage ;;
+        -sv | --istio-ver) shift && istioVer=$1 ;;
+        -sh | --istio-hub) shift && istioHub=$1 ;;
         -v | --verbose) set -x ;;
         -p | --pull) pull=1 ;;
         --no-color) NO_COLOR=1 ;;
@@ -83,6 +90,7 @@ parse_params "$@"
 setup_colors
 
 VERSION="${args[0]}"
+
 OS=$(uname)
 JSON_FLAG='-j'
 if [ $OS == 'Darwin' ]; then
@@ -99,7 +107,7 @@ if [[ $VERSION == 1* ]]; then
     wget -q https://storage.googleapis.com/gloo-mesh-enterprise/enterprise-agent/enterprise-agent-${VERSION}.tgz
     tar zxf enterprise-agent-${VERSION}.tgz
     find enterprise-agent -name "values.yaml" | while read file; do 
-        cat $file | yq eval $JSON_FLAG | jq -r '.. | .image? | select(. != null) | (if .registry then (if .registry == "docker.io" then "docker.io/library" else .registry end) + "/" else "" end) + .repository + ":" + (.tag | tostring)'
+        cat $file | yq eval $JSON_FLAG | jq -r '.. | .image? | select(. != null) | (if .registry then (if .registry == "docker.io" then "docker.io" else .registry end) + "/" else "" end) + .repository + ":" + (.tag | tostring)'
     done | sort -u | tee .images.out
 elif [[ $VERSION == 2.0* || $VERSION == 2.1* || $VERSION == 2.2* || $VERSION == 2.3* ]]; then
     echo ""
@@ -109,7 +117,7 @@ elif [[ $VERSION == 2.0* || $VERSION == 2.1* || $VERSION == 2.2* || $VERSION == 
     wget -q https://storage.googleapis.com/gloo-mesh-enterprise/gloo-mesh-agent/gloo-mesh-agent-${VERSION}.tgz
     tar zxf gloo-mesh-agent-${VERSION}.tgz
     find gloo-mesh-agent -name "values.yaml" | while read file; do
-        cat $file | yq eval $JSON_FLAG | jq -r '.. | .image? | select(. != null) | (if .registry then (if .registry == "docker.io" then "docker.io/library" else .registry end) + "/" else "" end) + .repository? + ":" + (.tag? | tostring)'
+        cat $file | yq eval $JSON_FLAG | jq -r '.. | .image? | select(. != null) | (if .registry then (if .registry == "docker.io" then "docker.io" else .registry end) + "/" else "" end) + .repository? + ":" + (.tag? | tostring)'
     done | sort -u | tee .images.out
 fi
 
@@ -121,23 +129,22 @@ if [[ $VERSION == 2.0* || $VERSION == 2.1* || $VERSION == 2.2* || $VERSION == 2.
     wget -q https://storage.googleapis.com/gloo-mesh-enterprise/gloo-mesh-enterprise/gloo-mesh-enterprise-${VERSION}.tgz
     tar zxf gloo-mesh-enterprise-${VERSION}.tgz
     find gloo-mesh-enterprise -name "values.yaml" | while read file; do
-        cat $file | yq eval $JSON_FLAG | jq -r '.. | .image? | select(. != null) | (if .registry then (if .registry == "docker.io" then "docker.io/library" else .registry end) + "/" else "" end) + .repository? + ":" + (.tag? | tostring)'
+        cat $file | yq eval $JSON_FLAG | jq -r '.. | .image? | select(. != null) | (if .registry then (if .registry == "docker.io" then "docker.io" else .registry end) + "/" else "" end) + .repository? + ":" + (.tag? | tostring)'
     done | sort -u | tee -a .images.out
 else
     wget -q https://storage.googleapis.com/gloo-platform/helm-charts/gloo-platform-${VERSION}.tgz
     tar zxf gloo-platform-${VERSION}.tgz
     find gloo-platform -name "values.yaml" | while read file; do
-        cat $file | yq eval $JSON_FLAG | jq -r '.. | .image? | select(. != null) | (if .registry then (if .registry == "docker.io" then "docker.io/library" else .registry end) + "/" else "" end) + .repository? + .repo? + ":" + (if (.tag? | tostring) != "" then (.tag? | tostring) else "latest" end)'
+        cat $file | yq eval $JSON_FLAG | jq -r '.. | .image? | select(. != null) | (if .registry then (if .registry == "docker.io" then "docker.io" else .registry end) + "/" else "" end) + (if (.repository? | tostring | contains("gloo-mesh/gloo-network-agent-")) then "us-docker.pkg.dev/" + (.repository? | tostring) else (.repository? | tostring) end) + .repo? + ":" + (if (.tag? | tostring) != "" then (.tag? | tostring) else "latest" end)'
     done | sort -u | tee -a .images.out
 fi
-
 
 echo ""
 echo "#######################################"
 echo "# Getting Solo distributions of Istio #"
 echo "#######################################"
-echo us-docker.pkg.dev/gloo-mesh/istio-workshops/pilot:1.20.2-solo | tee -a .images.out
-echo us-docker.pkg.dev/gloo-mesh/istio-workshops/proxyv2:1.20.2-solo | tee -a .images.out
+echo $istioHub/pilot:$istioVer-solo | tee -a .images.out
+echo $istioHub/proxyv2:$istioVer-solo | tee -a .images.out
 
 
 if [ $pull == 1 ]; then
