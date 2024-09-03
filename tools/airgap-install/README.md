@@ -1,5 +1,5 @@
 # Air-gap Installation Image List
-This utility scripts the functionality found in the Gloo Mesh Enterprise [documentation](https://docs.solo.io/gloo-mesh-enterprise/latest/setup/installation/airgap_install/).  
+This utility scripts the functionality found in the Gloo Platform [documentation](https://docs.solo.io/gloo-mesh-enterprise/latest/setup/install/airgap_install/).  
 
 
 ## Pre-requisites
@@ -17,16 +17,28 @@ To run the utility, type
 ./get-image-list <version>
 ```
 
-where **version** is the Gloo Mesh Enterprise version (e.g. 1.1.6).
+where **version** is the Gloo Platform version (e.g. 1.1.6).
 
 This will print the list of images to stdout.
 
 ## Options
-`-p | --pull` - pull the images locally.
+
+- `-ih | --istio-hub`         - Istio hub (Defaults to us-docker.pkg.dev/gloo-mesh/istio-workshops if not specified)
+- `-iv | --istio-ver`         - Istio version (Defaults to 1.20.2 if not specified)
+- `-p  | --pull`              - Execute a Docker pull
+- `-sa | --skip-all`          - Skip all sub charts (By default it will pull all images)
+- `-sj | --skip-jaeger`       - Skip jaeger related images (By default it will pull all images)
+- `-sp | --skip-prom`         - Skip prometheus related images (By default it will pull all images)
+- `-so | --skip-otel`         - Skip otel related images (By default it will pull all images)
+- `-p  | --pull`              - Execute a Docker pull
+- `-r  | --retain`            - Retain '.images.out' at the end of the run and dont purge it
+- `-v  | --validate`          - Validate the discovered Docker repositories
+- `-d  | --debug`             - Print script debug info
+- `-h  |  --help`             - Print help and exit
 
 ### Sample Output
 
-Example output when specifying Gloo Mesh 1.1.1 and pulling images.
+Example output when specifying Gloo Platform 1.1.1 and pulling images.
 ```
 $ ./get-image-list -p 1.1.1
 Finding images for Gloo Mesh Enterprise version 1.1.1

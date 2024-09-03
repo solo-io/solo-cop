@@ -1,24 +1,43 @@
 #!/usr/bin/env bash
 
 set -Eeuo pipefail
-trap cleanup SIGINT SIGTERM ERR EXIT 
+trap cleanup SIGINT SIGTERM ERR EXIT
 
+script_name=$(basename "${BASH_SOURCE[0]}")
 script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd -P)
+
+# default values of variables set from params
+version=""
+istio_hub="us-docker.pkg.dev/gloo-mesh/istio-workshops"
+istio_ver="1.20.2"
+pull=false
+retain_images=false
+skip_all=false
+skip_jaeger=false
+skip_otel=false
+skip_prom=false
+validate_image_repo=false
 
 usage() {
     cat <<EOF
-Usage: $(basename "${BASH_SOURCE[0]}") [-h] version
+Usage: $script_name [-h] version
 
 This script will print out the list of images required for an air-gapped installation of Gloo Mesh Enterprise.
 The version argument is required.
 
 Available options:
 
--sv, --istio-ver    Istio version (Defaults to 1.20.2 if not specified)
--sh, --istio-hub    Istio hub (Defaults to us-docker.pkg.dev/gloo-mesh/istio-workshops if not specified)
--p,  --pull         Execute a Docker pull
--v,  --verbose      Print script debug info
--h,  --help         Print this help and exit
+-ih, --istio-hub        Istio hub (Defaults to us-docker.pkg.dev/gloo-mesh/istio-workshops if not specified)
+-iv, --istio-ver        Istio version (Defaults to 1.20.2 if not specified)
+-p,  --pull             Execute a Docker pull
+-r,  --retain           Retain '.images.out' at the end of the run and dont purge it
+-sa, --skip-all         Skip all sub charts (By default it will pull all images)
+-sj, --skip-jaeger      Skip jaeger related images (By default it will pull all images)
+-sp, --skip-prom        Skip prometheus related images (By default it will pull all images)
+-so, --skip-otel        Skip otel related images (By default it will pull all images)
+-v,  --validate         Validate the discovered Docker repositories
+-d,  --debug            Print script debug info
+-h,  --help             Print help and exit
 EOF
     exit
 }
@@ -26,15 +45,17 @@ EOF
 cleanup() {
     trap - SIGINT SIGTERM ERR EXIT
     # nothing to do
-    if [[ -z $VERSION ]]; then
+    if [[ -z $version ]]; then
         return
     fi
-    rm *.tgz
+    rm -f *.tgz
     rm -rf enterprise-agent || true
     rm -rf gloo-mesh-agent || true
     rm -rf gloo-mesh-enterprise || true
     rm -rf gloo-platform || true
-    rm .images.out
+    if [[ "$retain_images" == false ]]; then
+        rm -f .images.out
+    fi
 }
 
 setup_colors() {
@@ -57,39 +78,127 @@ die() {
 }
 
 parse_params() {
-    # default values of variables set from params
-    pull=0
-    param=''
-    istioVer="1.20.2"
-    istioHub="us-docker.pkg.dev/gloo-mesh/istio-workshops"
-    VERSION=''
+    local args=("$@")
 
     while :; do
         case "${1-}" in 
-        -h | --help) usage ;;
-        -sv | --istio-ver) shift && istioVer=$1 ;;
-        -sh | --istio-hub) shift && istioHub=$1 ;;
-        -v | --verbose) set -x ;;
-        -p | --pull) pull=1 ;;
+        -d  | --debug) set -x ;;
+        -h  | --help) usage ;;
+        -ih | --istio-hub) shift && istio_hub=$1 ;;
+        -iv | --istio-ver) shift && istio_ver=$1 ;;
+        -sa | --skip-all) skip_all=true ;;
+        -sj | --skip-jaeger) skip_jaeger=true ;;
+        -so | --skip-otel) skip_otel=true ;;
+        -sp | --skip-prom) skip_prom=true ;;
+        -p  | --pull) pull=true ;;
+        -r  | --retain) retain_images=true ;;
+        -v  | --verbose) validate_image_repo=true ;;
         --no-color) NO_COLOR=1 ;;
         -?*) die "Unknown option: $1" ;;
-        *) break ;;
+        *)
+            if [[ -z $version ]]; then
+                version=$1
+            else
+                break
+            fi
+            ;;
         esac
         shift
     done
 
-    args=("$@")
-
     # check required params and arguments
-    [[ ${#args[@]} -eq 0 ]] && die "Missing required argument - version"
+    if [[ ${#args[@]} -eq 0 || -z $version ]]; then
+        die "Missing required argument - version"
+    fi
+    if [[ ! $version =~ ^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(-[a-zA-Z\d][-a-zA-Z.\d]*)?$ ]]; then
+        die "Version is invalid" 
+    fi
 
     return 0
 }
 
+# POSIX compatible
+prechecks() {
+    if ! command -v wget &> /dev/null; then
+        die "command 'wget' not found"
+    fi
+    if ! command -v docker &> /dev/null; then
+        die "command 'docker' not found"
+    fi
+    if ! command -v jq &> /dev/null; then
+        die "command 'jq' not found"
+    fi
+    if ! command -v yq &> /dev/null; then
+        die "command 'yq' not found"
+    fi
+    if [[ -f .images.out ]]; then
+        rm -f .images.out
+    fi
+}
+
+get_version_from_subchart() {
+    local file=$1
+    local default_repo=$2
+    local parent_chart_dir=$3
+    local should_sanitize_version=${4:-true}
+
+    directory=${file%/*}
+    default_version=""
+    if [[ -f $parent_chart_dir/Chart.yaml ]]; then
+        default_version=$(cat $parent_chart_dir/Chart.yaml | yq eval $JSON_FLAG | jq -r '.appVersion')
+        if [[ "$should_sanitize_version" = true ]]; then
+            default_version="${default_version#v}"
+            default_version="v$default_version"
+        fi
+    elif [[ -f $directory/Chart.yaml ]]; then
+        default_version=$(cat $directory/Chart.yaml | yq eval $JSON_FLAG | jq -r '.appVersion')
+        if [[ "$should_sanitize_version" = true ]]; then
+            default_version="${default_version#v}"
+            default_version="v$default_version"
+        fi
+    fi
+    cat $file | yq eval $JSON_FLAG | jq --arg default_version "$default_version" --arg default_repo "$default_repo" -r '.. | .image? | select(. != null) | (if .registry then (if .registry == "docker.io" then "docker.io" else .registry end) + "/" else "" end) + (if ((.repository? | tostring) != "") and has("repository") then (.repository? | tostring) elif ((.repo? | tostring) != "") and has("repo") then (.repo? | tostring) elif ($default_repo != "") then $default_repo else (.repository? | tostring) end) + ":" + (if ((.tag? | tostring) != "") and has("tag") then (.tag? | tostring) elif ($default_version != "") then $default_version else "latest" end)'
+}
+
+pull_images_from_subcharts() {
+    echo ""
+    echo "#######################################"
+    echo "# Getting images from subcharts       #"
+    echo "#######################################"
+
+    # we are going to deal with some special cases first
+    find gloo-platform -mindepth 2 -type f -name "values.yaml" | while read file; do
+        case $file in
+        gloo-platform/charts/prometheus*)
+            if [[ "$skip_prom" == false ]]; then
+                get_version_from_subchart $file "" ""
+            fi
+            ;;
+        gloo-platform/charts/opentelemetry-collector*)
+            if [[ "$skip_otel" == false ]]; then
+                get_version_from_subchart $file "otel/opentelemetry-collector" "gloo-platform/charts/opentelemetry-collector" false
+            fi
+            ;;
+        gloo-platform/charts/jaeger*)
+            if [[ "$skip_jaeger" == false ]]; then
+                get_version_from_subchart $file "" "" false
+            fi
+            ;;
+        *)
+            cat $file | yq eval $JSON_FLAG | jq -r '.. | .image? | select(. != null) | (if .registry then (if .registry == "docker.io" then "docker.io" else .registry end) + "/" else "" end) + (if ((.repository? | tostring) != "") and has("repository") then (.repository? | tostring) elif ((.repo? | tostring) != "") and has("repo") then (.repo? | tostring) else (.repository? | tostring) end) + ":" + (if (.tag? | tostring) != "" then (.tag? | tostring) else "latest" end)'
+            ;;
+        esac
+    done | sort -u | tee -a .images.out
+}
+
+check_valid_docker_repo() {
+    docker manifest inspect $1 > /dev/null 2>&1
+}
+
+prechecks
+
 parse_params "$@"
 setup_colors
-
-VERSION="${args[0]}"
 
 OS=$(uname)
 JSON_FLAG='-j'
@@ -98,25 +207,25 @@ if [ $OS == 'Darwin' ]; then
 fi
 
 # Script logic
-echo "Finding images for Gloo Mesh Enterprise version ${VERSION}"
-if [[ $VERSION == 1* ]]; then
+echo "Finding images for Gloo Mesh Enterprise version ${version}"
+if [[ $version == 1* ]]; then
     echo ""
     echo "###################################"
     echo "# Getting enterprise-agent images #"
     echo "###################################"
-    wget -q https://storage.googleapis.com/gloo-mesh-enterprise/enterprise-agent/enterprise-agent-${VERSION}.tgz
-    tar zxf enterprise-agent-${VERSION}.tgz
-    find enterprise-agent -name "values.yaml" | while read file; do 
+    wget -q https://storage.googleapis.com/gloo-mesh-enterprise/enterprise-agent/enterprise-agent-${version}.tgz
+    tar zxf enterprise-agent-${version}.tgz
+    find enterprise-agent -type f -name "values.yaml" | while read file; do 
         cat $file | yq eval $JSON_FLAG | jq -r '.. | .image? | select(. != null) | (if .registry then (if .registry == "docker.io" then "docker.io" else .registry end) + "/" else "" end) + .repository + ":" + (.tag | tostring)'
     done | sort -u | tee .images.out
-elif [[ $VERSION == 2.0* || $VERSION == 2.1* || $VERSION == 2.2* || $VERSION == 2.3* ]]; then
+elif [[ $version == 2.0* || $version == 2.1* || $version == 2.2* || $version == 2.3* ]]; then
     echo ""
     echo "###################################"
     echo "# Getting gloo-mesh-agent images #"
     echo "###################################"
-    wget -q https://storage.googleapis.com/gloo-mesh-enterprise/gloo-mesh-agent/gloo-mesh-agent-${VERSION}.tgz
-    tar zxf gloo-mesh-agent-${VERSION}.tgz
-    find gloo-mesh-agent -name "values.yaml" | while read file; do
+    wget -q https://storage.googleapis.com/gloo-mesh-enterprise/gloo-mesh-agent/gloo-mesh-agent-${version}.tgz
+    tar zxf gloo-mesh-agent-${version}.tgz
+    find gloo-mesh-agent -type f -name "values.yaml" | while read file; do
         cat $file | yq eval $JSON_FLAG | jq -r '.. | .image? | select(. != null) | (if .registry then (if .registry == "docker.io" then "docker.io" else .registry end) + "/" else "" end) + .repository? + ":" + (.tag? | tostring)'
     done | sort -u | tee .images.out
 fi
@@ -125,36 +234,55 @@ echo ""
 echo "###################################"
 echo "# Getting Gloo Mesh images        #"
 echo "###################################"
-if [[ $VERSION == 2.0* || $VERSION == 2.1* || $VERSION == 2.2* || $VERSION == 2.3* ]]; then
-    wget -q https://storage.googleapis.com/gloo-mesh-enterprise/gloo-mesh-enterprise/gloo-mesh-enterprise-${VERSION}.tgz
-    tar zxf gloo-mesh-enterprise-${VERSION}.tgz
-    find gloo-mesh-enterprise -name "values.yaml" | while read file; do
+if [[ $version == 2.0* || $version == 2.1* || $version == 2.2* || $version == 2.3* ]]; then
+    wget -q https://storage.googleapis.com/gloo-mesh-enterprise/gloo-mesh-enterprise/gloo-mesh-enterprise-${version}.tgz
+    tar zxf gloo-mesh-enterprise-${version}.tgz
+    find gloo-mesh-enterprise -type f -name "values.yaml" | while read file; do
         cat $file | yq eval $JSON_FLAG | jq -r '.. | .image? | select(. != null) | (if .registry then (if .registry == "docker.io" then "docker.io" else .registry end) + "/" else "" end) + .repository? + ":" + (.tag? | tostring)'
     done | sort -u | tee -a .images.out
 else
-    wget -q https://storage.googleapis.com/gloo-platform/helm-charts/gloo-platform-${VERSION}.tgz
-    tar zxf gloo-platform-${VERSION}.tgz
-    find gloo-platform -name "values.yaml" | while read file; do
-        cat $file | yq eval $JSON_FLAG | jq -r '.. | .image? | select(. != null) | (if .registry then (if .registry == "docker.io" then "docker.io" else .registry end) + "/" else "" end) + (if (.repository? | tostring | contains("gloo-mesh/gloo-network-agent-")) then "us-docker.pkg.dev/" + (.repository? | tostring) else (.repository? | tostring) end) + .repo? + ":" + (if (.tag? | tostring) != "" then (.tag? | tostring) else "latest" end)'
+    wget -q https://storage.googleapis.com/gloo-platform/helm-charts/gloo-platform-${version}.tgz
+    tar zxf gloo-platform-${version}.tgz
+    # only look at the top level values.yaml
+    find gloo-platform -maxdepth 1 -type f -name "values.yaml" | while read file; do
+        cat $file | yq eval $JSON_FLAG | jq -r '.. | .image? | select(. != null) | (if .registry then (if .registry == "docker.io" then "docker.io" else .registry end) + "/" else "" end) + (if ((.repository? | tostring | contains("gloo-mesh/gloo-network-agent-")) and has("repository")) then "us-docker.pkg.dev/" + (.repository? | tostring) elif ((.repo? | tostring) != "") and has("repo") then (.repo? | tostring) else (.repository? | tostring) end) + ":" + (if has("tag") then (.tag? | tostring) else "latest" end)'
     done | sort -u | tee -a .images.out
+
+    if [[ "$skip_all" == false ]]; then
+        # managing the subcharts separately
+        pull_images_from_subcharts
+    fi
 fi
 
 echo ""
 echo "#######################################"
 echo "# Getting Solo distributions of Istio #"
 echo "#######################################"
-echo $istioHub/pilot:$istioVer-solo | tee -a .images.out
-echo $istioHub/proxyv2:$istioVer-solo | tee -a .images.out
+echo $istio_hub/pilot:$istio_ver-solo | tee -a .images.out
+echo $istio_hub/proxyv2:$istio_ver-solo | tee -a .images.out
 
+if [[ "$validate_image_repo" == true ]]; then
+    echo ""
+    echo "Validating image repositories"
+    cat .images.out | while read image; do
+        echo -n "Checking repo: $image, status: "
+        if ! check_valid_docker_repo $image; then
+            echo "failed"
+            echo "Invalid repository found: $image"
+        else
+            echo "success"
+        fi
+    done
+fi
 
-if [ $pull == 1 ]; then
-  echo ""
-  echo "Pulling images locally"
-  cat .images.out | while read image; do
-    src=$(echo $image | sed 's/^docker\.io\///g')
-    dest=$(echo $image | awk -F/ '{ if(NF>2){ print $2"/"$3}else{if($1=="docker.io"){print $2}else{print $1"/"$2}}}')
-    docker pull $image 
-  done
+if [[ "$pull" == true ]]; then
+    echo ""
+    echo "Pulling images locally"
+    cat .images.out | while read image; do
+        src=$(echo $image | sed 's/^docker\.io\///g')
+        dest=$(echo $image | awk -F/ '{ if(NF>2){ print $2"/"$3}else{if($1=="docker.io"){print $2}else{print $1"/"$2}}}')
+        docker pull $image
+    done
 fi
 
 # Cleanup
