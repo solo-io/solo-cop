@@ -200,11 +200,7 @@ prechecks
 parse_params "$@"
 setup_colors
 
-OS=$(uname)
-JSON_FLAG='-j'
-if [ $OS == 'Darwin' ]; then
-    JSON_FLAG="-o=json"
-fi
+JSON_FLAG='-o=json'
 
 # Script logic
 echo "Finding images for Gloo Mesh Enterprise version ${version}"
