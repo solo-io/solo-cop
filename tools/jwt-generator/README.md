@@ -38,7 +38,7 @@ The JWT generator is a shell script that creates JWT tokens that are issued by `
    ```
 
 5. Review your JWT.
-   1. Go to the [jwt.io](https://jwt.io/)) site.
+   1. Go to the [jwt.io](https://jwt.io/) site.
    2. Paste your JWT into the **Encoded** box.
    3. Review the JWT claims in the **Decoded** section.
   
