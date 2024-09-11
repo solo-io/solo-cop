@@ -30,5 +30,20 @@ The JWT generator is a shell script that creates JWT tokens that are issued by `
    Example command: 
    ```sh
    ./create_jwt.sh private_key.pem alice dev openai gpt-3.5-turbo
-   ``` 
+   ```
+
+   Example JWT:
+   ```
+   eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyAiaXNzIjogInNvbG8uaW8iLCAib3JnIjogInNvbG8uaW8iLCAic3ViIjogImFsaWNlIiwgInRlYW0iOiAiZGV2IiwgImxsbXMiOiB7ICJvcGVuYWkiOiBbICJncHQtMy41LXR1cmJvIiBdIH0gfQ.I7whTti0aDKxlILc5uLK9oo6TljGS6JUrjPVd6z1PxzucUa_cnuKkY0qj_wrkzyVN5djy4t2ggE1uBO8Llpwi-Ygru9hM84-1m53aO07JYFya1VTDsI25tCRG8rYhShDdAP5L935SIARta2QtHhrVcd1Ae7yfTDZ8G1DXLtjR2QelszCd2R8PioCQmqJ8PeKg4sURhu05GlBCZoXES9-rtPVbe6j3YLBTodJAvLHhyy3LgV_QbN7IiZ5qEywdKHoEF4D4aCUf_LqPp4NoqHXnGT4jLzWJEtZXHQ4sgRy_5T93NOLzWLdIjgMjGO_F0aVLwBzU-phykOVfcBPaMvetg
+   ```
+
+5. Review your JWT.
+   1. Go to the [jwt.io](https://jwt.io/)) site.
+   2. Paste your JWT into the **Encoded** box.
+   3. Review the JWT claims in the **Decoded** section.
+  
+   <img width="1225" alt="image" src="https://github.com/user-attachments/assets/7a57a156-3455-47c3-b5a3-5acb840307c8">
+
+
+   
    
