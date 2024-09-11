@@ -24,7 +24,7 @@ The JWT generator is a shell script that creates JWT tokens that are issued by `
    * `<private_key_path>`: Private key that you created earlier, such as `private_key.pem`. 
    * `<subject>`: The `sub` claim that identifies the entity (usually a user) the JWT token refers to.
    * `<team>`: The team the subject belongs to.
-   * `<llm>`: The LLM provider that the JWT token has access to, such as `openai` or `mistral`
+   * `<llm>`: The LLM provider that the JWT token has access to, such as `openai` or `mistral`.
    * `<model>`: The LLM model the JWT has access to, such as `gpt-3.5-turbo`.
   
    Example command: 
