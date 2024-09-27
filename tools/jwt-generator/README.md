@@ -19,7 +19,7 @@ The JWT generator is a shell script that creates JWT tokens that are issued by `
 
 4. Run the JWT generator. The command requires the following values: 
    ```sh
-   ./create_jwt.sh <private_key_path> <subject> <team> <llm> <model>
+   ./create-jwt.sh <private_key_path> <subject> <team> <llm> <model>
    ```
    * `<private_key_path>`: Private key that you created earlier, such as `private_key.pem`. 
    * `<subject>`: The `sub` claim that identifies the entity (usually a user) the JWT token refers to.
@@ -29,7 +29,7 @@ The JWT generator is a shell script that creates JWT tokens that are issued by `
   
    Example command: 
    ```sh
-   ./create_jwt.sh private_key.pem alice dev openai gpt-3.5-turbo
+   ./create-jwt.sh private_key.pem alice dev openai gpt-3.5-turbo
    ```
 
    Example JWT:
