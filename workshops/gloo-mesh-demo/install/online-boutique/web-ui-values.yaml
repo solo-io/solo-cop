@@ -1,0 +1,56 @@
+clusterName: cluster1
+
+endpoints:
+  productCatalogService: 'productcatalogservice.backend-apis.svc.cluster.local:3550'
+  currencyService: 'currencyservice.backend-apis.svc.cluster.local:7000'
+  recommendationService: 'recommendationservice.backend-apis.svc.cluster.local:8080'
+  shippingService: 'shipping.backend-apis-team.solo-io.mesh:80'
+  checkoutService: 'checkout.backend-apis-team.solo-io.mesh:80'
+  adService: 'adservice.backend-apis.svc.cluster.local:9555'
+  cartService: 'cartservice.backend-apis.svc.cluster.local:7070'
+
+images:
+  repository: gcr.io/solo-test-236622
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "1.3"
+
+serviceAccounts:
+  # Specifies whether service accounts should be created.
+  create: true
+
+frontend:
+  create: true
+
+loadGenerator:
+  create: true
+
+adService:
+  create: false
+
+cartService:
+  create: false
+
+checkoutService:
+  create: false
+
+currencyService:
+  create: false
+
+emailService:
+  create: false
+
+paymentService:
+  create: false
+
+productCatalogService:
+  create: false
+
+recommendationService:
+  create: false
+
+shippingService:
+  create: false
+
+cartDatabase:
+  inClusterRedis:
+    create: false
