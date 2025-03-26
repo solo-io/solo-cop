@@ -1,0 +1,50 @@
+clusterName: cluster1
+
+endpoints:
+  productCatalogService: 'productcatalogservice.backend-apis.svc.cluster.local:3550'
+
+images:
+  repository: gcr.io/solo-test-236622
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "1.3"
+
+serviceAccounts:
+  # Specifies whether service accounts should be created.
+  create: true
+
+shippingService:
+  create: false
+
+checkoutService:
+  create: false
+
+paymentService:
+  create: false
+
+frontend:
+  create: false
+
+loadGenerator:
+  create: false
+
+adService:
+  create: true
+
+cartService:
+  create: true
+
+currencyService:
+  create: true
+
+emailService:
+  create: true
+
+productCatalogService:
+  create: true
+
+recommendationService:
+  create: true
+
+cartDatabase:
+  inClusterRedis:
+    create: true
