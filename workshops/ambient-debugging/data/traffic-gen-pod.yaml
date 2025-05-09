@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: traffic-generator
+  namespace: default
+  labels:
+    app: traffic-generator
+spec:
+  containers:
+  - name: traffic
+    image: curlimages/curl:latest
+    command: ["/bin/sh"]
+    args:
+      - -c
+      - |
+        while true; do
+          curl -s -o /dev/null -w "HTTP Status: %{http_code}, Time: %{time_total}s\n" http://client.client.svc.cluster.local:8080
+          sleep 1
+        done
