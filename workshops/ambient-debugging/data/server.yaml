@@ -43,14 +43,15 @@ spec:
     spec:
       serviceAccountName: server
       affinity:
-        nodeAffinity:
+        podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-            - matchExpressions:
-              - key: kubernetes.io/hostname
+          - labelSelector:
+              matchExpressions:
+              - key: app
                 operator: In
                 values:
-                - ambient-worker2
+                - client
+            topologyKey: kubernetes.io/hostname
       containers:
       - name: server
         image: ghcr.io/nmnellis/fake-service:v2
