@@ -110,7 +110,7 @@ parse_params() {
     if [[ ${#args[@]} -eq 0 || -z $version ]]; then
         die "Missing required argument - version"
     fi
-    if [[ ! $version =~ ^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(-[a-zA-Z\d][-a-zA-Z.\d]*)?$ ]]; then
+    if [[ ! $version =~ ^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)|(-[a-zA-Z\d][-a-zA-Z.\d]*)?$ ]]; then
         die "Version is invalid" 
     fi
 
