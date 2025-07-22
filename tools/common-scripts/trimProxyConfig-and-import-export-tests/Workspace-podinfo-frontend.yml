@@ -1,0 +1,15 @@
+apiVersion: admin.gloo.solo.io/v2
+kind: Workspace
+metadata:
+  name: podinfo-frontend
+  namespace: gloo-mesh
+spec:
+  workloadClusters:
+  - configEnabled: true
+    name: drew-mgmt
+    namespaces:
+    - name: podinfo-frontend
+  - configEnabled: true
+    name: bgottfri-cluster-1
+    namespaces:
+    - name: podinfo-frontend

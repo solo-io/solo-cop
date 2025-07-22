@@ -1,0 +1,16 @@
+apiVersion: admin.gloo.solo.io/v2
+kind: WorkspaceSettings
+metadata:
+  name: podinfo-backend
+  namespace: podinfo-backend
+spec:
+  options:
+    eastWestGateways:
+    - selector:
+        labels:
+          istio: eastwestgateway
+    federation:
+      enabled: false
+    serviceIsolation:
+      enabled: true
+      trimProxyConfig: true
