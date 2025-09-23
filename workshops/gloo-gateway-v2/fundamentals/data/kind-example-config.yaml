@@ -1,0 +1,33 @@
+# three node (two workers) cluster config
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+- role: control-plane
+  kubeadmConfigPatches:
+  - |
+    kind: InitConfiguration
+    apiVersion: kubeadm.k8s.io/v1beta3
+    nodeRegistration:
+      kubeletExtraArgs:
+        node-labels: "topology.kubernetes.io/region=us-east-1,topology.kubernetes.io/zone=us-east-1a"
+- role: worker
+  kubeadmConfigPatches:
+  - |
+    kind: JoinConfiguration
+    nodeRegistration:
+      kubeletExtraArgs:
+        node-labels: "topology.kubernetes.io/region=us-east-1,topology.kubernetes.io/zone=us-east-1a"
+- role: worker
+  kubeadmConfigPatches:
+  - |
+    kind: JoinConfiguration
+    nodeRegistration:
+      kubeletExtraArgs:
+        node-labels: "topology.kubernetes.io/region=us-east-1,topology.kubernetes.io/zone=us-east-1b"
+- role: worker
+  kubeadmConfigPatches:
+  - |
+    kind: JoinConfiguration
+    nodeRegistration:
+      kubeletExtraArgs:
+        node-labels: "topology.kubernetes.io/region=us-east-1,topology.kubernetes.io/zone=us-east-1c"
