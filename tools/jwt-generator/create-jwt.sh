@@ -16,13 +16,20 @@ if [ -z "$PRIVATE_KEY_PATH" ] || [ -z "$SUBJECT" ] || [ -z "$TEAM" ] || [ -z "$L
     exit 1
 fi
 
+# Generate a random, unique Key ID
+KID=$(openssl rand -hex 16)
+
 
 if [[ "$LLM" != "openai" && "$LLM" != "mistralai" ]]; then
     echo "LLM must be either 'openai' or 'mistralai'."
     exit 1
 fi
 
-HEADER='{"alg":"RS256","typ":"JWT"}'
+HEADER=$(jq -n --arg kid "$KID" '{
+  "alg": "RS256",
+  "typ": "JWT",
+  "kid": $kid
+}')
 PAYLOAD=$(jq -n --arg sub "$SUBJECT" --arg team "$TEAM" --arg llm "$LLM" --arg model "$MODEL" \
 '{
   "iss": "solo.io",
