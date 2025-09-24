@@ -16,23 +16,21 @@ if [ -z "$PRIVATE_KEY_PATH" ] || [ -z "$SUBJECT" ] || [ -z "$TEAM" ] || [ -z "$L
     exit 1
 fi
 
+# Use a specific Key ID that matches your public key
+KID="solo-public-key-001"
+
 
 if [[ "$LLM" != "openai" && "$LLM" != "mistralai" ]]; then
     echo "LLM must be either 'openai' or 'mistralai'."
     exit 1
 fi
 
-HEADER='{"alg":"RS256","typ":"JWT"}'
-PAYLOAD=$(jq -n --arg sub "$SUBJECT" --arg team "$TEAM" --arg llm "$LLM" --arg model "$MODEL" \
-'{
-  "iss": "solo.io",
-  "org": "solo.io",
-  "sub": $sub,
-  "team": $team,
-  "llms": {
-    ($llm): [$model]
-  }
-}')
+HEADER=$(jq -c -n --arg kid "$KID" '{"alg":"RS256","typ":"JWT","kid":$kid}')
+# Calculate expiration time (10 years from now)
+EXP_TIME=$(date -d "+10 years" +%s 2>/dev/null || date -v+10y +%s 2>/dev/null || echo $(($(date +%s) + 315360000)))
+
+PAYLOAD=$(jq -c -n --arg sub "$SUBJECT" --arg team "$TEAM" --arg llm "$LLM" --arg model "$MODEL" --argjson exp "$EXP_TIME" \
+'{"iss":"solo.io","org":"solo.io","sub":$sub,"team":$team,"exp":$exp,"llms":{($llm):[$model]}}')
 
 # Encode Base64URL function
 base64url_encode() {
