@@ -4,7 +4,7 @@ The JWT generator can be used to create [JSON Web Tokens (JWT)](https://auth0.co
 
 ## How to use the JWT generator? 
 
-The JWT generator is a shell script that creates JWT tokens that are issued by `solo.io`. You can customize the token and set your own `sub`, `team`, and `llms` claims. The JWT header will now automatically include a randomly generated `kid` field that is unique to each token generation.
+The JWT generator is a shell script that creates JWT tokens that are issued by `solo.io`. You can customize the token and set your own `sub`, `team`, and `llms` claims. The JWT header also includes a static `kid` and `exp` fields so that you can use it with agentgateway proxies.
 
 1. Download the [`create-jwt.sh`](create-jwt.sh) script.
 2. Make the script executable.
