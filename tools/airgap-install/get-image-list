@@ -110,7 +110,7 @@ parse_params() {
     if [[ ${#args[@]} -eq 0 || -z $version ]]; then
         die "Missing required argument - version"
     fi
-    if [[ ! $version =~ ^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)|^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(-[a-zA-Z\d][-a-zA-Z.\d]*)?$ ]]; then
+    if [[ ! $version =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?$ ]]; then
         die "Version is invalid" 
     fi
 
@@ -214,7 +214,7 @@ if [[ $version == 1* ]]; then
     find enterprise-agent -type f -name "values.yaml" | while read file; do 
         cat $file | yq eval $JSON_FLAG | jq -r '.. | .image? | select(. != null) | (if .registry then (if .registry == "docker.io" then "docker.io" else .registry end) + "/" else "" end) + .repository + ":" + (.tag | tostring)'
     done | sort -u | tee .images.out
-elif [[ $version == 2.0* || $version == 2.1* || $version == 2.2* || $version == 2.3* ]]; then
+elif [[ $version == 2.0.* || $version == 2.1.* || $version == 2.2.* || $version == 2.3.* ]]; then
     echo ""
     echo "###################################"
     echo "# Getting gloo-mesh-agent images #"
@@ -230,7 +230,7 @@ echo ""
 echo "###################################"
 echo "# Getting Gloo Mesh images        #"
 echo "###################################"
-if [[ $version == 2.0* || $version == 2.1* || $version == 2.2* || $version == 2.3* ]]; then
+if [[ $version == 2.0.* || $version == 2.1.* || $version == 2.2.* || $version == 2.3.* ]]; then
     wget -q https://storage.googleapis.com/gloo-mesh-enterprise/gloo-mesh-enterprise/gloo-mesh-enterprise-${version}.tgz
     tar zxf gloo-mesh-enterprise-${version}.tgz
     find gloo-mesh-enterprise -type f -name "values.yaml" | while read file; do
