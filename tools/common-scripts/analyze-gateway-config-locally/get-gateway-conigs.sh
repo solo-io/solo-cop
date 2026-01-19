@@ -14,7 +14,7 @@
 #   Creates a file named: all-gateway-related-custom-resources-YYYYMMDDHHMMSS.yaml
 #   containing all discovered resources from:
 #   - gateway.networking.k8s.io API group (standard Gateway API resources)
-#   - solo.io, kgateway, and agentgateway related CRDs (Gloo Gateway resources)
+#   - solo.io, kgateway, and agentgateway related CRDs
 #
 # Exit codes:
 #   0 - Success (resources found and written to file)
@@ -35,8 +35,8 @@ for gateway_api_custom_resource_type in $(kubectl api-resources --api-group=gate
     fi
 done
 
-for gloo_gateway_custom_resource_type in $(kubectl get crds | grep -E "solo.io|kgateway|agentgateway" | awk '{ print $1 }' | cut -d. -f1); do
-    output=$(kubectl get "${gloo_gateway_custom_resource_type}" -A -o yaml 2>/dev/null)
+for solo_ent_gateway_custom_resource_type in $(kubectl get crds | grep -E "solo.io|kgateway|agentgateway" | awk '{ print $1 }' | cut -d. -f1); do
+    output=$(kubectl get "${solo_ent_gateway_custom_resource_type}" -A -o yaml 2>/dev/null)
     if echo "$output" | grep -q "^- "; then
         echo "---" >> "all-gateway-related-custom-resources-${timestamp}.yaml"
         echo "$output" >> "all-gateway-related-custom-resources-${timestamp}.yaml"
@@ -45,7 +45,7 @@ for gloo_gateway_custom_resource_type in $(kubectl get crds | grep -E "solo.io|k
 done
 
 if [ "${found_resources}" = false ]; then
-    echo "No Gateway API and Gloo Gateway API related custom resources are present in the cluster."
+    echo "[INFO] No Gateway API and Solo Enteprise for KGateway, AgentGateway related custom resources are present in the cluster."
 else
-    echo "Output file: all-gateway-related-custom-resources-${timestamp}.yaml"
+    echo "[INFO] Gateway specific Custom Resources saved in: all-gateway-related-custom-resources-${timestamp}.yaml"
 fi
