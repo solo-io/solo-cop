@@ -18,8 +18,10 @@ Please run the [extract-files-from-yaml.sh](../extract-files-from-yaml/extract-f
 
 To run:
 
+Copy the [extract-files-from-yaml.sh](../extract-files-from-yaml/extract-files-from-yaml.sh) script to the path where the `all-gateway-related-custom-resources-20260119130244.yaml` file got created and run the following
+
 ```bash
-./extract-files-from-yaml all-gateway-related-custom-resources-20260119130244.yaml
+./extract-files-from-yaml.sh all-gateway-related-custom-resources-20260119130244.yaml
 ```
 
 Output:
