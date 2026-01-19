@@ -3,7 +3,7 @@
 To run the script:
 
 ```bash
-./get-gateway-conigs.sh
+./get-gateway-configs.sh
 ```
 
 Output

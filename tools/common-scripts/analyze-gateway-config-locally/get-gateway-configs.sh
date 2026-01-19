@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Usage: ./get-gateway-conigs.sh
+# Usage: ./get-gateway-configs.sh
 #
 # Description:
 #   Collects all Gateway API and KGateway/AgentGateway related custom resources from the
