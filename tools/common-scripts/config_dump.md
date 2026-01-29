@@ -3,14 +3,17 @@
 Save the function to a file and source it in your shell.
 
 ```bash
-get_envoy_admin_config_dump() {
-  TIMESTAMP=$(date +%Y%m%d%H%M%S)
-  kubectl -n "${1}" port-forward "deploy/${2}" "${3}" & PID=$!
-  echo "[DEBUG] Wait for the port-forward to be established"
-  sleep 3
-  curl -s "http://localhost:${ENVOY_ADMIN_PORT}/config_dump?include_eds" > "config-dump-${1}-${TIMESTAMP}.json"
-  kill $PID
-  echo; echo "[INFO] Envoy admin config dump for ${1} saved to config-dump-${1}-${TIMESTAMP}.json"; echo;
+get_envoy_admin_config_dump () {
+	TIMESTAMP=$(date +%Y%m%d%H%M%S)
+	kubectl -n "${1}" port-forward "deploy/${2}" "${3}" &
+	PID=$!
+	echo "[DEBUG] Wait for the port-forward to be established"
+	sleep 3
+	curl -s "http://localhost:${3}/config_dump?include_eds" > "config-dump-${2}-${TIMESTAMP}.json"
+	kill $PID
+	echo
+	echo "[INFO] Envoy admin config dump for ${2} saved to config-dump-${2}-${TIMESTAMP}.json"
+	echo
 }
 ```
 
