@@ -272,38 +272,32 @@ for i in {1..2}; do
   done
 
 kubectl --context ${CLUSTER} --namespace "client-app" apply -f - << EOF
----
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: bombardier
+  name: "netshoot"
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: bombardier
+  name: "netshoot"
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: bombardier
+      app: "netshoot"
   template:
     metadata:
       labels:
-        app: bombardier
+        app: "netshoot"
     spec:
-      serviceAccountName: bombardier
+      serviceAccountName: "netshoot"
       containers:
-      - name: bombardier
-        image: alpine/bombardier:v1.2.5
-        imagePullPolicy: IfNotPresent
-        command: ["/bin/sh", "-c", "while true; do sleep 10; echo 'Sleeping forever...'; done"]
-        resources:
-            requests:
-              cpu: 20m
-              memory: 25Mi
+      - name: "netshoot"
+        image: nicolaka/netshoot
+        command: ["/bin/sh", "-c", "wget https://github.com/tsenart/vegeta/releases/download/v12.12.0/vegeta_12.12.0_linux_arm64.tar.gz -O vegeta.tar.gz ; tar -xzf vegeta.tar.gz ; mv vegeta /usr/local/bin/ ;echo \"GET http://httpbin.httpbin.mesh.internal:8000/headers\" >> /tmp/targets.txt ; while true; do sleep 10; echo 'Sleeping forever...'; done"]
 EOF
-kubectl --context ${CLUSTER} --namespace "client-app" rollout status deployment/bombardier
+kubectl --context ${CLUSTER} --namespace "client-app" rollout status deployment/netshoot
 
 kubectl --context ${CLUSTER} --namespace "httpbin" apply -f - << EOF
 apiVersion: v1
@@ -510,25 +504,63 @@ for i in {1..2}; do
 done;
 
 # make global for failover with httpbin.httpbin.mesh.internal
-kubectl label namespace httpbin --context ambient-cluster1 solo.io/service-scope=global
-kubectl label namespace httpbin --context ambient-cluster2 solo.io/service-scope=global
-
-## Alternate
-# # httpbin.httpbin.svc.cluster.local with failover - https://docs.solo.io/gloo-mesh/latest/ambient/multicluster/multi-apps/overview/#endpoint-traffic-control
-# for i in {1..2}; do
-#   CLUSTER="ambient-cluster${i}"
-#   kubectl --context ${CLUSTER} label namespace httpbin solo.io/service-scope=global
-#   kubectl --context ${CLUSTER} label namespace httpbin solo.io/service-takeover=true
-#   kubectl --context ${CLUSTER} annotate service httpbin -n httpbin networking.istio.io/traffic-distribution=PreferClose --overwrite
-# done;
-## kubectl --context ambient-cluster1 --namespace client-app exec -it deploy/bombardier -- bombardier -k -c 5 -d "3s" -r 100 -p i,p,r "http://httpbin.httpbin.svc.cluster.local:8000/get"
+for i in {1..2}; do
+  CLUSTER="ambient-cluster${i}"
+  kubectl --context ${CLUSTER} label namespace httpbin solo.io/service-scope=global
+done;
 
 echo; echo "________________________________________________________________________________"; echo;
 echo "Run the following to test client-server comms with auto failover"; echo;
-echo 'kubectl --context ambient-cluster1 --namespace client-app exec -it deploy/bombardier -- bombardier -k -c 5 -d "10s" -r 100 -p i,p,r "http://httpbin.httpbin.mesh.internal:8000/get"'
+echo 'kubectl --context ambient-cluster1 --namespace client-app exec -it deploy/netshoot -- sh -c "echo \"GET http://httpbin.httpbin.mesh.internal:8000/headers\" | vegeta attack  -rate=100 -duration=5s < /tmp/targets.txt | vegeta report"'
 echo;
 echo "________________________________________________________________________________"; echo;
 
 # # # Useful commands and queries
 # # istioctl zc certificate ztunnel-kc2zs.istio-system
-# # istio_requests_total {reporter="source",response_code="200",destination_service="httpbin.httpbin.mesh.internal",destination_cluster="ambient-cluster1"}
+# # istio_requests_total {reporter="source",response_code="200",destination_service="httpbin.httpbin.mesh.internal"}
+
+# Alternate
+echo; echo "_____________________________ Failover with httpbin.httpbin.svc.cluster.local __________________________________________________"; echo;
+# https://docs.solo.io/gloo-mesh/latest/ambient/multicluster/multi-apps/overview/#endpoint-traffic-control
+for i in {1..2}; do
+  CLUSTER="ambient-cluster${i}"
+  kubectl --context ${CLUSTER} label namespace httpbin solo.io/service-scope=global
+  kubectl --context ${CLUSTER} label namespace httpbin solo.io/service-takeover=true
+  kubectl --context ${CLUSTER} annotate service httpbin -n httpbin networking.istio.io/traffic-distribution=PreferClose --overwrite
+done;
+echo "Run the following to test client-server comms with auto failover"; echo;
+kubectl --context ambient-cluster1 --namespace client-app exec -it deploy/netshoot -- sh -c "echo \"GET http://httpbin.httpbin.svc.cluster.local:8000/headers\" | vegeta attack -rate=1000 -duration=5s | vegeta report"
+## o/p
+## Requests      [total, rate, throughput]         4999, 1000.19, 1000.15
+## Duration      [total, attack, wait]             4.998s, 4.998s, 202.708µs
+## Latencies     [min, mean, 50, 90, 95, 99, max]  136.834µs, 247.067µs, 238.036µs, 308.768µs, 335.375µs, 440.573µs, 2.426ms
+## Bytes In      [total, mean]                     1153659, 230.78
+## Bytes Out     [total, mean]                     0, 0.00
+## Success       [ratio]                           100.00%
+## Status Codes  [code:count]                      200:4999
+## Error Set:
+## scale dowm in cluster1 
+kubectl --context ambient-cluster1 --namespace httpbin scale deployment/httpbin --replicas=0
+## re-run
+kubectl --context ambient-cluster1 --namespace client-app exec -it deploy/netshoot -- sh -c "echo \"GET http://httpbin.httpbin.svc.cluster.local:8000/headers\" | vegeta attack -rate=1000 -duration=5s | vegeta report"
+## o/p
+## Requests      [total, rate, throughput]         4999, 1000.22, 1000.14
+## Duration      [total, attack, wait]             4.998s, 4.998s, 425.917µs
+## Latencies     [min, mean, 50, 90, 95, 99, max]  246.167µs, 522.109µs, 401.626µs, 491.477µs, 534.427µs, 1.005ms, 31.563ms
+## Bytes In      [total, mean]                     1153659, 230.78
+## Bytes Out     [total, mean]                     0, 0.00
+## Success       [ratio]                           100.00%
+## Status Codes  [code:count]                      200:4999
+## Error Set:
+echo;
+echo; echo "_____________________________ Failover with httpbin.httpbin.svc.cluster.local __________________________________________________"; echo;
+
+echo; echo "______________________________Check Grafana URL__________________________________________________"; echo;
+CLUSTER="ambient-cluster1"
+GRAFANA_SVC_IP=$(kubectl --context ${CLUSTER} -n monitoring get svc kube-prometheus-stack-grafana --no-headers | awk '{print $4}')
+GRAFANA_HOST="http://${GRAFANA_SVC_IP}:3000"
+echo; echo "${CLUSTER} Grafana URL: ${GRAFANA_HOST}/explore - username: admin, password: prom-operator"
+echo 'istio_requests_total {reporter="source",response_code="200",destination_service="httpbin.httpbin.svc.cluster.local"}'
+echo; echo "______________________________Check Grafana URL__________________________________________________"; echo;
+## query to run and check traffic going to cluster2
+## istio_requests_total {reporter="source",response_code="200",destination_service="httpbin.httpbin.svc.cluster.local"}
