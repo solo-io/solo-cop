@@ -295,7 +295,7 @@ spec:
       containers:
       - name: "netshoot"
         image: nicolaka/netshoot
-        command: ["/bin/sh", "-c", "wget https://github.com/tsenart/vegeta/releases/download/v12.12.0/vegeta_12.12.0_linux_arm64.tar.gz -O vegeta.tar.gz ; tar -xzf vegeta.tar.gz ; mv vegeta /usr/local/bin/ ;echo \"GET http://httpbin.httpbin.mesh.internal:8000/headers\" >> /tmp/targets.txt ; while true; do sleep 10; echo 'Sleeping forever...'; done"]
+        command: ["/bin/sh", "-c", "wget https://github.com/tsenart/vegeta/releases/download/v12.12.0/vegeta_12.12.0_linux_arm64.tar.gz -O vegeta.tar.gz ; tar -xzf vegeta.tar.gz ; mv vegeta /usr/local/bin/ ; while true; do sleep 10; echo 'Sleeping forever...'; done"]
 EOF
 kubectl --context ${CLUSTER} --namespace "client-app" rollout status deployment/netshoot
 
@@ -511,7 +511,7 @@ done;
 
 echo; echo "________________________________________________________________________________"; echo;
 echo "Run the following to test client-server comms with auto failover"; echo;
-echo 'kubectl --context ambient-cluster1 --namespace client-app exec -it deploy/netshoot -- sh -c "echo \"GET http://httpbin.httpbin.mesh.internal:8000/headers\" | vegeta attack  -rate=100 -duration=5s < /tmp/targets.txt | vegeta report"'
+echo 'kubectl --context ambient-cluster1 --namespace client-app exec -it deploy/netshoot -- sh -c "echo \"GET http://httpbin.httpbin.mesh.internal:8000/headers\" | vegeta attack  -rate=100 -duration=5s | vegeta report"'
 echo;
 echo "________________________________________________________________________________"; echo;
 
