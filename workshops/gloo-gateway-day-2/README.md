@@ -90,7 +90,6 @@ helm upgrade --install gloo-platform-crds gloo-platform/gloo-platform-crds \
 
 helm upgrade --install gloo-platform gloo-platform/gloo-platform \
   --version=$GLOO_PLATFORM_VERSION \
-  --devel \
   --namespace=gloo-mesh \
   --set licensing.glooMeshLicenseKey=$GLOO_PLATFORM_LICENSE_KEY \
   --set licensing.glooTrialLicenseKey=$GLOO_PLATFORM_LICENSE_KEY \

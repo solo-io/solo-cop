@@ -45,10 +45,10 @@ Set these environment variables which will be used throughout the workshop.
 ```sh
 # Used to enable Gloo (please ask for a trial license key)
 export GLOO_PLATFORM_LICENSE_KEY=<licence_key>
-export GLOO_PLATFORM_VERSION=v2.3.0-rc1
+export GLOO_PLATFORM_VERSION=v2.3.5
 export ISTIO_IMAGE_REPO=us-docker.pkg.dev/gloo-mesh/istio-workshops
-export ISTIO_IMAGE_TAG=1.16.3-solo
-export ISTIO_VERSION=1.16.3
+export ISTIO_IMAGE_TAG=1.16.4-solo
+export ISTIO_VERSION=1.16.4
 export ISTIO_REVISION=1-16
 ```
 
