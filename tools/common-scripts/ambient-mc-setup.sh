@@ -131,6 +131,7 @@ tag: ${ISTIO_TAG}
 env:
   PEERING_ENABLE_FLAT_NETWORKS: "false"
   PILOT_SKIP_VALIDATE_TRUST_DOMAIN: "true"
+  PILOT_ENABLE_ALPHA_GATEWAY_API: "true"
 global:
   hub: ${ISTIO_REPO}
   tag: ${ISTIO_TAG}
@@ -560,7 +561,7 @@ CLUSTER="ambient-cluster1"
 GRAFANA_SVC_IP=$(kubectl --context ${CLUSTER} -n monitoring get svc kube-prometheus-stack-grafana --no-headers | awk '{print $4}')
 GRAFANA_HOST="http://${GRAFANA_SVC_IP}:3000"
 echo; echo "${CLUSTER} Grafana URL: ${GRAFANA_HOST}/explore - username: admin, password: prom-operator"
-echo 'istio_requests_total {reporter="source",response_code="200",destination_service="httpbin.httpbin.svc.cluster.local"}'
+echo 'istio_requests_total {reporter="source",response_code="200",destination_service="httpbin.httpbin.mesh.internal"}'
 echo; echo "______________________________Check Grafana URL__________________________________________________"; echo;
 ## query to run and check traffic going to cluster2
 ## istio_requests_total {reporter="source",response_code="200",destination_service="httpbin.httpbin.svc.cluster.local"}
