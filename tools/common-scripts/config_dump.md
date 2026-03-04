@@ -44,3 +44,14 @@ DEPLOYMENT_NAME=istio-ingressgateway
 ENVOY_ADMIN_PORT=15000
 get_envoy_admin_config_dump ${NAMESPACE} ${DEPLOYMENT_NAME} ${ENVOY_ADMIN_PORT}
 ```
+
+### Example for Agentgateway
+
+Admin port is `15000`
+
+```bash
+NAMESPACE=enterprise-agentgateway
+DEPLOYMENT_NAME=agentgateway
+ENVOY_ADMIN_PORT=15000
+get_envoy_admin_config_dump ${NAMESPACE} ${DEPLOYMENT_NAME} ${ENVOY_ADMIN_PORT}
+```
