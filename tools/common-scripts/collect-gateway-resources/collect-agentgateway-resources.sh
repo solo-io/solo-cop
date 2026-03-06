@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 #
-# collect-agentgateway-resources.sh
+# collect-gateway-resources.sh
 #
 # Collects all custom resource objects for Enterprise AgentGateway,
-# Kubernetes Gateway API, and related Solo.io CRDs from a cluster.
+# Kgateway, Kubernetes Gateway API, and related Solo.io CRDs from a cluster.
 #
 # Usage:
 #   ./collect-agentgateway-resources.sh [--namespace <ns>] [--all-namespaces] [--output <dir>]
@@ -16,9 +16,16 @@ set -euo pipefail
 # Config
 # ---------------------------------------------------------------------------
 API_GROUPS=(
+  # Kubernetes Gateway API
   "gateway.networking.k8s.io"
+  "gateway.networking.x-k8s.io"
+  # AgentGateway
   "agentgateway.dev"
   "enterpriseagentgateway.solo.io"
+  # Kgateway
+  "gateway.kgateway.dev"
+  "enterprisekgateway.solo.io"
+  # Shared Solo.io extensions
   "ratelimit.solo.io"
   "extauth.solo.io"
 )
@@ -49,6 +56,10 @@ if [[ -z "$OUTPUT_DIR" ]]; then
   OUTPUT_DIR="agentgateway-dump-${TIMESTAMP}"
 fi
 mkdir -p "$OUTPUT_DIR"
+
+# Send all output to both terminal and a log file inside the output directory
+LOG_FILE="${OUTPUT_DIR}/script.log"
+exec > >(tee -a "$LOG_FILE") 2>&1
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -101,7 +112,7 @@ done
 
 if [[ ${#ALL_RESOURCES[@]} -eq 0 ]]; then
   log "ERROR: No matching API resources found in the cluster."
-  log "Make sure AgentGateway / Gateway API CRDs are installed."
+  log "Make sure AgentGateway / Kgateway / Gateway API CRDs are installed."
   exit 1
 fi
 
@@ -125,7 +136,7 @@ OBJECTS_DIR="${OUTPUT_DIR}/objects"
 mkdir -p "$OBJECTS_DIR"
 
 SUMMARY_FILE="${OUTPUT_DIR}/summary.txt"
-echo "AgentGateway Resource Dump — ${TIMESTAMP}" > "$SUMMARY_FILE"
+echo "Gateway Resource Dump — ${TIMESTAMP}" > "$SUMMARY_FILE"
 echo "============================================" >> "$SUMMARY_FILE"
 echo "" >> "$SUMMARY_FILE"
 
@@ -158,19 +169,19 @@ for fqn in "${ALL_RESOURCES[@]}"; do
 done
 
 # ---------------------------------------------------------------------------
-# 5. Collect related workloads & services (agentgateway namespaces)
+# 5. Collect related workloads & services (gateway namespaces)
 # ---------------------------------------------------------------------------
 log "Collecting related workloads..."
 WORKLOADS_DIR="${OUTPUT_DIR}/workloads"
 mkdir -p "$WORKLOADS_DIR"
 
-# Auto-detect namespaces that have agentgateway resources
-AG_NAMESPACES=$(kubectl get deployments --all-namespaces --no-headers 2>/dev/null \
-  | grep -iE 'agentgateway|agent-gateway' \
+# Auto-detect namespaces that have agentgateway or kgateway resources
+GW_NAMESPACES=$(kubectl get deployments --all-namespaces --no-headers 2>/dev/null \
+  | grep -iE 'agentgateway|agent-gateway|kgateway' \
   | awk '{print $1}' \
   | sort -u || true)
 
-for ns in $AG_NAMESPACES; do
+for ns in $GW_NAMESPACES; do
   log "  Namespace: ${ns}"
   ns_dir="${WORKLOADS_DIR}/${ns}"
   mkdir -p "$ns_dir"
@@ -198,17 +209,17 @@ if command -v helm &>/dev/null; then
   HELM_DIR="${OUTPUT_DIR}/helm"
   mkdir -p "$HELM_DIR"
 
-  # List all releases, filter for agentgateway-related ones
+  # List all releases, filter for agentgateway or kgateway related ones
   while IFS=$'\t' read -r name namespace chart status revision; do
     [[ -z "$name" ]] && continue
     log "  Found release: ${name} (namespace: ${namespace}, chart: ${chart})"
 
     # User-supplied values (overrides only)
-    helm get values "$name" -n "$namespace" \
+    helm get values "$name" -n "$namespace" | sed 's/\(licenseKey:\).*/\1 REDACTED/' \
       > "${HELM_DIR}/${name}.values.yaml" 2>/dev/null || true
 
     # All computed values (user + defaults)
-    helm get values "$name" -n "$namespace" --all \
+    helm get values "$name" -n "$namespace" --all | sed 's/\(licenseKey:\).*/\1 REDACTED/' \
       > "${HELM_DIR}/${name}.values-all.yaml" 2>/dev/null || true
 
     # Release metadata
@@ -222,12 +233,12 @@ if command -v helm &>/dev/null; then
 
   done < <(helm list --all-namespaces --output table 2>/dev/null \
     | awk 'NR>1' \
-    | grep -iE 'agentgateway|agent-gateway' \
+    | grep -iE 'agentgateway|agent-gateway|kgateway' \
     | awk '{print $1"\t"$2"\t"$9"\t"$7"\t"$3}' \
     || true)
 
   if [ -z "$(ls -A "$HELM_DIR" 2>/dev/null)" ]; then
-    log "  No agentgateway Helm releases found"
+    log "  No agentgateway/kgateway Helm releases found"
     rmdir "$HELM_DIR" 2>/dev/null || true
   fi
 else
@@ -240,7 +251,7 @@ fi
 {
   echo ""
   echo "Total objects collected: ${total_objects}"
-  echo "AgentGateway namespaces: ${AG_NAMESPACES:-none detected}"
+  echo "Gateway namespaces: ${GW_NAMESPACES:-none detected}"
 } >> "$SUMMARY_FILE"
 
 log "Done. ${total_objects} resource objects collected."
@@ -249,7 +260,7 @@ log "Directory structure:"
 find "$OUTPUT_DIR" -type f | sort | sed "s|^${OUTPUT_DIR}/|  |"
 
 # ---------------------------------------------------------------------------
-# 7. Package into archive
+# 8. Package into archive
 # ---------------------------------------------------------------------------
 ARCHIVE="${OUTPUT_DIR}.tar.gz"
 log "Creating archive: ${ARCHIVE}"
