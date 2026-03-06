@@ -53,7 +53,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ -z "$OUTPUT_DIR" ]]; then
-  OUTPUT_DIR="agentgateway-dump-${TIMESTAMP}"
+  OUTPUT_DIR="gateway-configurations-${TIMESTAMP}"
 fi
 mkdir -p "$OUTPUT_DIR"
 

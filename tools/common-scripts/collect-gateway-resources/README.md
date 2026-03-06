@@ -41,7 +41,7 @@ Script to collect all custom resource objects and related configuration from a K
 The script creates a timestamped directory and a `.tar.gz` archive:
 
 ```
-agentgateway-dump-YYYYMMDD-HHMMSS/
+gateway-configurations-YYYYMMDD-HHMMSS/
 ├── cluster-info.txt
 ├── summary.txt
 ├── crds/
@@ -60,7 +60,7 @@ agentgateway-dump-YYYYMMDD-HHMMSS/
     ├── <release>.values-all.yaml     # all values (user + defaults)
     └── <release>.info.txt            # chart version, status, revision
 
-agentgateway-dump-YYYYMMDD-HHMMSS.tar.gz   # shareable archive
+gateway-configurations-YYYYMMDD-HHMMSS.tar.gz   # shareable archive
 ```
 
 ## Prerequisites
