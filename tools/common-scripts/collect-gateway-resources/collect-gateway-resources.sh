@@ -6,7 +6,7 @@
 # Kgateway, Kubernetes Gateway API, and related Solo.io CRDs from a cluster.
 #
 # Usage:
-#   ./collect-agentgateway-resources.sh [--namespace <ns>] [--all-namespaces] [--output <dir>]
+#   ./collect-gateway-resources.sh [--namespace <ns>] [--all-namespaces] [--output <dir>]
 #
 # Defaults to --all-namespaces. Output goes to a timestamped directory.
 

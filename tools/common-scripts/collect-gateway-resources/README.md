@@ -6,13 +6,13 @@ Script to collect all custom resource objects and related configuration from a K
 
 ```bash
 # All namespaces (default)
-./collect-agentgateway-resources.sh
+./collect-gateway-resources.sh
 
 # Specific namespace
-./collect-agentgateway-resources.sh -n enterprise-agentgateway
+./collect-gateway-resources.sh -n enterprise-agentgateway
 
 # Custom output directory
-./collect-agentgateway-resources.sh -o /tmp/my-dump
+./collect-gateway-resources.sh -o /tmp/my-dump
 ```
 
 ## What it collects
