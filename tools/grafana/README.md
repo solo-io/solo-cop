@@ -18,3 +18,13 @@ Monitor the health of Istio service mesh peering connections using this dashboar
 * Convergence time for peer connections
 
 ![Istio peering health dashboard screenshot of Grafana](./istio-peering-health.png)
+
+# Istio Global Services Dashboard
+
+Monitor locality-aware traffic distribution and endpoint health across clusters, networks, zones, and regions using this dashboard. The dashboard provides insights into:
+* Percentage of traffic staying within the same cluster, zone, and region
+* TCP connection rates broken down by source and destination locality to identify cross-locality failover
+* Ztunnel outlier detection metrics including total endpoints, unhealthy endpoints, and unhealthy percentage per workload and network
+* TCP connection failure rates with reason codes to correlate endpoint health issues with active failover
+
+![Istio global services dashboard screenshot of Grafana](./istio-global-services-dashboard.png)
