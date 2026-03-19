@@ -1,0 +1,876 @@
+{
+   "description": "Istio Global Services Dashboard: locality-aware traffic analysis and ztunnel outlier detection health",
+   "graphTooltip": 1,
+   "panels": [
+      {
+         "collapsed": false,
+         "description": "Percentage of TCP connections where source and destination share the same locality scope. Zone and region panels only include traffic where locality labels are populated (requires ztunnel or locality-aware proxies).",
+         "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 0
+         },
+         "id": 1,
+         "panels": [],
+         "title": "Locality Traffic Overview",
+         "type": "row"
+      },
+      {
+         "datasource": {
+            "type": "datasource",
+            "uid": "-- Mixed --"
+         },
+         "description": "Percentage of outbound TCP connections where source and destination are in the same cluster. A high value indicates traffic is staying within cluster boundaries. A drop may indicate cross-cluster failover is occurring.",
+         "fieldConfig": {
+            "defaults": {
+               "color": {
+                  "mode": "thresholds"
+               },
+               "max": 1,
+               "min": 0,
+               "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                     {
+                        "color": "red",
+                        "value": null
+                     },
+                     {
+                        "color": "yellow",
+                        "value": 0.5
+                     },
+                     {
+                        "color": "green",
+                        "value": 0.8
+                     }
+                  ]
+               },
+               "unit": "percentunit"
+            }
+         },
+         "gridPos": {
+            "h": 4,
+            "w": 8,
+            "x": 0,
+            "y": 1
+         },
+         "id": 2,
+         "interval": "15s",
+         "options": {
+            "colorMode": "background",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+               "calcs": [
+                  "lastNotNull"
+               ],
+               "fields": "",
+               "values": false
+            },
+            "textMode": "auto"
+         },
+         "pluginVersion": "v11.0.0",
+         "targets": [
+            {
+               "datasource": {
+                  "type": "prometheus",
+                  "uid": "$datasource"
+               },
+               "expr": "sum(\n  rate(istio_tcp_connections_opened_total{reporter=\"source\",source_cluster=~\"$cluster\",destination_cluster=~\"$destination_cluster\",destination_service=~\"$service\"}[$__rate_interval])\n  and on(source_cluster, destination_cluster)\n  label_replace(\n    sum by (source_cluster) (\n      rate(istio_tcp_connections_opened_total{reporter=\"source\",source_cluster=~\"$cluster\",destination_cluster=~\"$destination_cluster\",destination_service=~\"$service\"}[$__rate_interval])\n    ),\n    \"destination_cluster\", \"$1\", \"source_cluster\", \"(.*)\"\n  )\n)\n/\nsum(rate(istio_tcp_connections_opened_total{reporter=\"source\",source_cluster=~\"$cluster\",destination_cluster=~\"$destination_cluster\",destination_service=~\"$service\"}[$__rate_interval]))",
+               "legendFormat": "Same Cluster"
+            }
+         ],
+         "title": "Same Cluster Traffic",
+         "type": "stat"
+      },
+      {
+         "datasource": {
+            "type": "datasource",
+            "uid": "-- Mixed --"
+         },
+         "description": "Percentage of TCP connections where source and destination are in the same zone. Only includes traffic where both source_zone and destination_zone labels are present. No data means zone locality is not configured.",
+         "fieldConfig": {
+            "defaults": {
+               "color": {
+                  "mode": "thresholds"
+               },
+               "max": 1,
+               "min": 0,
+               "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                     {
+                        "color": "red",
+                        "value": null
+                     },
+                     {
+                        "color": "yellow",
+                        "value": 0.5
+                     },
+                     {
+                        "color": "green",
+                        "value": 0.8
+                     }
+                  ]
+               },
+               "unit": "percentunit"
+            }
+         },
+         "gridPos": {
+            "h": 4,
+            "w": 8,
+            "x": 8,
+            "y": 1
+         },
+         "id": 3,
+         "interval": "15s",
+         "options": {
+            "colorMode": "background",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+               "calcs": [
+                  "lastNotNull"
+               ],
+               "fields": "",
+               "values": false
+            },
+            "textMode": "auto"
+         },
+         "pluginVersion": "v11.0.0",
+         "targets": [
+            {
+               "datasource": {
+                  "type": "prometheus",
+                  "uid": "$datasource"
+               },
+               "expr": "sum(\n  rate(istio_tcp_connections_opened_total{reporter=\"source\",source_cluster=~\"$cluster\",destination_cluster=~\"$destination_cluster\",destination_service=~\"$service\",source_zone=~\"$source_zone\",destination_zone=~\"$destination_zone\",source_zone!=\"\",destination_zone!=\"\"}[$__rate_interval])\n  and on(source_zone, destination_zone)\n  label_replace(\n    sum by (source_zone) (\n      rate(istio_tcp_connections_opened_total{reporter=\"source\",source_cluster=~\"$cluster\",destination_cluster=~\"$destination_cluster\",destination_service=~\"$service\",source_zone=~\"$source_zone\",destination_zone=~\"$destination_zone\",source_zone!=\"\",destination_zone!=\"\"}[$__rate_interval])\n    ),\n    \"destination_zone\", \"$1\", \"source_zone\", \"(.*)\"\n  )\n)\n/\nsum(rate(istio_tcp_connections_opened_total{reporter=\"source\",source_cluster=~\"$cluster\",destination_cluster=~\"$destination_cluster\",destination_service=~\"$service\",source_zone=~\"$source_zone\",destination_zone=~\"$destination_zone\",source_zone!=\"\",destination_zone!=\"\"}[$__rate_interval]))",
+               "legendFormat": "Same Zone"
+            }
+         ],
+         "title": "Same Zone Traffic",
+         "type": "stat"
+      },
+      {
+         "datasource": {
+            "type": "datasource",
+            "uid": "-- Mixed --"
+         },
+         "description": "Percentage of TCP connections where source and destination are in the same region. Only includes traffic where both source_region and destination_region labels are present. No data means region locality is not configured.",
+         "fieldConfig": {
+            "defaults": {
+               "color": {
+                  "mode": "thresholds"
+               },
+               "max": 1,
+               "min": 0,
+               "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                     {
+                        "color": "red",
+                        "value": null
+                     },
+                     {
+                        "color": "yellow",
+                        "value": 0.5
+                     },
+                     {
+                        "color": "green",
+                        "value": 0.8
+                     }
+                  ]
+               },
+               "unit": "percentunit"
+            }
+         },
+         "gridPos": {
+            "h": 4,
+            "w": 8,
+            "x": 16,
+            "y": 1
+         },
+         "id": 4,
+         "interval": "15s",
+         "options": {
+            "colorMode": "background",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+               "calcs": [
+                  "lastNotNull"
+               ],
+               "fields": "",
+               "values": false
+            },
+            "textMode": "auto"
+         },
+         "pluginVersion": "v11.0.0",
+         "targets": [
+            {
+               "datasource": {
+                  "type": "prometheus",
+                  "uid": "$datasource"
+               },
+               "expr": "sum(\n  rate(istio_tcp_connections_opened_total{reporter=\"source\",source_cluster=~\"$cluster\",destination_cluster=~\"$destination_cluster\",destination_service=~\"$service\",source_region=~\"$source_region\",destination_region=~\"$destination_region\",source_region!=\"\",destination_region!=\"\"}[$__rate_interval])\n  and on(source_region, destination_region)\n  label_replace(\n    sum by (source_region) (\n      rate(istio_tcp_connections_opened_total{reporter=\"source\",source_cluster=~\"$cluster\",destination_cluster=~\"$destination_cluster\",destination_service=~\"$service\",source_region=~\"$source_region\",destination_region=~\"$destination_region\",source_region!=\"\",destination_region!=\"\"}[$__rate_interval])\n    ),\n    \"destination_region\", \"$1\", \"source_region\", \"(.*)\"\n  )\n)\n/\nsum(rate(istio_tcp_connections_opened_total{reporter=\"source\",source_cluster=~\"$cluster\",destination_cluster=~\"$destination_cluster\",destination_service=~\"$service\",source_region=~\"$source_region\",destination_region=~\"$destination_region\",source_region!=\"\",destination_region!=\"\"}[$__rate_interval]))",
+               "legendFormat": "Same Region"
+            }
+         ],
+         "title": "Same Region Traffic",
+         "type": "stat"
+      },
+      {
+         "collapsed": false,
+         "description": "TCP connection rate broken down by source and destination locality. Same-locality entries appear where source and destination labels match. Cross-locality entries indicate traffic crossing cluster, zone, or region boundaries — which can be caused by failover when local endpoints are unhealthy.",
+         "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 5
+         },
+         "id": 5,
+         "panels": [],
+         "title": "Traffic by Locality",
+         "type": "row"
+      },
+      {
+         "datasource": {
+            "type": "datasource",
+            "uid": "-- Mixed --"
+         },
+         "description": "TCP connection rate grouped by source and destination cluster. Entries where source_cluster != destination_cluster indicate cross-cluster traffic.",
+         "fieldConfig": {
+            "defaults": {
+               "custom": {
+                  "fillOpacity": 10,
+                  "gradientMode": "hue",
+                  "showPoints": "never"
+               },
+               "unit": "cps"
+            }
+         },
+         "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 0,
+            "y": 6
+         },
+         "id": 6,
+         "interval": "15s",
+         "options": {
+            "legend": {
+               "calcs": [
+                  "last",
+                  "max"
+               ],
+               "displayMode": "table"
+            }
+         },
+         "pluginVersion": "v11.0.0",
+         "targets": [
+            {
+               "datasource": {
+                  "type": "prometheus",
+                  "uid": "$datasource"
+               },
+               "expr": "sum by (source_cluster, destination_cluster) (\n  rate(istio_tcp_connections_opened_total{reporter=\"source\",source_cluster=~\"$cluster\",destination_cluster=~\"$destination_cluster\",destination_service=~\"$service\"}[$__rate_interval])\n)",
+               "legendFormat": "{{source_cluster}} → {{destination_cluster}}"
+            }
+         ],
+         "title": "Traffic by Cluster",
+         "type": "timeseries"
+      },
+      {
+         "datasource": {
+            "type": "datasource",
+            "uid": "-- Mixed --"
+         },
+         "description": "TCP connection rate grouped by source and destination zone. Only shown for traffic where zone locality labels are present. Requires ztunnel with locality information configured.",
+         "fieldConfig": {
+            "defaults": {
+               "custom": {
+                  "fillOpacity": 10,
+                  "gradientMode": "hue",
+                  "showPoints": "never"
+               },
+               "unit": "cps"
+            }
+         },
+         "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 8,
+            "y": 6
+         },
+         "id": 7,
+         "interval": "15s",
+         "options": {
+            "legend": {
+               "calcs": [
+                  "last",
+                  "max"
+               ],
+               "displayMode": "table"
+            }
+         },
+         "pluginVersion": "v11.0.0",
+         "targets": [
+            {
+               "datasource": {
+                  "type": "prometheus",
+                  "uid": "$datasource"
+               },
+               "expr": "sum by (source_zone, destination_zone) (\n  rate(istio_tcp_connections_opened_total{reporter=\"source\",source_cluster=~\"$cluster\",destination_cluster=~\"$destination_cluster\",destination_service=~\"$service\",source_zone=~\"$source_zone\",destination_zone=~\"$destination_zone\",source_zone!=\"\"}[$__rate_interval])\n)",
+               "legendFormat": "{{source_zone}} → {{destination_zone}}"
+            }
+         ],
+         "title": "Traffic by Zone",
+         "type": "timeseries"
+      },
+      {
+         "datasource": {
+            "type": "datasource",
+            "uid": "-- Mixed --"
+         },
+         "description": "TCP connection rate grouped by source and destination region. Only shown for traffic where region locality labels are present. Requires ztunnel with locality information configured.",
+         "fieldConfig": {
+            "defaults": {
+               "custom": {
+                  "fillOpacity": 10,
+                  "gradientMode": "hue",
+                  "showPoints": "never"
+               },
+               "unit": "cps"
+            }
+         },
+         "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 16,
+            "y": 6
+         },
+         "id": 8,
+         "interval": "15s",
+         "options": {
+            "legend": {
+               "calcs": [
+                  "last",
+                  "max"
+               ],
+               "displayMode": "table"
+            }
+         },
+         "pluginVersion": "v11.0.0",
+         "targets": [
+            {
+               "datasource": {
+                  "type": "prometheus",
+                  "uid": "$datasource"
+               },
+               "expr": "sum by (source_region, destination_region) (\n  rate(istio_tcp_connections_opened_total{reporter=\"source\",source_cluster=~\"$cluster\",destination_cluster=~\"$destination_cluster\",destination_service=~\"$service\",source_region=~\"$source_region\",destination_region=~\"$destination_region\",source_region!=\"\"}[$__rate_interval])\n)",
+               "legendFormat": "{{source_region}} → {{destination_region}}"
+            }
+         ],
+         "title": "Traffic by Region",
+         "type": "timeseries"
+      },
+      {
+         "collapsed": false,
+         "description": "Ztunnel outlier detection metrics showing endpoint health per workload, cluster, network, zone, and region. Unhealthy endpoints (health score ≤ 1e-4) are ejected from the load balancer, causing ztunnel to fail over to endpoints in other localities. The destination_network label shows which network each endpoint belongs to — use this to identify cross-network failover.",
+         "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 14
+         },
+         "id": 9,
+         "panels": [],
+         "title": "Outlier Detection (Ztunnel)",
+         "type": "row"
+      },
+      {
+         "datasource": {
+            "type": "datasource",
+            "uid": "-- Mixed --"
+         },
+         "description": "Total number of endpoints being tracked per workload by ztunnel's outlier detection. Labeled by cluster, network, region, and zone so you can see the locality distribution of endpoints for each service.",
+         "fieldConfig": {
+            "defaults": {
+               "custom": {
+                  "fillOpacity": 10,
+                  "gradientMode": "hue",
+                  "showPoints": "never"
+               },
+               "unit": "short"
+            }
+         },
+         "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 0,
+            "y": 15
+         },
+         "id": 10,
+         "interval": "15s",
+         "options": {
+            "legend": {
+               "calcs": [
+                  "last",
+                  "max"
+               ],
+               "displayMode": "table"
+            }
+         },
+         "pluginVersion": "v11.0.0",
+         "targets": [
+            {
+               "datasource": {
+                  "type": "prometheus",
+                  "uid": "$datasource"
+               },
+               "expr": "sum by (destination_cluster, destination_workload, destination_workload_namespace, destination_network, destination_region, destination_zone) (\n  istio_outlier_detection_endpoints{destination_workload_namespace=~\"$namespace\",destination_cluster=~\"$destination_cluster\",destination_network=~\"$network\",destination_zone=~\"$destination_zone\",destination_region=~\"$destination_region\"}\n)",
+               "legendFormat": "{{destination_workload}}.{{destination_workload_namespace}} ({{destination_cluster}}/{{destination_network}}/{{destination_region}}/{{destination_zone}})"
+            }
+         ],
+         "title": "Total Tracked Endpoints",
+         "type": "timeseries"
+      },
+      {
+         "datasource": {
+            "type": "datasource",
+            "uid": "-- Mixed --"
+         },
+         "description": "Number of unhealthy endpoints (health score ≤ 1e-4) per workload, as tracked by ztunnel's outlier detection. Unhealthy endpoints are ejected and traffic fails over to other localities. If unhealthy endpoints appear in a specific cluster/network/zone, check the Connection Failures section to confirm failover is occurring.",
+         "fieldConfig": {
+            "defaults": {
+               "color": {
+                  "mode": "palette-classic"
+               },
+               "custom": {
+                  "fillOpacity": 10,
+                  "gradientMode": "hue",
+                  "showPoints": "never"
+               },
+               "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                     {
+                        "color": "green",
+                        "value": null
+                     },
+                     {
+                        "color": "yellow",
+                        "value": 1
+                     },
+                     {
+                        "color": "red",
+                        "value": 3
+                     }
+                  ]
+               },
+               "unit": "short"
+            }
+         },
+         "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 8,
+            "y": 15
+         },
+         "id": 11,
+         "interval": "15s",
+         "options": {
+            "legend": {
+               "calcs": [
+                  "last",
+                  "max"
+               ],
+               "displayMode": "table"
+            }
+         },
+         "pluginVersion": "v11.0.0",
+         "targets": [
+            {
+               "datasource": {
+                  "type": "prometheus",
+                  "uid": "$datasource"
+               },
+               "expr": "sum by (destination_cluster, destination_workload, destination_workload_namespace, destination_network, destination_region, destination_zone) (\n  istio_outlier_detection_endpoints_unhealthy{destination_workload_namespace=~\"$namespace\",destination_cluster=~\"$destination_cluster\",destination_network=~\"$network\",destination_zone=~\"$destination_zone\",destination_region=~\"$destination_region\"}\n)",
+               "legendFormat": "{{destination_workload}}.{{destination_workload_namespace}} ({{destination_cluster}}/{{destination_network}}/{{destination_region}}/{{destination_zone}})"
+            }
+         ],
+         "title": "Unhealthy Endpoints",
+         "type": "timeseries"
+      },
+      {
+         "datasource": {
+            "type": "datasource",
+            "uid": "-- Mixed --"
+         },
+         "description": "Ratio of unhealthy to total endpoints per workload. A rising unhealthy percentage in a specific locality (cluster/network/zone/region) indicates that ztunnel will fail over traffic to other localities for that service.",
+         "fieldConfig": {
+            "defaults": {
+               "color": {
+                  "mode": "thresholds"
+               },
+               "custom": {
+                  "fillOpacity": 10,
+                  "gradientMode": "hue",
+                  "showPoints": "never"
+               },
+               "max": 1,
+               "min": 0,
+               "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                     {
+                        "color": "green",
+                        "value": null
+                     },
+                     {
+                        "color": "yellow",
+                        "value": 0.25
+                     },
+                     {
+                        "color": "red",
+                        "value": 0.5
+                     }
+                  ]
+               },
+               "unit": "percentunit"
+            }
+         },
+         "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 16,
+            "y": 15
+         },
+         "id": 12,
+         "interval": "15s",
+         "options": {
+            "legend": {
+               "calcs": [
+                  "last",
+                  "max"
+               ],
+               "displayMode": "table"
+            }
+         },
+         "pluginVersion": "v11.0.0",
+         "targets": [
+            {
+               "datasource": {
+                  "type": "prometheus",
+                  "uid": "$datasource"
+               },
+               "expr": "sum by (destination_cluster, destination_workload, destination_workload_namespace, destination_network, destination_region, destination_zone) (\n  istio_outlier_detection_endpoints_unhealthy{destination_workload_namespace=~\"$namespace\",destination_cluster=~\"$destination_cluster\",destination_network=~\"$network\",destination_zone=~\"$destination_zone\",destination_region=~\"$destination_region\"}\n)\n/\nsum by (destination_cluster, destination_workload, destination_workload_namespace, destination_network, destination_region, destination_zone) (\n  istio_outlier_detection_endpoints{destination_workload_namespace=~\"$namespace\",destination_cluster=~\"$destination_cluster\",destination_network=~\"$network\",destination_zone=~\"$destination_zone\",destination_region=~\"$destination_region\"}\n)",
+               "legendFormat": "{{destination_workload}}.{{destination_workload_namespace}} ({{destination_cluster}}/{{destination_network}}/{{destination_region}}/{{destination_zone}})"
+            }
+         ],
+         "title": "Unhealthy Endpoint %",
+         "type": "timeseries"
+      },
+      {
+         "collapsed": false,
+         "description": "TCP connection failures tracked by ztunnel. Connection failures indicate that traffic to a specific destination is failing, which will cause ztunnel's outlier detection to eject that endpoint and fail over to other localities. Correlate with the Unhealthy Endpoints panels above to understand which locality failures are driving cross-locality traffic.",
+         "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 23
+         },
+         "id": 13,
+         "panels": [],
+         "title": "Connection Failures",
+         "type": "row"
+      },
+      {
+         "datasource": {
+            "type": "datasource",
+            "uid": "-- Mixed --"
+         },
+         "description": "Rate of TCP connection failures per destination workload, broken down by cluster, region, and zone. High failure rates to endpoints in a specific locality will cause ztunnel to mark those endpoints as unhealthy and fail over to other localities.",
+         "fieldConfig": {
+            "defaults": {
+               "custom": {
+                  "fillOpacity": 10,
+                  "gradientMode": "hue",
+                  "showPoints": "never"
+               },
+               "unit": "cps"
+            }
+         },
+         "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 24
+         },
+         "id": 14,
+         "interval": "15s",
+         "options": {
+            "legend": {
+               "calcs": [
+                  "last",
+                  "max"
+               ],
+               "displayMode": "table"
+            }
+         },
+         "pluginVersion": "v11.0.0",
+         "targets": [
+            {
+               "datasource": {
+                  "type": "prometheus",
+                  "uid": "$datasource"
+               },
+               "expr": "(\n  sum by (destination_workload, destination_workload_namespace, destination_cluster, destination_region, destination_zone, response_flags) (\n    rate(istio_tcp_connections_failed_total{reporter=\"source\",source_cluster=~\"$cluster\",destination_cluster=~\"$destination_cluster\",destination_workload_namespace=~\"$namespace\",destination_service=~\"$service\"}[$__rate_interval])\n  )\n) or vector(0)",
+               "legendFormat": "{{destination_workload}}.{{destination_workload_namespace}} ({{destination_cluster}}/{{destination_region}}/{{destination_zone}}) [{{response_flags}}]"
+            }
+         ],
+         "title": "TCP Connection Failures by Workload",
+         "type": "timeseries"
+      },
+      {
+         "datasource": {
+            "type": "datasource",
+            "uid": "-- Mixed --"
+         },
+         "description": "Rate of TCP connection failures grouped by source and destination locality. Use this to identify which source-to-destination locality pairs are experiencing failures, confirming whether cross-locality failover is being triggered by endpoint health issues.",
+         "fieldConfig": {
+            "defaults": {
+               "custom": {
+                  "fillOpacity": 10,
+                  "gradientMode": "hue",
+                  "showPoints": "never"
+               },
+               "unit": "cps"
+            }
+         },
+         "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 24
+         },
+         "id": 15,
+         "interval": "15s",
+         "options": {
+            "legend": {
+               "calcs": [
+                  "last",
+                  "max"
+               ],
+               "displayMode": "table"
+            }
+         },
+         "pluginVersion": "v11.0.0",
+         "targets": [
+            {
+               "datasource": {
+                  "type": "prometheus",
+                  "uid": "$datasource"
+               },
+               "expr": "(\n  sum by (source_cluster, destination_cluster, source_region, destination_region, source_zone, destination_zone, response_flags) (\n    rate(istio_tcp_connections_failed_total{reporter=\"source\",source_cluster=~\"$cluster\",destination_cluster=~\"$destination_cluster\",destination_service=~\"$service\",source_zone=~\"$source_zone\",destination_zone=~\"$destination_zone\",source_region=~\"$source_region\",destination_region=~\"$destination_region\"}[$__rate_interval])\n  )\n) or vector(0)",
+               "legendFormat": "{{source_cluster}}/{{source_region}}/{{source_zone}} → {{destination_cluster}}/{{destination_region}}/{{destination_zone}} [{{response_flags}}]"
+            }
+         ],
+         "title": "Connection Failure Rate by Locality",
+         "type": "timeseries"
+      }
+   ],
+   "refresh": "15s",
+   "schemaVersion": 39,
+   "templating": {
+      "list": [
+         {
+            "name": "datasource",
+            "query": "prometheus",
+            "type": "datasource"
+         },
+         {
+            "datasource": {
+               "type": "prometheus",
+               "uid": "$datasource"
+            },
+            "definition": "label_values(process_cpu_seconds_total, cluster)",
+            "includeAll": true,
+            "allValue": ".*",
+            "label": "Source Cluster",
+            "multi": true,
+            "name": "cluster",
+            "query": {
+               "query": "label_values(process_cpu_seconds_total, cluster)",
+               "refId": "StandardVariableQuery"
+            },
+            "refresh": 2,
+            "sort": 1,
+            "type": "query"
+         },
+         {
+            "datasource": {
+               "type": "prometheus",
+               "uid": "$datasource"
+            },
+            "definition": "label_values(process_cpu_seconds_total, cluster)",
+            "includeAll": true,
+            "allValue": ".*",
+            "label": "Destination Cluster",
+            "multi": true,
+            "name": "destination_cluster",
+            "query": {
+               "query": "label_values(process_cpu_seconds_total, cluster)",
+               "refId": "StandardVariableQuery"
+            },
+            "refresh": 2,
+            "sort": 1,
+            "type": "query"
+         },
+         {
+            "datasource": {
+               "type": "prometheus",
+               "uid": "$datasource"
+            },
+            "definition": "label_values(istio_tcp_connections_opened_total{reporter=\"source\",source_cluster=~\"$cluster\"}, destination_service)",
+            "includeAll": true,
+            "allValue": ".*",
+            "label": "Service",
+            "multi": true,
+            "name": "service",
+            "query": {
+               "query": "label_values(istio_tcp_connections_opened_total{reporter=\"source\",source_cluster=~\"$cluster\"}, destination_service)",
+               "refId": "StandardVariableQuery"
+            },
+            "refresh": 2,
+            "sort": 1,
+            "type": "query"
+         },
+         {
+            "datasource": {
+               "type": "prometheus",
+               "uid": "$datasource"
+            },
+            "definition": "label_values(istio_tcp_connections_opened_total{reporter=\"source\",source_cluster=~\"$cluster\"}, destination_workload_namespace)",
+            "includeAll": true,
+            "allValue": ".*",
+            "label": "Namespace",
+            "multi": true,
+            "name": "namespace",
+            "query": {
+               "query": "label_values(istio_tcp_connections_opened_total{reporter=\"source\",source_cluster=~\"$cluster\"}, destination_workload_namespace)",
+               "refId": "StandardVariableQuery"
+            },
+            "refresh": 2,
+            "sort": 1,
+            "type": "query"
+         },
+         {
+            "datasource": {
+               "type": "prometheus",
+               "uid": "$datasource"
+            },
+            "definition": "label_values(istio_tcp_connections_opened_total{reporter=\"source\",source_cluster=~\"$cluster\"}, source_zone)",
+            "includeAll": true,
+            "allValue": ".*",
+            "label": "Source Zone",
+            "multi": true,
+            "name": "source_zone",
+            "query": {
+               "query": "label_values(istio_tcp_connections_opened_total{reporter=\"source\",source_cluster=~\"$cluster\"}, source_zone)",
+               "refId": "StandardVariableQuery"
+            },
+            "refresh": 2,
+            "sort": 1,
+            "type": "query"
+         },
+         {
+            "datasource": {
+               "type": "prometheus",
+               "uid": "$datasource"
+            },
+            "definition": "label_values(istio_tcp_connections_opened_total{destination_cluster=~\"$destination_cluster\"}, destination_zone)",
+            "includeAll": true,
+            "allValue": ".*",
+            "label": "Destination Zone",
+            "multi": true,
+            "name": "destination_zone",
+            "query": {
+               "query": "label_values(istio_tcp_connections_opened_total{destination_cluster=~\"$destination_cluster\"}, destination_zone)",
+               "refId": "StandardVariableQuery"
+            },
+            "refresh": 2,
+            "sort": 1,
+            "type": "query"
+         },
+         {
+            "datasource": {
+               "type": "prometheus",
+               "uid": "$datasource"
+            },
+            "definition": "label_values(istio_tcp_connections_opened_total{reporter=\"source\",source_cluster=~\"$cluster\"}, source_region)",
+            "includeAll": true,
+            "allValue": ".*",
+            "label": "Source Region",
+            "multi": true,
+            "name": "source_region",
+            "query": {
+               "query": "label_values(istio_tcp_connections_opened_total{reporter=\"source\",source_cluster=~\"$cluster\"}, source_region)",
+               "refId": "StandardVariableQuery"
+            },
+            "refresh": 2,
+            "sort": 1,
+            "type": "query"
+         },
+         {
+            "datasource": {
+               "type": "prometheus",
+               "uid": "$datasource"
+            },
+            "definition": "label_values(istio_tcp_connections_opened_total{destination_cluster=~\"$destination_cluster\"}, destination_region)",
+            "includeAll": true,
+            "allValue": ".*",
+            "label": "Destination Region",
+            "multi": true,
+            "name": "destination_region",
+            "query": {
+               "query": "label_values(istio_tcp_connections_opened_total{destination_cluster=~\"$destination_cluster\"}, destination_region)",
+               "refId": "StandardVariableQuery"
+            },
+            "refresh": 2,
+            "sort": 1,
+            "type": "query"
+         },
+         {
+            "datasource": {
+               "type": "prometheus",
+               "uid": "$datasource"
+            },
+            "definition": "label_values(istio_outlier_detection_endpoints{destination_cluster=~\"$destination_cluster\"}, destination_network)",
+            "includeAll": true,
+            "allValue": ".*",
+            "label": "Network",
+            "multi": true,
+            "name": "network",
+            "query": {
+               "query": "label_values(istio_outlier_detection_endpoints{destination_cluster=~\"$destination_cluster\"}, destination_network)",
+               "refId": "StandardVariableQuery"
+            },
+            "refresh": 2,
+            "sort": 1,
+            "type": "query"
+         }
+      ]
+   },
+   "time": {
+      "from": "now-30m",
+      "to": "now"
+   },
+   "timezone": "utc",
+   "title": "Istio Global Services Dashboard",
+   "uid": "istio-global-services-dashboard"
+}
