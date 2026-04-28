@@ -1,18 +1,11 @@
-# Solo Gateway Config Dump
+# Collect Gateway Resources
 
 Script to collect all custom resource objects and related configuration from a Kubernetes cluster running Solo Enterprise for Agentgateway, Kgateway, or both.
 
 ## Usage
 
 ```bash
-# All namespaces (default)
 ./collect-gateway-resources.sh
-
-# Specific namespace
-./collect-gateway-resources.sh -n enterprise-agentgateway
-
-# Custom output directory
-./collect-gateway-resources.sh -o /tmp/my-dump
 ```
 
 ## What it collects
